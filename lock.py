@@ -26,6 +26,7 @@ class Lock:
         self.picks = self.create_picks()
 
         self.current_pick = 0
+        self.changes = []
 
     def validate_tumblers(self):
         assert all(tumbler.position >= 0 for tumbler in self.tumblers)
@@ -85,11 +86,16 @@ class Lock:
                and pick != self.current_pick
         ]
 
+    def add_change(self, tumbler: Tumbler, height: int):
+        if tumbler.height != height:
+            self.changes.append((tumbler.position, tumbler.upper, height, tumbler.height))
+
     def apply_rules(self, position: int, upper: bool, pushed: bool):
         tumbler = self.positions[position][upper]
         for pos, up, difference in self.rules.get((position, upper), []):
             picks = self.get_picks(pos, up)
             tumb = self.positions[pos][up]
+            height = tumb.height
 
             jammed = False
             if picks and pushed:
@@ -101,10 +107,20 @@ class Lock:
                 if pushed and not tumbler.jammed:
                     tumb.release()
 
+            self.add_change(tumb, height)
+
     def apply_rules_iteratively(self, position: int, upper: bool, pushed: bool):
         self.apply_rules(position, upper, pushed)
         if not self.revise_picks():
             self.apply_rules(position, upper, pushed)
+
+    def apply_master_tumbler(self, tumbler: Tumbler):
+        if tumbler.master and tumbler.pushed:
+            for tumb in self.groups[tumbler.group]:
+                height = tumb.height
+                tumb.jam()
+                tumb.difference = 0
+                self.add_change(tumb, height)
 
     def check_if_pick_is_valid(self, pick: int) -> bool:
         index = self.picks[pick]
@@ -132,7 +148,7 @@ class Lock:
                     all_picks_valid = False
                     position, upper = index
                     self.apply_rules(position, upper, False)
-                    self.release_pick(pick)
+                    self.clear_pick(pick)
                     self.release_tumbler(position, upper)
 
         return number_of_revisions == 1
@@ -142,6 +158,7 @@ class Lock:
         if tumbler is None or not self.check_previous_tumblers(tumbler):
             return
 
+        height = tumbler.height
         self.picks[self.current_pick] = (position, upper)
         if tumbler.jammed:
             tumbler.unjam()
@@ -150,33 +167,37 @@ class Lock:
         tumbler.unjam()
         tumbler.push()
 
+        self.add_change(tumbler, height)
         self.apply_rules_iteratively(position, upper, pushed=True)
-
-        if tumbler.master and tumbler.pushed:
-            for tumb in self.groups[tumbler.group]:
-                tumb.jam()
-                tumb.difference = 0
+        self.apply_master_tumbler(tumbler)
 
     def release_tumbler(self, position: int, upper: bool):
         tumbler = self.positions[position][upper]
+        height = tumbler.height
         if not tumbler.jammed:
             tumbler.release()
 
-        for pick in self.get_picks(position, upper):
-            self.release_pick(pick)
-
+        self.add_change(tumbler, height)
         self.apply_rules_iteratively(position, upper, False)
 
-    def release(self):
+    def release_current_pick(self):
         current = self.picks[self.current_pick]
         if current is None:
             return
 
         position, upper = current
-        self.release_pick()
+        self.clear_pick()
         self.release_tumbler(position, upper)
         self.revise_picks()
 
-    def release_pick(self, pick: Optional[int] = None):
+    def clear_pick(self, pick: Optional[int] = None):
         pick = pick if pick is not None else self.current_pick
         self.picks[pick] = None
+
+    def get_recent_changes(self) -> Dict[Tuple[int, bool], Tuple[int, int]]:
+        changes = self.changes.copy()
+        self.changes.clear()
+        return {
+            (pos, up): (start, end)
+            for pos, up, start, end in changes
+        }

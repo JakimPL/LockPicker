@@ -21,6 +21,9 @@ class Game:
 
         self.highlighted = None
 
+        self.animation = 0.0
+        self.animation_items = {}
+
     def run(self):
         self.running = True
 
@@ -39,8 +42,19 @@ class Game:
         self.set_mouse_state()
 
     def action(self):
-        self.handle_selected_tumbler()
         self.toggle_current_pick()
+        if not self.animation_frame():
+            self.handle_selected_tumbler()
+            self.animation_items = self.lock.get_recent_changes()
+
+    def animation_frame(self) -> bool:
+        if self.animation_items:
+            self.animation += 0.05
+            if self.animation >= self.get_max_animation_value():
+                self.animation = 0.0
+                self.animation_items = {}
+
+        return bool(self.animation_items)
 
     def draw(self):
         self.draw_background()
@@ -58,6 +72,9 @@ class Game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+
+    def get_max_animation_value(self) -> int:
+        return max(abs(end - start) for start, end in self.animation_items.values())
 
     def get_mouse_state(self):
         self.mouse_pos = pygame.mouse.get_pos()
@@ -79,14 +96,26 @@ class Game:
         for pick in self.lock.picks:
             self.draw_pick(pick)
 
+    def get_current_height(self, tumbler: Tumbler) -> int:
+        if (tumbler.position, tumbler.upper) in self.animation_items:
+            start, end = self.animation_items[(tumbler.position, tumbler.upper)]
+            if end > start:
+                height = start + min(self.animation, end - start)
+            else:
+                height = start + max(-self.animation, end - start)
+        else:
+            height = tumbler.height
+
+        return height
+
     def draw_tumbler(self, tumbler: Tumbler, position: int) -> bool:
         alpha = 255 if tumbler.master else 160
         alpha /= 3 if tumbler.jammed else 1
         color = TUMBLERS_COLORS[tumbler.group]
 
-        height = tumbler.height
-        x = position * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET
+        height = self.get_current_height(tumbler)
         h = height * SCALE
+        x = position * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET
         y = 0 if tumbler.upper else HEIGHT - h
 
         rect = pygame.Rect(x, y, BAR_WIDTH, h)
@@ -110,9 +139,11 @@ class Game:
         else:
             position, upper = index
             tumbler = self.lock.positions[position][upper]
-            height = tumbler.height * SCALE
+            height = self.get_current_height(tumbler)
+
+            h = height * SCALE
             x = position * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET + BAR_WIDTH // 2
-            y = height + PICK_OFFSET if upper else HEIGHT - height - PICK_OFFSET
+            y = h + PICK_OFFSET if upper else HEIGHT - h - PICK_OFFSET
 
         color = (*PICK_COLORS[pick], alpha)
         shape_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
@@ -132,11 +163,9 @@ class Game:
 
     def handle_selected_tumbler(self):
         if self.mouse_pressed[0] and not self.mouse_was_pressed[0]:
+            self.lock.release_current_pick()
             if self.highlighted is not None:
-                self.lock.release()
                 self.lock.push(*self.highlighted)
-            else:
-                self.lock.release()
 
     def toggle_current_pick(self):
         if self.mouse_pressed[2] and not self.mouse_was_pressed[2]:
