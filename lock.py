@@ -1,6 +1,7 @@
 from collections import defaultdict
 from typing import DefaultDict, Dict, List, Optional, Tuple
 
+from level import Level
 from tumbler import Tumbler
 
 MAX_HEIGHT = 11
@@ -10,13 +11,12 @@ PICKS = 2
 class Lock:
     def __init__(
             self,
-            tumblers: List[Tumbler],
-            rules: Dict[Tuple[int, bool], List[Tuple[int, bool, int]]],
+            level: Level,
             number_of_picks: int = PICKS,
             max_height: int = MAX_HEIGHT
     ):
-        self.tumblers = tumblers
-        self.rules = rules
+        self.tumblers = level.tumblers
+        self.rules = level.rules
         self.max_height = max_height
         self.number_of_picks = number_of_picks
 
@@ -201,3 +201,11 @@ class Lock:
             (pos, up): (start, end)
             for pos, up, start, end in changes
         }
+
+    def check_win(self) -> bool:
+        for items in self.positions.values():
+            for tumbler in items.values():
+                if tumbler is not None and tumbler.height > 1:
+                    return False
+
+        return True

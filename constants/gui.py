@@ -1,10 +1,11 @@
-from constants.game import LOCK
+from lock import MAX_HEIGHT
 
 WIDTH, HEIGHT = 1000, 800
 X_OFFSET = 150
 BAR_WIDTH = 80
 BAR_OFFSET = 5
-SCALE = HEIGHT / LOCK.max_height
+BAR_Y_OFFSET = 5
+SCALE = (HEIGHT - BAR_Y_OFFSET) / MAX_HEIGHT
 
 PICK_SIZE = 20
 PICK_OFFSET = 20

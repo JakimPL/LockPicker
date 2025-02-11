@@ -1,9 +1,9 @@
 import pygame
 
-from constants.gui import WIDTH, HEIGHT
-from constants.gui import BAR_WIDTH, BAR_OFFSET, X_OFFSET, SCALE, ANIMATION_SPEED
 from constants.gui import BACKGROUND_COLOR, HIGHLIGHT_COLOR, PICK_COLORS, TUMBLERS_COLORS
+from constants.gui import BAR_WIDTH, BAR_OFFSET, X_OFFSET, SCALE, ANIMATION_SPEED
 from constants.gui import PICK_OFFSET, PICK_SIZE, PICK_WIDTH, PICK_IDLE_OFFSET, PICK_DISCREPANCY
+from constants.gui import WIDTH, HEIGHT
 from lock import Lock
 from tumbler import Tumbler
 
@@ -25,6 +25,7 @@ class Game:
         self.animation_items = {}
 
         self.win = False
+        self.loss = False
 
     def run(self):
         self.running = True
@@ -117,9 +118,13 @@ class Game:
         color = TUMBLERS_COLORS[tumbler.group]
 
         height = self.get_current_height(tumbler)
-        h = height * SCALE
         x = position * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET
-        y = 0 if tumbler.upper else HEIGHT - h
+        if tumbler.upper:
+            h = height * SCALE
+            y = 0
+        else:
+            h = height * SCALE
+            y = HEIGHT - h
 
         rect = pygame.Rect(x, y, BAR_WIDTH, h)
 
@@ -175,14 +180,12 @@ class Game:
             self.lock.current_pick = 1 - self.lock.current_pick
 
     def check_win(self) -> bool:
-        for position, items in self.lock.positions.items():
-            for upper, item in items.items():
-                if item is not None and item.height > 1:
-                    return False
+        if self.lock.check_win():
+            self.win = True
+            self.running = False
+            return True
 
-        self.win = True
-        self.running = False
-        return True
+        return False
 
     @staticmethod
     def terminate():

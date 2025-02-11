@@ -1,5 +1,7 @@
-from constants.game import LOCK
+from constants.levels import LEVEL
 from game import Game
+from lock import Lock
 
-game = Game(LOCK)
+lock = Lock(LEVEL)
+game = Game(lock)
 game.run()

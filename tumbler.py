@@ -20,6 +20,9 @@ class Tumbler:
         self._height = height
         self._release = False
 
+    def __repr__(self):
+        return f"Tumbler({self.position}, {self.upper}, {self.group}, {self.height}, master={self.master})"
+
     def jam(self):
         self._release = False
         self._jammed = True
