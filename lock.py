@@ -29,7 +29,7 @@ class Lock:
 
     def validate_tumblers(self):
         assert all(tumbler.position >= 0 for tumbler in self.tumblers)
-        assert all(0 < tumbler.height < self.max_height for tumbler in self.tumblers)
+        assert all(0 < tumbler.base_height < self.max_height for tumbler in self.tumblers)
 
         tumblers = {
             (tumbler.group, tumbler.upper, tumbler.position)
@@ -73,7 +73,7 @@ class Lock:
             counter = self.positions[i].get(not upper)
             if tumb is not None and i < position and not tumb.pushed:
                 return False
-            if counter is not None and tumbler.current_height + counter.current_height >= self.max_height:
+            if counter is not None and tumbler.height + counter.height >= self.max_height:
                 return False
 
         return True
@@ -112,11 +112,11 @@ class Lock:
             position, upper = index
             for pos in range(position):
                 tumbler = self.positions[pos].get(upper)
-                if tumbler is not None and tumbler.current_height > 1:
+                if tumbler is not None and tumbler.height > 1:
                     return False
 
             tumbler = self.positions[position][upper]
-            if tumbler is not None and tumbler.current_height > 1:
+            if tumbler is not None and tumbler.height > 1:
                 return False
 
         return True

@@ -9,13 +9,13 @@ class Tumbler:
     ):
         self.position = position
         self.upper = upper
-        self.height = height
         self.group = group
         self.master = master
 
         self.difference = 0
         self._pushed = False
         self._jammed = False
+        self._height = height
 
     def jam(self):
         self._jammed = True
@@ -40,5 +40,9 @@ class Tumbler:
         return self._jammed
 
     @property
-    def current_height(self):
-        return self.height + self.difference if not self.pushed else 1
+    def height(self):
+        return self._height + self.difference if not self.pushed else 1
+
+    @property
+    def base_height(self):
+        return self._height

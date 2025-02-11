@@ -84,7 +84,7 @@ class Game:
         alpha /= 3 if tumbler.jammed else 1
         color = TUMBLERS_COLORS[tumbler.group]
 
-        height = tumbler.current_height
+        height = tumbler.height
         x = position * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET
         h = height * SCALE
         y = 0 if tumbler.upper else HEIGHT - h
@@ -110,7 +110,7 @@ class Game:
         else:
             position, upper = index
             tumbler = self.lock.positions[position][upper]
-            height = tumbler.current_height * SCALE
+            height = tumbler.height * SCALE
             x = position * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET + BAR_WIDTH // 2
             y = height + PICK_OFFSET if upper else HEIGHT - height - PICK_OFFSET
 
