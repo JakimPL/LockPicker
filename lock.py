@@ -93,14 +93,13 @@ class Lock:
 
             jammed = False
             if picks and pushed:
-                tumb.jammed = True
-                jammed = tumb.jammed
+                tumb.jam()
+                jammed = True
 
             if not jammed:
                 tumb.difference = difference if tumbler.pushed else 0
                 if pushed and not tumbler.jammed:
-                    tumb.jammed = False
-                    tumb.pushed = False
+                    tumb.release()
 
     def apply_rules_iteratively(self, position: int, upper: bool, pushed: bool):
         self.apply_rules(position, upper, pushed)
@@ -145,24 +144,23 @@ class Lock:
 
         self.picks[self.current_pick] = (position, upper)
         if tumbler.jammed:
-            tumbler.jammed = False
+            tumbler.unjam()
             return
 
-        tumbler.jammed = False
-        tumbler.pushed = True
+        tumbler.unjam()
+        tumbler.push()
 
         self.apply_rules_iteratively(position, upper, pushed=True)
 
         if tumbler.master and tumbler.pushed:
             for tumb in self.groups[tumbler.group]:
-                tumb.jammed = True
-                tumb.pushed = True
+                tumb.jam()
                 tumb.difference = 0
 
     def release_tumbler(self, position: int, upper: bool):
         tumbler = self.positions[position][upper]
         if not tumbler.jammed:
-            tumbler.pushed = False
+            tumbler.release()
 
         for pick in self.get_picks(position, upper):
             self.release_pick(pick)
