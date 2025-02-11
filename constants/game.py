@@ -12,7 +12,7 @@ TUMBLERS = [
     Tumbler(7, True, 2, 5),
     Tumbler(8, True, 2, 6, master=True),
 
-    Tumbler(0, False, 0, 5),
+    Tumbler(0, False, 0, 5, post_release_height=-1),
     Tumbler(1, False, 0, 2),
     Tumbler(3, False, 1, 4),
     Tumbler(4, False, 1, 5),

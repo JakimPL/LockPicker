@@ -175,7 +175,7 @@ class Lock:
         tumbler = self.positions[position][upper]
         height = tumbler.height
         if not tumbler.jammed:
-            tumbler.release()
+            tumbler.release(direct=True)
 
         self.add_change(tumbler, height)
         self.apply_rules_iteratively(position, upper, False)

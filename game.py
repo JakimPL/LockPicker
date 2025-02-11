@@ -1,9 +1,9 @@
 import pygame
 
-from constants.gui import BAR_WIDTH, BAR_OFFSET, X_OFFSET, SCALE, HIGHLIGHT_COLOR
-from constants.gui import PICK_COLORS, TUMBLERS_COLORS
+from constants.gui import WIDTH, HEIGHT
+from constants.gui import BAR_WIDTH, BAR_OFFSET, X_OFFSET, SCALE, ANIMATION_SPEED
+from constants.gui import BACKGROUND_COLOR, HIGHLIGHT_COLOR, PICK_COLORS, TUMBLERS_COLORS
 from constants.gui import PICK_OFFSET, PICK_SIZE, PICK_WIDTH, PICK_IDLE_OFFSET, PICK_DISCREPANCY
-from constants.gui import WIDTH, HEIGHT, BACKGROUND_COLOR
 from lock import Lock
 from tumbler import Tumbler
 
@@ -24,6 +24,8 @@ class Game:
         self.animation = 0.0
         self.animation_items = {}
 
+        self.win = False
+
     def run(self):
         self.running = True
 
@@ -40,6 +42,7 @@ class Game:
         self.action()
 
         self.set_mouse_state()
+        self.check_win()
 
     def action(self):
         self.toggle_current_pick()
@@ -49,7 +52,7 @@ class Game:
 
     def animation_frame(self) -> bool:
         if self.animation_items:
-            self.animation += 0.05
+            self.animation += ANIMATION_SPEED
             if self.animation >= self.get_max_animation_value():
                 self.animation = 0.0
                 self.animation_items = {}
@@ -170,6 +173,16 @@ class Game:
     def toggle_current_pick(self):
         if self.mouse_pressed[2] and not self.mouse_was_pressed[2]:
             self.lock.current_pick = 1 - self.lock.current_pick
+
+    def check_win(self) -> bool:
+        for position, items in self.lock.positions.items():
+            for upper, item in items.items():
+                if item is not None and item.height > 1:
+                    return False
+
+        self.win = True
+        self.running = False
+        return True
 
     @staticmethod
     def terminate():
