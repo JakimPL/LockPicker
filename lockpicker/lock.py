@@ -74,8 +74,8 @@ class Lock:
             if tumb is not None and i < position and not tumb.pushed:
                 return False
             if (
-                    counter is not None
-                    and tumbler.height + counter.height >= self.max_height
+                counter is not None
+                and tumbler.height + counter.height >= self.max_height
             ):
                 return False
 
@@ -86,9 +86,9 @@ class Lock:
             pick
             for pick, index in self.picks.items()
             if index is not None
-               and index[0] == position
-               and index[1] == upper
-               and pick != self.current_pick
+            and index[0] == position
+            and index[1] == upper
+            and pick != self.current_pick
         ]
 
     def add_change(self, tumbler: Tumbler, height: int):

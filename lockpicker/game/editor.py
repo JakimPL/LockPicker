@@ -21,7 +21,11 @@ class Editor(BaseGame):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_s and pygame.key.get_mods() & pygame.KMOD_CTRL:
+            if (
+                event.type == pygame.KEYDOWN
+                and event.key == pygame.K_s
+                and pygame.key.get_mods() & pygame.KMOD_CTRL
+            ):
                 self.save_level()
 
     def run(self):
