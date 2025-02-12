@@ -6,8 +6,8 @@ from lockpicker.lock import Lock
 
 
 class Game(BaseGame):
-    def __init__(self, lock: Lock):
-        super().__init__(lock)
+    def __init__(self, screen: pygame.surface.Surface, lock: Lock):
+        super().__init__(screen, lock)
         self.win = False
         self.loss = False
 

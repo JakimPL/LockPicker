@@ -22,7 +22,8 @@ from lockpicker.tumbler import Tumbler
 
 
 class BaseGame:
-    def __init__(self, lock: Lock):
+    def __init__(self, screen: pygame.surface.Surface, lock: Lock):
+        self.screen = screen
         self.lock = lock
         self.running = False
         self.screen = self.init_pygame()
@@ -37,7 +38,6 @@ class BaseGame:
         self.running = True
         while self.running:
             self.frame()
-        self.terminate()
 
     def frame(self):
         raise NotImplementedError("frame method must be implemented in child class")

@@ -28,6 +28,16 @@ class Tumbler:
     def __repr__(self) -> str:
         return f"Tumbler({self.position}, {self.upper}, {self.group}, {self.height}, master={self.master})"
 
+    def copy(self) -> "Tumbler":
+        return Tumbler(
+            self.position,
+            self.upper,
+            self.group,
+            self.base_height,
+            self.post_release_height,
+            self.master,
+        )
+
     def jam(self):
         self._release = False
         self._jammed = True

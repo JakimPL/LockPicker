@@ -14,6 +14,16 @@ class Level:
     tumblers: List[Tumbler]
     rules: Dict[Tuple[int, bool], List[Tuple[int, bool, int]]]
 
+    def copy(self) -> "Level":
+        tumblers = [tumbler.copy() for tumbler in self.tumblers]
+        rules = {position: rules.copy() for position, rules in self.rules.items()}
+        return Level(
+            self.number_of_picks,
+            self.max_height,
+            tumblers,
+            rules,
+        )
+
     def serialize_tumblers(self) -> bytes:
         tumblers_count = struct.pack("I", len(self.tumblers))
         tumblers_data = b"".join(tumbler.serialize() for tumbler in self.tumblers)

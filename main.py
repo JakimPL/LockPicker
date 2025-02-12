@@ -1,5 +1,8 @@
 import argparse
 
+import pygame
+
+from lockpicker.constants.gui import HEIGHT, WIDTH
 from lockpicker.game.editor import Editor
 from lockpicker.game.game import Game
 from lockpicker.lock import Level, Lock
@@ -14,12 +17,22 @@ def main():
     level = Level.load(args.level_file)
     lock = Lock(level)
 
+    def run_game():
+        lock_copy = Lock(lock.level.copy())
+        game = Game(screen, lock_copy)
+        game.run()
+
+    pygame.init()
+    pygame.display.set_caption("LockPicker")
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+
     if args.edit:
-        editor = Editor(lock, args.level_file)
+        editor = Editor(screen, lock, args.level_file, run_game)
         editor.run()
     else:
-        game = Game(lock)
-        game.run()
+        run_game()
+
+    pygame.quit()
 
 
 if __name__ == "__main__":

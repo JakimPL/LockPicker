@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Union
+from typing import Callable, Union
 
 import pygame
 
@@ -18,12 +18,17 @@ from lockpicker.tumbler import Tumbler
 
 
 class Editor(BaseGame):
-    def __init__(self, lock: Lock, path: Union[str, os.PathLike]):
-        super().__init__(lock)
+    def __init__(
+        self, screen: pygame.surface.Surface, lock: Lock, path: Union[str, os.PathLike], run_game_callback: Callable
+    ):
+        super().__init__(screen, lock)
         self.path = Path(path)
         self.save_path = self.get_save_path()
+
         self.dragging_tumbler = None
         self.initial_height = None
+
+        self.run_game_callback = run_game_callback
 
     def frame(self):
         self.gather_events()
@@ -41,8 +46,11 @@ class Editor(BaseGame):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_s and pygame.key.get_mods() & pygame.KMOD_CTRL:
-                self.save_level()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_s and pygame.key.get_mods() & pygame.KMOD_CTRL:
+                    self.save_level()
+                if event.key == pygame.K_p and pygame.key.get_mods() & pygame.KMOD_CTRL:
+                    self.run_game_callback()
 
     def handle_dragging(self):
         if self.mouse_pressed[0]:

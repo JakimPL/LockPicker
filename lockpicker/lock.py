@@ -25,14 +25,9 @@ class Lock:
 
     def validate_tumblers(self):
         assert all(tumbler.position >= 0 for tumbler in self.tumblers)
-        assert all(
-            0 < tumbler.base_height < self.max_height for tumbler in self.tumblers
-        )
+        assert all(0 < tumbler.base_height < self.max_height for tumbler in self.tumblers)
 
-        tumblers = {
-            (tumbler.group, tumbler.upper, tumbler.position)
-            for tumbler in self.tumblers
-        }
+        tumblers = {(tumbler.group, tumbler.upper, tumbler.position) for tumbler in self.tumblers}
 
         assert len(tumblers) == len(self.tumblers)
 
@@ -51,9 +46,7 @@ class Lock:
         return dict(groups.items())
 
     def create_positions(self) -> Dict[int, Dict[int, Optional[Tumbler]]]:
-        positions: DefaultDict[int, Dict[bool, Optional[Tumbler]]] = defaultdict(
-            lambda: {True: None, False: None}
-        )
+        positions: DefaultDict[int, Dict[bool, Optional[Tumbler]]] = defaultdict(lambda: {True: None, False: None})
         last_position = 0
         for tumbler in self.tumblers:
             positions[tumbler.position][tumbler.upper] = tumbler
@@ -71,12 +64,9 @@ class Lock:
         for i in range(position + 1):
             tumb = self.positions[i].get(upper)
             counter = self.positions[i].get(not upper)
-            if tumb is not None and i < position and not tumb.pushed:
+            if tumb is not None and i < position and tumb.height > 1:
                 return False
-            if (
-                counter is not None
-                and tumbler.height + counter.height >= self.max_height
-            ):
+            if counter is not None and tumbler.height + counter.height >= self.max_height:
                 return False
 
         return True
@@ -85,17 +75,12 @@ class Lock:
         return [
             pick
             for pick, index in self.picks.items()
-            if index is not None
-            and index[0] == position
-            and index[1] == upper
-            and pick != self.current_pick
+            if index is not None and index[0] == position and index[1] == upper and pick != self.current_pick
         ]
 
     def add_change(self, tumbler: Tumbler, height: int):
         if tumbler.height != height:
-            self.changes.append(
-                (tumbler.position, tumbler.upper, height, tumbler.height)
-            )
+            self.changes.append((tumbler.position, tumbler.upper, height, tumbler.height))
 
     def apply_rules(self, position: int, upper: bool, pushed: bool):
         tumbler = self.positions[position][upper]
