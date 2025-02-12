@@ -1,4 +1,4 @@
-from lock import MAX_HEIGHT
+from lockpicker.lock import MAX_HEIGHT
 
 WIDTH, HEIGHT = 1000, 800
 X_OFFSET = 150

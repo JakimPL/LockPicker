@@ -4,7 +4,7 @@ import struct
 from dataclasses import dataclass
 from typing import Dict, List, Tuple, Union
 
-from tumbler import Tumbler
+from lockpicker.tumbler import Tumbler
 
 
 @dataclass

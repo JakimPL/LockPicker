@@ -1,9 +1,6 @@
-import random
-
 import pygame
 
-from constants.gui import (
-    ANIMATION_SPEED,
+from lockpicker.constants.gui import (
     BACKGROUND_COLOR,
     BAR_OFFSET,
     BAR_WIDTH,
@@ -20,76 +17,21 @@ from constants.gui import (
     WIDTH,
     X_OFFSET,
 )
-from lock import Lock
-from tumbler import Tumbler
+from lockpicker.lock import Lock
+from lockpicker.tumbler import Tumbler
 
 
-class Game:
+class BaseGame:
     def __init__(self, lock: Lock):
         self.lock = lock
         self.running = False
-
         self.screen = self.init_pygame()
-
         self.mouse_pos = None
         self.mouse_pressed = (False, False, False)
         self.mouse_was_pressed = (False, False, False)
-
         self.highlighted = None
-
         self.animation = 0.0
         self.animation_items = {}
-
-        self.win = False
-        self.loss = False
-
-    def run(self):
-        self.running = True
-
-        while self.running:
-            self.frame()
-
-        self.terminate()
-
-    def frame(self):
-        self.gather_events()
-        self.get_mouse_state()
-
-        self.draw()
-        self.action()
-
-        self.set_mouse_state()
-        self.check_win()
-
-        # self.make_random_move()
-
-    def action(self):
-        self.toggle_current_pick()
-        if not self.animation_frame():
-            self.handle_selected_tumbler()
-            self.animation_items = self.lock.get_recent_changes()
-
-    def animation_frame(self) -> bool:
-        if self.animation_items:
-            self.animation += ANIMATION_SPEED
-            if self.animation >= self.get_max_animation_value():
-                self.animation = 0.0
-                self.animation_items = {}
-
-        return bool(self.animation_items)
-
-    def draw(self):
-        self.draw_background()
-        self.draw_tumblers()
-        self.draw_picks()
-        pygame.display.flip()
-
-    def make_random_move(self):
-        possible_moves = self.lock.get_possible_moves()
-        if possible_moves and not self.animation_items:
-            move = random.choice(possible_moves)
-            self.lock.current_pick = random.choice([0, 1])
-            self.lock.push(*move)
 
     @staticmethod
     def init_pygame():
@@ -102,15 +44,15 @@ class Game:
             if event.type == pygame.QUIT:
                 self.running = False
 
-    def get_max_animation_value(self) -> int:
-        return max(abs(end - start) for start, end in self.animation_items.values())
-
     def get_mouse_state(self):
         self.mouse_pos = pygame.mouse.get_pos()
         self.mouse_pressed = pygame.mouse.get_pressed()
 
     def set_mouse_state(self):
         self.mouse_was_pressed = self.mouse_pressed
+
+    def draw_background(self):
+        self.screen.fill(BACKGROUND_COLOR)
 
     def draw_tumblers(self):
         self.highlighted = None
@@ -120,22 +62,6 @@ class Game:
                     highlighted = self.draw_tumbler(item, position)
                     if highlighted:
                         self.highlighted = position, upper
-
-    def draw_picks(self):
-        for pick in self.lock.picks:
-            self.draw_pick(pick)
-
-    def get_current_height(self, tumbler: Tumbler) -> int:
-        if (tumbler.position, tumbler.upper) in self.animation_items:
-            start, end = self.animation_items[(tumbler.position, tumbler.upper)]
-            if end > start:
-                height = start + min(self.animation, end - start)
-            else:
-                height = start + max(-self.animation, end - start)
-        else:
-            height = tumbler.height
-
-        return height
 
     def draw_tumbler(self, tumbler: Tumbler, position: int) -> bool:
         alpha = 255 if tumbler.master else 160
@@ -162,6 +88,10 @@ class Game:
         self.screen.blit(surface, rect.topleft)
 
         return collision
+
+    def draw_picks(self):
+        for pick in self.lock.picks:
+            self.draw_pick(pick)
 
     def draw_pick(self, pick: int):
         index = self.lock.picks[pick]
@@ -196,26 +126,17 @@ class Game:
         pygame.draw.rect(shape_surface, color, rect)
         self.screen.blit(shape_surface, (0, 0))
 
-    def draw_background(self):
-        self.screen.fill(BACKGROUND_COLOR)
+    def get_current_height(self, tumbler: Tumbler) -> int:
+        if (tumbler.position, tumbler.upper) in self.animation_items:
+            start, end = self.animation_items[(tumbler.position, tumbler.upper)]
+            if end > start:
+                height = start + min(self.animation, end - start)
+            else:
+                height = start + max(-self.animation, end - start)
+        else:
+            height = tumbler.height
 
-    def handle_selected_tumbler(self):
-        if self.mouse_pressed[0] and not self.mouse_was_pressed[0]:
-            self.lock.release_current_pick()
-            if self.highlighted is not None:
-                self.lock.push(*self.highlighted)
-
-    def toggle_current_pick(self):
-        if self.mouse_pressed[2] and not self.mouse_was_pressed[2]:
-            self.lock.current_pick = 1 - self.lock.current_pick
-
-    def check_win(self) -> bool:
-        if self.lock.check_win():
-            self.win = True
-            self.running = False
-            return True
-
-        return False
+        return height
 
     @staticmethod
     def terminate():

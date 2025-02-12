@@ -1,8 +1,8 @@
 from collections import defaultdict
 from typing import DefaultDict, Dict, List, Optional, Tuple
 
-from level import Level
-from tumbler import Tumbler
+from lockpicker.level import Level
+from lockpicker.tumbler import Tumbler
 
 MAX_HEIGHT = 11
 PICKS = 2

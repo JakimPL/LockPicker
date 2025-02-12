@@ -1,7 +1,7 @@
 import argparse
 
-from game import Game
-from lock import Level, Lock
+from lockpicker.game.game import Game
+from lockpicker.lock import Level, Lock
 
 
 def main():
