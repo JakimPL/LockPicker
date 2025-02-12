@@ -9,16 +9,11 @@ PICKS = 2
 
 
 class Lock:
-    def __init__(
-            self,
-            level: Level,
-            number_of_picks: int = PICKS,
-            max_height: int = MAX_HEIGHT
-    ):
+    def __init__(self, level: Level):
         self.tumblers = level.tumblers
         self.rules = level.rules
-        self.max_height = max_height
-        self.number_of_picks = number_of_picks
+        self.max_height = level.max_height
+        self.number_of_picks = level.number_of_picks
 
         self.validate_tumblers()
         self.groups = self.create_groups()
@@ -209,3 +204,14 @@ class Lock:
                     return False
 
         return True
+
+    def get_possible_moves(self) -> List[Tuple[int, bool]]:
+        moves = []
+        for upper in [True, False]:
+            for position in reversed(sorted(self.positions)):
+                tumbler = self.positions[position].get(upper)
+                if tumbler is not None and self.check_previous_tumblers(tumbler):
+                    moves.extend([(pos, upper) for pos in range(position + 1)])
+                    break
+
+        return moves

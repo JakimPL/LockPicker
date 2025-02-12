@@ -1,3 +1,5 @@
+import random
+
 import pygame
 
 from constants.gui import BACKGROUND_COLOR, HIGHLIGHT_COLOR, PICK_COLORS, TUMBLERS_COLORS
@@ -45,6 +47,8 @@ class Game:
         self.set_mouse_state()
         self.check_win()
 
+        # self.make_random_move()
+
     def action(self):
         self.toggle_current_pick()
         if not self.animation_frame():
@@ -65,6 +69,13 @@ class Game:
         self.draw_tumblers()
         self.draw_picks()
         pygame.display.flip()
+
+    def make_random_move(self):
+        possible_moves = self.lock.get_possible_moves()
+        if possible_moves and not self.animation_items:
+            move = random.choice(possible_moves)
+            self.lock.current_pick = random.choice([0, 1])
+            self.lock.push(*move)
 
     @staticmethod
     def init_pygame():
