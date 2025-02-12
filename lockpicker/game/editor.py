@@ -47,10 +47,36 @@ class Editor(BaseGame):
             if event.type == pygame.QUIT:
                 self.running = False
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_s and pygame.key.get_mods() & pygame.KMOD_CTRL:
-                    self.save_level()
-                if event.key == pygame.K_p and pygame.key.get_mods() & pygame.KMOD_CTRL:
-                    self.run_game_callback()
+                if pygame.key.get_mods() & pygame.KMOD_CTRL:
+                    # if event.key == pygame.K_z:
+                    #     self.lock.undo()
+                    # if event.key == pygame.K_y:
+                    #     self.lock.redo()
+                    if event.key == pygame.K_s:
+                        self.save_level()
+                    if event.key == pygame.K_p:
+                        self.run_game_callback()
+                if event.key == pygame.K_DELETE:
+                    self.delete_highlighted_tumbler()
+
+    def delete_highlighted_tumbler(self):
+        if self.highlighted is not None:
+            position, upper = self.highlighted
+            tumbler = self.lock.positions[position][upper]
+            self.lock.tumblers.pop(self.lock.tumblers.index(tumbler))
+            del self.lock.positions[position][upper]
+            del tumbler
+
+            new_rules = {}
+            for current, rules in self.lock.rules.items():
+                if current == self.highlighted:
+                    continue
+
+                pos, up = current
+                new_rules[current] = [(p, u, h) for p, u, h in self.lock.rules[current] if p != pos and u != up]
+
+            self.lock.rules = new_rules
+            self.highlighted = None
 
     def handle_dragging(self):
         if self.mouse_pressed[0]:
