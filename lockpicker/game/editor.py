@@ -29,6 +29,7 @@ class Editor(BaseGame):
         self.initial_height = None
 
         self.run_game_callback = run_game_callback
+        self.current_group = 0
 
     def frame(self):
         self.gather_events()
@@ -56,8 +57,29 @@ class Editor(BaseGame):
                         self.save_level()
                     if event.key == pygame.K_p:
                         self.run_game_callback()
+                    if event.key == pygame.K_m:
+                        self.set_master_tumbler()
+                if event.key == pygame.K_INSERT:
+                    self.add_new_tumbler()
                 if event.key == pygame.K_DELETE:
                     self.delete_highlighted_tumbler()
+
+    def add_new_tumbler(self):
+        if self.highlighted is None:
+            position = (self.mouse_pos[0] - X_OFFSET) // (BAR_WIDTH + BAR_OFFSET)
+            if position < 0:
+                return
+
+            if position not in self.lock.positions:
+                self.lock.positions[position] = {}
+
+            upper = self.mouse_pos[1] < HEIGHT // 2
+            if self.lock.positions[position].get(upper) is None:
+                new_height = self.calculate_new_height(position, upper)
+                new_tumbler = Tumbler(position, upper, self.current_group, new_height)
+                self.lock.positions[position][upper] = new_tumbler
+                self.lock.tumblers.append(new_tumbler)
+                self.lock.groups[self.current_group].append(new_tumbler)
 
     def delete_highlighted_tumbler(self):
         if self.highlighted is not None:
@@ -78,6 +100,15 @@ class Editor(BaseGame):
             self.lock.rules = new_rules
             self.highlighted = None
 
+    def set_master_tumbler(self):
+        if self.highlighted is not None:
+            position, upper = self.highlighted
+            tumbler = self.lock.positions[position][upper]
+            tumbler.master = True
+            for tumb in self.lock.groups[tumbler.group]:
+                if tumb is not tumbler:
+                    tumb.master = False
+
     def handle_dragging(self):
         if self.mouse_pressed[0]:
             if self.dragging_tumbler is None and self.highlighted is not None:
@@ -85,7 +116,7 @@ class Editor(BaseGame):
             if self.dragging_tumbler is not None:
                 position, upper = self.dragging_tumbler
                 tumbler = self.lock.positions[position][upper]
-                new_height = self.calculate_new_height(tumbler)
+                new_height = self.calculate_new_height(tumbler.position, tumbler.upper)
                 tumbler.height = new_height
         elif self.mouse_pressed[2]:
             if self.dragging_tumbler is None and self.highlighted is not None:
@@ -96,7 +127,7 @@ class Editor(BaseGame):
             if self.dragging_tumbler is not None:
                 position, upper = self.dragging_tumbler
                 tumbler = self.lock.positions[position][upper]
-                new_height = self.calculate_new_height(tumbler)
+                new_height = self.calculate_new_height(tumbler.position, tumbler.upper, limit=False)
                 tumbler.post_release_height = new_height - self.initial_height
         else:
             self.dragging_tumbler = None
@@ -129,13 +160,18 @@ class Editor(BaseGame):
             post_release_surface.fill((*POST_RELEASE_COLOR, 160))
             self.screen.blit(post_release_surface, post_release_rect.topleft)
 
-    def calculate_new_height(self, tumbler: Tumbler) -> int:
-        if tumbler.upper:
+    def calculate_new_height(self, position: int, upper: bool, limit: bool = True) -> int:
+        if upper:
             height = self.mouse_pos[1] // SCALE
         else:
             height = (HEIGHT - self.mouse_pos[1]) // SCALE
 
-        return max(1, min(height, self.lock.max_height))
+        max_height = self.lock.max_height
+        counter = self.lock.positions[position].get(not upper)
+        if limit and counter is not None:
+            max_height -= counter.base_height
+
+        return max(1, min(height, max_height))
 
     def get_save_path(self) -> Path:
         filename = self.path.with_stem(f"{self.path.stem}_edit")
