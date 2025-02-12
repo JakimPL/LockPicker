@@ -67,6 +67,10 @@ class Tumbler:
     def base_height(self) -> int:
         return self._height
 
+    @height.setter
+    def height(self, height: int):
+        self._height = height
+
     @property
     def position(self) -> int:
         return self._position
@@ -83,9 +87,17 @@ class Tumbler:
     def master(self) -> bool:
         return self._master
 
+    @master.setter
+    def master(self, master: bool):
+        self._master = master
+
     @property
     def post_release_height(self) -> int:
         return self._post_release_height
+
+    @post_release_height.setter
+    def post_release_height(self, height: int):
+        self._post_release_height = height
 
     def serialize(self) -> bytes:
         return struct.pack(
@@ -100,5 +112,7 @@ class Tumbler:
 
     @classmethod
     def deserialize(cls, data: bytes) -> "Tumbler":
-        position, upper, group, height, post_release_height, master = struct.unpack(cls.struct_format, data)
+        position, upper, group, height, post_release_height, master = struct.unpack(
+            cls.struct_format, data
+        )
         return Tumbler(position, upper, group, height, post_release_height, master)
