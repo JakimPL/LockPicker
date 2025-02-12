@@ -1,3 +1,5 @@
+from typing import Optional, Tuple
+
 import pygame
 
 from lockpicker.constants.gui import (
@@ -66,19 +68,17 @@ class BaseGame:
     def draw_tumblers(self):
         self.highlighted = None
         for position, items in self.lock.positions.items():
-            for upper, item in items.items():
-                if item is not None:
-                    highlighted = self.draw_tumbler(item, position)
+            for upper, tumbler in items.items():
+                if tumbler is not None:
+                    bounds = self.get_tumbler_bounds(tumbler)
+                    highlighted = self.is_mouse_hovering_tumbler(tumbler, bounds)
+                    self.draw_tumbler(tumbler, bounds, highlighted)
                     if highlighted:
                         self.highlighted = position, upper
 
-    def draw_tumbler(self, tumbler: Tumbler, position: int) -> bool:
-        alpha = 255 if tumbler.master else 160
-        alpha /= 3 if tumbler.jammed else 1
-        color = TUMBLERS_COLORS[tumbler.group]
-
+    def get_tumbler_bounds(self, tumbler: Tumbler) -> Tuple[int, int, int, int]:
         height = self.get_current_height(tumbler)
-        x = position * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET
+        x = tumbler.position * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET
         if tumbler.upper:
             h = height * SCALE
             y = 0
@@ -86,17 +86,23 @@ class BaseGame:
             h = height * SCALE
             y = HEIGHT - h
 
-        rect = pygame.Rect(x, y, BAR_WIDTH, h)
+        return x, y, BAR_WIDTH, h
 
-        collision = rect.collidepoint(self.mouse_pos)
-        if collision:
-            color = HIGHLIGHT_COLOR
+    def is_mouse_hovering_tumbler(self, tumbler: Tumbler, bounds: Optional[Tuple[int, int, int, int]] = None) -> bool:
+        rect = pygame.Rect(*self.get_tumbler_bounds(tumbler) if bounds is None else bounds)
+        return rect.collidepoint(self.mouse_pos)
 
+    def draw_tumbler(
+        self, tumbler: Tumbler, bounds: Optional[Tuple[int, int, int, int]] = None, highlighted: bool = False
+    ):
+        alpha = 255 if tumbler.master else 160
+        alpha /= 3 if tumbler.jammed else 1
+        color = HIGHLIGHT_COLOR if highlighted else TUMBLERS_COLORS[tumbler.group]
+
+        rect = pygame.Rect(*self.get_tumbler_bounds(tumbler) if bounds is None else bounds)
         surface = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
         surface.fill((*color, alpha))
         self.screen.blit(surface, rect.topleft)
-
-        return collision
 
     def draw_picks(self):
         for pick in self.lock.picks:

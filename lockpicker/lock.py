@@ -1,3 +1,4 @@
+import warnings
 from collections import defaultdict
 from typing import DefaultDict, Dict, List, Optional, Tuple
 
@@ -36,7 +37,8 @@ class Lock:
             master_groups[tumbler.group].append(tumbler.master)
 
         for group, tumblers in master_groups.items():
-            assert sum(tumblers) == 1
+            if sum(tumblers) != 1:
+                warnings.warn(f"Group {group} doesn't have a master tumbler")
 
     def create_groups(self):
         groups = defaultdict(list)
@@ -68,6 +70,15 @@ class Lock:
         if tumbler.position not in self.positions:
             self.positions[tumbler.position] = {}
         self.positions[tumbler.position][tumbler.upper] = tumbler
+
+    def add_rule(self, initial_pos: int, initial_up: bool, target_pos: int, target_up: bool, difference: int):
+        if difference != 0:
+            key = (initial_pos, initial_up)
+            rule = (target_pos, target_up, difference)
+            if key not in self.rules:
+                self.rules[key] = [rule]
+            else:
+                self.rules[key].append(rule)
 
     def check_previous_tumblers(self, tumbler: Tumbler) -> bool:
         position = tumbler.position

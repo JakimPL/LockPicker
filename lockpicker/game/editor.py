@@ -1,9 +1,8 @@
 import os
 from pathlib import Path
-from typing import Callable, Union
+from typing import Callable, Optional, Tuple, Union
 
 import pygame
-from pygame.math import Vector2
 
 from lockpicker.constants.gui import (
     ARROW_COLOR,
@@ -32,6 +31,9 @@ class Editor(BaseGame):
         self.dragging_tumbler = None
         self.initial_height = None
 
+        self.binding_initial = None
+        self.binding_target = None
+
         self.run_game_callback = run_game_callback
         self.current_group = 0
 
@@ -46,13 +48,21 @@ class Editor(BaseGame):
         self.draw_background()
         self.draw_tumblers()
         self.draw_rules()
+        self.draw_binding_arrow()
         pygame.display.flip()
 
     def gather_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 3:
+                    self.cancel_binding()
             if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_b:
+                    self.handle_binding_key()
+                if event.key == pygame.K_m:
+                    self.set_master_tumbler()
                 if pygame.key.get_mods() & pygame.KMOD_CTRL:
                     # if event.key == pygame.K_z:
                     #     self.lock.undo()
@@ -62,8 +72,6 @@ class Editor(BaseGame):
                         self.save_level()
                     if event.key == pygame.K_p:
                         self.run_game_callback()
-                    if event.key == pygame.K_m:
-                        self.set_master_tumbler()
                 if event.key == pygame.K_INSERT:
                     self.add_new_tumbler()
                 if event.key == pygame.K_DELETE:
@@ -102,7 +110,38 @@ class Editor(BaseGame):
                 if tumb is not tumbler:
                     tumb.master = False
 
+    def handle_binding_key(self):
+        if self.binding_initial is None:
+            self.start_binding()
+        elif self.binding_target is None:
+            self.set_binding_target()
+        else:
+            self.complete_binding()
+
+    def start_binding(self):
+        if self.highlighted is not None:
+            self.binding_initial = self.highlighted
+
+    def set_binding_target(self):
+        if self.highlighted is not None and self.highlighted != self.binding_initial:
+            self.binding_target = self.highlighted
+
+    def complete_binding(self):
+        if self.binding_initial is not None and self.binding_target is not None:
+            initial_pos, initial_up = self.binding_initial
+            target_pos, target_up = self.binding_target
+            difference = self.calculate_difference(target_pos, target_up)
+            self.lock.add_rule(initial_pos, initial_up, target_pos, target_up, difference)
+            self.cancel_binding()
+
+    def cancel_binding(self):
+        self.binding_initial = None
+        self.binding_target = None
+
     def handle_dragging(self):
+        if self.binding_initial is not None:
+            return
+
         if self.mouse_pressed[0]:
             if self.dragging_tumbler is None and self.highlighted is not None:
                 self.dragging_tumbler = self.highlighted
@@ -126,15 +165,30 @@ class Editor(BaseGame):
             self.dragging_tumbler = None
             self.initial_height = None
 
-    def draw_tumbler(self, tumbler: Tumbler, position: int) -> bool:
-        collision = super().draw_tumbler(tumbler, position)
-        self.draw_post_release_height(tumbler, position)
+    def draw_tumblers(self):
+        self.highlighted = None
+        for position, items in self.lock.positions.items():
+            for upper, tumbler in items.items():
+                if tumbler is not None:
+                    bounds = self.get_tumbler_bounds(tumbler)
+                    highlighted = self.is_mouse_hovering_tumbler(tumbler, bounds)
+                    if highlighted:
+                        self.highlighted = position, upper
+
+                    highlighted |= self.binding_initial == (position, upper) or self.binding_target == (position, upper)
+                    self.draw_tumbler(tumbler, bounds, highlighted)
+
+    def draw_tumbler(
+        self, tumbler: Tumbler, bounds: Optional[Tuple[int, int, int, int]] = None, highlighted: bool = False
+    ) -> bool:
+        collision = super().draw_tumbler(tumbler, bounds, highlighted)
+        self.draw_post_release_height(tumbler)
         return collision
 
-    def draw_post_release_height(self, tumbler: Tumbler, position: int):
+    def draw_post_release_height(self, tumbler: Tumbler):
         if tumbler.post_release_height != 0:
             p = tumbler.post_release_height * SCALE
-            x = position * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET
+            x = tumbler.position * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET
             height = self.get_current_height(tumbler)
             if tumbler.upper:
                 h = height * SCALE
@@ -154,36 +208,64 @@ class Editor(BaseGame):
             self.screen.blit(post_release_surface, post_release_rect.topleft)
 
     def draw_rules(self):
-        for (start_pos, start_upper), targets in self.lock.rules.items():
-            start_tumbler = self.lock.positions[start_pos][start_upper]
-            start_x = start_pos * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET + BAR_WIDTH // 2
-            start_y = self.get_tumbler_y_position(start_tumbler)
+        for (start_pos, start_up), targets in self.lock.rules.items():
+            start_tumbler = self.lock.positions[start_pos][start_up]
+            start_x = self.get_tumbler_x(start_pos)
+            start_y = self.get_tumbler_y(start_up, start_tumbler.height)
 
-            for end_pos, end_upper, difference in targets:
-                end_tumbler = self.lock.positions[end_pos][end_upper]
-                intermediate_y = self.get_tumbler_y_position(end_tumbler)
-                end_x = end_pos * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET + BAR_WIDTH // 2
+            for end_pos, end_up, difference in targets:
+                end_tumbler = self.lock.positions[end_pos][end_up]
+                intermediate_y = self.get_tumbler_y(end_up, end_tumbler.height)
+                end_x = self.get_tumbler_x(end_pos)
                 end_y = intermediate_y - difference * SCALE
-
                 self.draw_arrow(start_x, start_y, intermediate_y, end_x, end_y)
 
-    @staticmethod
-    def get_tumbler_y_position(tumbler: Tumbler) -> int:
-        if tumbler.upper:
-            return tumbler.height * SCALE
-        else:
-            return HEIGHT - tumbler.height * SCALE
+    def draw_binding_arrow(self):
+        print(self.highlighted, self.binding_initial, self.binding_target)
+        if self.binding_target is not None or self.binding_initial is not None and self.highlighted is not None:
+            start_pos, start_up = self.binding_initial
+            start_tumbler = self.lock.positions[start_pos][start_up]
+            start_x = self.get_tumbler_x(start_pos)
+            start_y = self.get_tumbler_y(start_up, start_tumbler.height)
+
+            end_pos, end_up = self.binding_target if self.binding_target is not None else self.highlighted
+            end_tumbler = self.lock.positions[end_pos][end_up]
+
+            end_x = self.get_tumbler_x(end_pos)
+            end_y = self.get_tumbler_y(end_up, end_tumbler.height)
+            if self.binding_target is None:
+                self.draw_arrow(start_x, start_y, end_y, end_x, end_y)
+            else:
+                intermediate_y = end_y
+                difference = self.calculate_difference(end_pos, end_up)
+                end_y -= difference * SCALE
+                self.draw_arrow(start_x, start_y, intermediate_y, end_x, end_y)
 
     def draw_arrow(self, start_x: int, start_y: int, intermediate_y: int, end_x: int, end_y: int):
-        direction = -Vector2(end_x - start_x, intermediate_y - start_y).normalize()
-        left = direction.rotate(-135) * ARROW_SIZE
-        right = direction.rotate(135) * ARROW_SIZE
+        if start_x == end_x and start_y == intermediate_y:
+            return
 
         pygame.draw.line(self.screen, ARROW_COLOR, (start_x, start_y), (end_x, intermediate_y), ARROW_WIDTH)
         pygame.draw.line(self.screen, ARROW_COLOR, (end_x, intermediate_y), (end_x, end_y), ARROW_WIDTH)
+        pygame.draw.line(
+            self.screen, ARROW_COLOR, (end_x - ARROW_SIZE, end_y), (end_x + ARROW_SIZE, end_y), ARROW_WIDTH
+        )
 
-        pygame.draw.line(self.screen, ARROW_COLOR, (end_x, end_y), (end_x + left.x, end_y + left.y), ARROW_WIDTH)
-        pygame.draw.line(self.screen, ARROW_COLOR, (end_x, end_y), (end_x + right.x, end_y + right.y), ARROW_WIDTH)
+    @staticmethod
+    def get_tumbler_x(position: int) -> int:
+        return position * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET + BAR_WIDTH // 2
+
+    @staticmethod
+    def get_tumbler_y(upper: bool, height: int) -> int:
+        if upper:
+            return height * SCALE
+        else:
+            return HEIGHT - height * SCALE
+
+    def calculate_difference(self, position: int, upper: bool) -> int:
+        tumbler = self.lock.positions[position][upper]
+        difference = tumbler.height - self.calculate_new_height(position, upper, limit=False)
+        return difference if upper else -difference
 
     def calculate_new_height(self, position: int, upper: bool, limit: bool = True) -> int:
         if upper:
