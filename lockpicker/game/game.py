@@ -11,12 +11,6 @@ class Game(BaseGame):
         self.win = False
         self.loss = False
 
-    def run(self):
-        self.running = True
-        while self.running:
-            self.frame()
-        self.terminate()
-
     def frame(self):
         self.gather_events()
         self.get_mouse_state()
@@ -24,6 +18,12 @@ class Game(BaseGame):
         self.action()
         self.set_mouse_state()
         self.check_win()
+
+    def draw(self):
+        self.draw_background()
+        self.draw_tumblers()
+        self.draw_picks()
+        pygame.display.flip()
 
     def action(self):
         self.toggle_current_pick()
@@ -38,12 +38,6 @@ class Game(BaseGame):
                 self.animation = 0.0
                 self.animation_items = {}
         return bool(self.animation_items)
-
-    def draw(self):
-        self.draw_background()
-        self.draw_tumblers()
-        self.draw_picks()
-        pygame.display.flip()
 
     def get_max_animation_value(self) -> int:
         return max(abs(end - start) for start, end in self.animation_items.values())

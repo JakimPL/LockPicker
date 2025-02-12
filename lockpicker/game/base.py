@@ -1,10 +1,22 @@
 import pygame
 
-from lockpicker.constants.gui import (BACKGROUND_COLOR, BAR_OFFSET, BAR_WIDTH,
-                                      HEIGHT, HIGHLIGHT_COLOR, PICK_COLORS,
-                                      PICK_DISCREPANCY, PICK_IDLE_OFFSET,
-                                      PICK_OFFSET, PICK_SIZE, PICK_WIDTH,
-                                      SCALE, TUMBLERS_COLORS, WIDTH, X_OFFSET)
+from lockpicker.constants.gui import (
+    BACKGROUND_COLOR,
+    BAR_OFFSET,
+    BAR_WIDTH,
+    HEIGHT,
+    HIGHLIGHT_COLOR,
+    PICK_COLORS,
+    PICK_DISCREPANCY,
+    PICK_IDLE_OFFSET,
+    PICK_OFFSET,
+    PICK_SIZE,
+    PICK_WIDTH,
+    SCALE,
+    TUMBLERS_COLORS,
+    WIDTH,
+    X_OFFSET,
+)
 from lockpicker.lock import Lock
 from lockpicker.tumbler import Tumbler
 
@@ -20,6 +32,15 @@ class BaseGame:
         self.highlighted = None
         self.animation = 0.0
         self.animation_items = {}
+
+    def run(self):
+        self.running = True
+        while self.running:
+            self.frame()
+        self.terminate()
+
+    def frame(self):
+        raise NotImplementedError("frame method must be implemented in child class")
 
     @staticmethod
     def init_pygame():
@@ -86,9 +107,7 @@ class BaseGame:
         alpha = 255 if pick == self.lock.current_pick else 160
         if index is None:
             x = PICK_IDLE_OFFSET
-            y = HEIGHT // 2 + PICK_DISCREPANCY * (
-                pick - self.lock.number_of_picks / 2 + 0.5
-            )
+            y = HEIGHT // 2 + PICK_DISCREPANCY * (pick - self.lock.number_of_picks / 2 + 0.5)
         else:
             position, upper = index
             tumbler = self.lock.positions[position][upper]

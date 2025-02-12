@@ -97,7 +97,7 @@ class Tumbler:
 
     @post_release_height.setter
     def post_release_height(self, height: int):
-        self._post_release_height = height
+        self._post_release_height = round(height)
 
     def serialize(self) -> bytes:
         return struct.pack(
@@ -112,7 +112,5 @@ class Tumbler:
 
     @classmethod
     def deserialize(cls, data: bytes) -> "Tumbler":
-        position, upper, group, height, post_release_height, master = struct.unpack(
-            cls.struct_format, data
-        )
+        position, upper, group, height, post_release_height, master = struct.unpack(cls.struct_format, data)
         return Tumbler(position, upper, group, height, post_release_height, master)
