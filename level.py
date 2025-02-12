@@ -53,7 +53,9 @@ class Level:
         return tumblers
 
     @staticmethod
-    def deserialize_rules(file: gzip.GzipFile) -> Dict[Tuple[int, bool], List[Tuple[int, bool, int]]]:
+    def deserialize_rules(
+        file: gzip.GzipFile,
+    ) -> Dict[Tuple[int, bool], List[Tuple[int, bool, int]]]:
         rules_count = struct.unpack("I", file.read(4))[0]
         rules = {}
         for _ in range(rules_count):

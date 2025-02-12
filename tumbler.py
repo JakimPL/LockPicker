@@ -5,13 +5,13 @@ class Tumbler:
     struct_format = "i?iii?"
 
     def __init__(
-            self,
-            position: int,
-            upper: bool,
-            group: int,
-            height: int,
-            post_release_height: int = 0,
-            master: bool = False
+        self,
+        position: int,
+        upper: bool,
+        group: int,
+        height: int,
+        post_release_height: int = 0,
+        master: bool = False,
     ):
         self._position = position
         self._upper = upper

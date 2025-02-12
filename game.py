@@ -2,10 +2,24 @@ import random
 
 import pygame
 
-from constants.gui import BACKGROUND_COLOR, HIGHLIGHT_COLOR, PICK_COLORS, TUMBLERS_COLORS
-from constants.gui import BAR_WIDTH, BAR_OFFSET, X_OFFSET, SCALE, ANIMATION_SPEED
-from constants.gui import PICK_OFFSET, PICK_SIZE, PICK_WIDTH, PICK_IDLE_OFFSET, PICK_DISCREPANCY
-from constants.gui import WIDTH, HEIGHT
+from constants.gui import (
+    ANIMATION_SPEED,
+    BACKGROUND_COLOR,
+    BAR_OFFSET,
+    BAR_WIDTH,
+    HEIGHT,
+    HIGHLIGHT_COLOR,
+    PICK_COLORS,
+    PICK_DISCREPANCY,
+    PICK_IDLE_OFFSET,
+    PICK_OFFSET,
+    PICK_SIZE,
+    PICK_WIDTH,
+    SCALE,
+    TUMBLERS_COLORS,
+    WIDTH,
+    X_OFFSET,
+)
 from lock import Lock
 from tumbler import Tumbler
 
@@ -168,7 +182,12 @@ class Game:
         shape_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
 
         if pick == 0:
-            points = [(x, y - PICK_SIZE), (x - PICK_SIZE, y), (x, y + PICK_SIZE), (x + PICK_SIZE, y)]
+            points = [
+                (x, y - PICK_SIZE),
+                (x - PICK_SIZE, y),
+                (x, y + PICK_SIZE),
+                (x + PICK_SIZE, y),
+            ]
             pygame.draw.polygon(shape_surface, color, points)
         else:
             pygame.draw.circle(shape_surface, color, (x, y), PICK_SIZE)

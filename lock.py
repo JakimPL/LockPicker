@@ -27,10 +27,7 @@ class Lock:
         assert all(tumbler.position >= 0 for tumbler in self.tumblers)
         assert all(0 < tumbler.base_height < self.max_height for tumbler in self.tumblers)
 
-        tumblers = {
-            (tumbler.group, tumbler.upper, tumbler.position)
-            for tumbler in self.tumblers
-        }
+        tumblers = {(tumbler.group, tumbler.upper, tumbler.position) for tumbler in self.tumblers}
 
         assert len(tumblers) == len(self.tumblers)
 
@@ -76,9 +73,9 @@ class Lock:
 
     def get_picks(self, position: int, upper: bool) -> List[int]:
         return [
-            pick for pick, index in self.picks.items()
-            if index is not None and index[0] == position and index[1] == upper
-               and pick != self.current_pick
+            pick
+            for pick, index in self.picks.items()
+            if index is not None and index[0] == position and index[1] == upper and pick != self.current_pick
         ]
 
     def add_change(self, tumbler: Tumbler, height: int):
@@ -192,10 +189,7 @@ class Lock:
     def get_recent_changes(self) -> Dict[Tuple[int, bool], Tuple[int, int]]:
         changes = self.changes.copy()
         self.changes.clear()
-        return {
-            (pos, up): (start, end)
-            for pos, up, start, end in changes
-        }
+        return {(pos, up): (start, end) for pos, up, start, end in changes}
 
     def check_win(self) -> bool:
         for items in self.positions.values():

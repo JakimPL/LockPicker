@@ -1,7 +1,7 @@
 import argparse
 
 from game import Game
-from lock import Lock, Level
+from lock import Level, Lock
 
 
 def main():
