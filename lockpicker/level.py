@@ -6,6 +6,9 @@ from typing import Dict, List, Tuple, Union
 
 from lockpicker.tumbler import Tumbler
 
+MAX_HEIGHT = 11
+NUMBER_OF_PICKS = 2
+
 
 @dataclass
 class Level:
@@ -13,6 +16,10 @@ class Level:
     max_height: int
     tumblers: List[Tumbler]
     rules: Dict[Tuple[int, bool], List[Tuple[int, bool, int]]]
+
+    @staticmethod
+    def default() -> "Level":
+        return Level(NUMBER_OF_PICKS, MAX_HEIGHT, [], {})
 
     def copy(self) -> "Level":
         tumblers = [tumbler.copy() for tumbler in self.tumblers]

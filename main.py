@@ -1,4 +1,5 @@
 import argparse
+from pathlib import Path
 
 import pygame
 
@@ -8,14 +9,20 @@ from lockpicker.game.game import Game
 from lockpicker.lock import Level, Lock
 
 
+def load_level(path: Path) -> Level:
+    if path.exists() and path.is_file():
+        return Level.load(path)
+    else:
+        return Level.default()
+
+
 def main():
     parser = argparse.ArgumentParser(description="Load a level from a file.")
     parser.add_argument("level_file", type=str, help="Path to the level file")
     parser.add_argument("--edit", action="store_true", help="Run the level editor")
     args = parser.parse_args()
-
-    level = Level.load(args.level_file)
-    lock = Lock(level)
+    path = Path(args.level_file)
+    lock = Lock(load_level(path))
 
     def run_game():
         lock_copy = Lock(lock.level.copy())
@@ -27,7 +34,7 @@ def main():
     screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
     if args.edit:
-        editor = Editor(screen, lock, args.level_file, run_game)
+        editor = Editor(screen, lock, path, run_game)
         editor.run()
     else:
         run_game()

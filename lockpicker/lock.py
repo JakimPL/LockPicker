@@ -5,9 +5,6 @@ from typing import DefaultDict, Dict, List, Optional, Tuple
 from lockpicker.level import Level
 from lockpicker.tumbler import Tumbler
 
-MAX_HEIGHT = 11
-PICKS = 2
-
 
 class Lock:
     def __init__(self, level: Level):

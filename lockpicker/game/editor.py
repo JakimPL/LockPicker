@@ -1,4 +1,5 @@
 import os
+from collections import deque
 from pathlib import Path
 from typing import Callable, Optional, Tuple, Union
 
@@ -26,7 +27,6 @@ class Editor(BaseGame):
     ):
         super().__init__(screen, lock)
         self.path = Path(path)
-        self.save_path = self.get_save_path()
 
         self.dragging_tumbler = None
         self.initial_height = None
@@ -36,6 +36,8 @@ class Editor(BaseGame):
 
         self.run_game_callback = run_game_callback
         self.current_group = 0
+
+        self.history = deque()
 
     def frame(self):
         self.gather_events()
@@ -64,14 +66,15 @@ class Editor(BaseGame):
                 if event.key == pygame.K_m:
                     self.set_master_tumbler()
                 if pygame.key.get_mods() & pygame.KMOD_CTRL:
-                    # if event.key == pygame.K_z:
-                    #     self.lock.undo()
-                    # if event.key == pygame.K_y:
-                    #     self.lock.redo()
+                    if event.key == pygame.K_z:
+                        self.undo()
+                    if event.key == pygame.K_y:
+                        self.redo()
                     if event.key == pygame.K_s:
                         self.save_level()
                     if event.key == pygame.K_p:
                         self.run_game_callback()
+                        self.highlighted = None
                 if event.key == pygame.K_INSERT:
                     self.add_new_tumbler()
                 if event.key == pygame.K_DELETE:
@@ -221,7 +224,6 @@ class Editor(BaseGame):
                 self.draw_arrow(start_x, start_y, intermediate_y, end_x, end_y)
 
     def draw_binding_arrow(self):
-        print(self.highlighted, self.binding_initial, self.binding_target)
         if self.binding_target is not None or self.binding_initial is not None and self.highlighted is not None:
             start_pos, start_up = self.binding_initial
             start_tumbler = self.lock.positions[start_pos][start_up]
@@ -269,9 +271,9 @@ class Editor(BaseGame):
 
     def calculate_new_height(self, position: int, upper: bool, limit: bool = True) -> int:
         if upper:
-            height = self.mouse_pos[1] // SCALE
+            height = round(self.mouse_pos[1] / SCALE)
         else:
-            height = (HEIGHT - self.mouse_pos[1]) // SCALE
+            height = round((HEIGHT - self.mouse_pos[1]) / SCALE)
 
         max_height = self.lock.max_height
         counter = self.lock.positions[position].get(not upper)
@@ -280,9 +282,5 @@ class Editor(BaseGame):
 
         return max(1, min(height, max_height))
 
-    def get_save_path(self) -> Path:
-        filename = self.path.with_stem(f"{self.path.stem}_edit")
-        return self.path.parent / filename
-
     def save_level(self):
-        self.lock.level.save(self.save_path)
+        self.lock.level.save(self.path)
