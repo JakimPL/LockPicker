@@ -58,6 +58,17 @@ class Lock:
     def create_picks(self) -> Dict[int, Optional[Tuple[int, bool]]]:
         return {pick: None for pick in range(self.number_of_picks)}
 
+    def add_tumbler(self, tumbler: Tumbler):
+        if tumbler not in self.tumblers:
+            self.tumblers.append(tumbler)
+        if tumbler.group not in self.groups:
+            self.groups[tumbler.group] = []
+        self.groups[tumbler.group].append(tumbler)
+
+        if tumbler.position not in self.positions:
+            self.positions[tumbler.position] = {}
+        self.positions[tumbler.position][tumbler.upper] = tumbler
+
     def check_previous_tumblers(self, tumbler: Tumbler) -> bool:
         position = tumbler.position
         upper = tumbler.upper
@@ -70,6 +81,23 @@ class Lock:
                 return False
 
         return True
+
+    def delete_tumbler(self, tumbler: Tumbler):
+        position = tumbler.position
+        upper = tumbler.upper
+        self.tumblers.remove(tumbler)
+        self.groups[tumbler.group].remove(tumbler)
+        self.positions[position][upper] = None
+
+        rules = {}
+        for (pos, up), rule in self.rules.items():
+            if (pos, up) == (position, upper):
+                continue
+
+            rules[(pos, up)] = [(p, u, d) for (p, u, d) in rule if p != position or u != upper]
+
+        self.rules = rules
+        del tumbler
 
     def get_picks(self, position: int, upper: bool) -> List[int]:
         return [

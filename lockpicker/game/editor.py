@@ -3,8 +3,12 @@ from pathlib import Path
 from typing import Callable, Union
 
 import pygame
+from pygame.math import Vector2
 
 from lockpicker.constants.gui import (
+    ARROW_COLOR,
+    ARROW_SIZE,
+    ARROW_WIDTH,
     BAR_OFFSET,
     BAR_WIDTH,
     HEIGHT,
@@ -41,6 +45,7 @@ class Editor(BaseGame):
     def draw(self):
         self.draw_background()
         self.draw_tumblers()
+        self.draw_rules()
         pygame.display.flip()
 
     def gather_events(self):
@@ -63,6 +68,8 @@ class Editor(BaseGame):
                     self.add_new_tumbler()
                 if event.key == pygame.K_DELETE:
                     self.delete_highlighted_tumbler()
+                if event.key in (pygame.K_1, pygame.K_2, pygame.K_3):
+                    self.current_group = event.key - pygame.K_1
 
     def add_new_tumbler(self):
         if self.highlighted is None:
@@ -75,29 +82,15 @@ class Editor(BaseGame):
 
             upper = self.mouse_pos[1] < HEIGHT // 2
             if self.lock.positions[position].get(upper) is None:
-                new_height = self.calculate_new_height(position, upper)
-                new_tumbler = Tumbler(position, upper, self.current_group, new_height)
-                self.lock.positions[position][upper] = new_tumbler
-                self.lock.tumblers.append(new_tumbler)
-                self.lock.groups[self.current_group].append(new_tumbler)
+                height = self.calculate_new_height(position, upper)
+                tumbler = Tumbler(position, upper, self.current_group, height)
+                self.lock.add_tumbler(tumbler)
 
     def delete_highlighted_tumbler(self):
         if self.highlighted is not None:
             position, upper = self.highlighted
             tumbler = self.lock.positions[position][upper]
-            self.lock.tumblers.pop(self.lock.tumblers.index(tumbler))
-            del self.lock.positions[position][upper]
-            del tumbler
-
-            new_rules = {}
-            for current, rules in self.lock.rules.items():
-                if current == self.highlighted:
-                    continue
-
-                pos, up = current
-                new_rules[current] = [(p, u, h) for p, u, h in self.lock.rules[current] if p != pos and u != up]
-
-            self.lock.rules = new_rules
+            self.lock.delete_tumbler(tumbler)
             self.highlighted = None
 
     def set_master_tumbler(self):
@@ -159,6 +152,38 @@ class Editor(BaseGame):
             post_release_surface = pygame.Surface((post_release_rect.width, post_release_rect.height), pygame.SRCALPHA)
             post_release_surface.fill((*POST_RELEASE_COLOR, 160))
             self.screen.blit(post_release_surface, post_release_rect.topleft)
+
+    def draw_rules(self):
+        for (start_pos, start_upper), targets in self.lock.rules.items():
+            start_tumbler = self.lock.positions[start_pos][start_upper]
+            start_x = start_pos * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET + BAR_WIDTH // 2
+            start_y = self.get_tumbler_y_position(start_tumbler)
+
+            for end_pos, end_upper, difference in targets:
+                end_tumbler = self.lock.positions[end_pos][end_upper]
+                intermediate_y = self.get_tumbler_y_position(end_tumbler)
+                end_x = end_pos * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET + BAR_WIDTH // 2
+                end_y = intermediate_y - difference * SCALE
+
+                self.draw_arrow(start_x, start_y, intermediate_y, end_x, end_y)
+
+    @staticmethod
+    def get_tumbler_y_position(tumbler: Tumbler) -> int:
+        if tumbler.upper:
+            return tumbler.height * SCALE
+        else:
+            return HEIGHT - tumbler.height * SCALE
+
+    def draw_arrow(self, start_x: int, start_y: int, intermediate_y: int, end_x: int, end_y: int):
+        direction = -Vector2(end_x - start_x, intermediate_y - start_y).normalize()
+        left = direction.rotate(-135) * ARROW_SIZE
+        right = direction.rotate(135) * ARROW_SIZE
+
+        pygame.draw.line(self.screen, ARROW_COLOR, (start_x, start_y), (end_x, intermediate_y), ARROW_WIDTH)
+        pygame.draw.line(self.screen, ARROW_COLOR, (end_x, intermediate_y), (end_x, end_y), ARROW_WIDTH)
+
+        pygame.draw.line(self.screen, ARROW_COLOR, (end_x, end_y), (end_x + left.x, end_y + left.y), ARROW_WIDTH)
+        pygame.draw.line(self.screen, ARROW_COLOR, (end_x, end_y), (end_x + right.x, end_y + right.y), ARROW_WIDTH)
 
     def calculate_new_height(self, position: int, upper: bool, limit: bool = True) -> int:
         if upper:
