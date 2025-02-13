@@ -8,12 +8,8 @@ from lockpicker.tumbler import Tumbler
 
 class Lock:
     def __init__(self, level: Level):
-        self.tumblers = level.tumblers
-        self.rules = level.rules
-        self.max_height = level.max_height
-        self.number_of_picks = level.number_of_picks
-
-        self.validate_tumblers()
+        self._level = level
+        self.level.validate()
         self.groups = self.create_groups()
         self.positions = self.create_positions()
         self.picks = self.create_picks()
@@ -21,25 +17,9 @@ class Lock:
         self.current_pick = 0
         self.changes = []
 
-    def validate_tumblers(self):
-        assert all(tumbler.position >= 0 for tumbler in self.tumblers)
-        assert all(0 < tumbler.base_height < self.max_height for tumbler in self.tumblers)
-
-        tumblers = {(tumbler.group, tumbler.upper, tumbler.position) for tumbler in self.tumblers}
-
-        assert len(tumblers) == len(self.tumblers)
-
-        master_groups = defaultdict(list)
-        for tumbler in self.tumblers:
-            master_groups[tumbler.group].append(tumbler.master)
-
-        for group, tumblers in master_groups.items():
-            if sum(tumblers) != 1:
-                warnings.warn(f"Group {group} doesn't have a master tumbler")
-
     def create_groups(self):
         groups = defaultdict(list)
-        for tumbler in self.tumblers:
+        for tumbler in self.level.tumblers:
             groups[tumbler.group].append(tumbler)
 
         return dict(groups.items())
@@ -47,7 +27,7 @@ class Lock:
     def create_positions(self) -> Dict[int, Dict[int, Optional[Tumbler]]]:
         positions: DefaultDict[int, Dict[bool, Optional[Tumbler]]] = defaultdict(lambda: {True: None, False: None})
         last_position = 0
-        for tumbler in self.tumblers:
+        for tumbler in self.level.tumblers:
             positions[tumbler.position][tumbler.upper] = tumbler
             if tumbler.position > last_position:
                 last_position = tumbler.position
@@ -55,11 +35,11 @@ class Lock:
         return dict(positions.items())
 
     def create_picks(self) -> Dict[int, Optional[Tuple[int, bool]]]:
-        return {pick: None for pick in range(self.number_of_picks)}
+        return {pick: None for pick in range(self.level.number_of_picks)}
 
     def add_tumbler(self, tumbler: Tumbler):
-        if tumbler not in self.tumblers:
-            self.tumblers.append(tumbler)
+        if tumbler not in self.level.tumblers:
+            self.level.add_tumbler(tumbler)
         if tumbler.group not in self.groups:
             self.groups[tumbler.group] = []
         self.groups[tumbler.group].append(tumbler)
@@ -69,13 +49,7 @@ class Lock:
         self.positions[tumbler.position][tumbler.upper] = tumbler
 
     def add_rule(self, initial_pos: int, initial_up: bool, target_pos: int, target_up: bool, difference: int):
-        if difference != 0:
-            key = (initial_pos, initial_up)
-            rule = (target_pos, target_up, difference)
-            if key not in self.rules:
-                self.rules[key] = [rule]
-            else:
-                self.rules[key].append(rule)
+        self.level.add_rule(initial_pos, initial_up, target_pos, target_up, difference)
 
     def check_previous_tumblers(self, tumbler: Tumbler) -> bool:
         position = tumbler.position
@@ -87,7 +61,7 @@ class Lock:
             counter = self.positions[i].get(not upper)
             if tumb is not None and i < position and tumb.height > 1:
                 return False
-            if counter is not None and tumbler.height + counter.height >= self.max_height:
+            if counter is not None and tumbler.height + counter.height >= self.level.max_height:
                 return False
 
         return True
@@ -95,19 +69,9 @@ class Lock:
     def delete_tumbler(self, tumbler: Tumbler):
         position = tumbler.position
         upper = tumbler.upper
-        self.tumblers.remove(tumbler)
         self.groups[tumbler.group].remove(tumbler)
         self.positions[position][upper] = None
-
-        rules = {}
-        for (pos, up), rule in self.rules.items():
-            if (pos, up) == (position, upper):
-                continue
-
-            rules[(pos, up)] = [(p, u, d) for (p, u, d) in rule if p != position or u != upper]
-
-        self.rules = rules
-        del tumbler
+        self.level.remove_tumbler(tumbler)
 
     def get_picks(self, position: int, upper: bool) -> List[int]:
         return [
@@ -122,7 +86,7 @@ class Lock:
 
     def apply_rules(self, position: int, upper: bool, pushed: bool):
         tumbler = self.positions[position][upper]
-        for pos, up, difference in self.rules.get((position, upper), []):
+        for pos, up, difference in self.level.rules.get((position, upper), []):
             picks = self.get_picks(pos, up)
             tumb = self.positions[pos][up]
             height = tumb.height
@@ -253,9 +217,15 @@ class Lock:
 
     @property
     def level(self) -> Level:
-        return Level(
-            number_of_picks=self.number_of_picks,
-            max_height=self.max_height,
-            tumblers=self.tumblers,
-            rules=self.rules,
-        )
+        return self._level
+
+    @level.setter
+    def level(self, level: Level):
+        self._level = level
+        self.level.validate()
+        self.groups = self.create_groups()
+        self.positions = self.create_positions()
+        self.picks = self.create_picks()
+
+        self.current_pick = 0
+        self.changes = []

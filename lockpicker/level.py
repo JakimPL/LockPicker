@@ -1,6 +1,8 @@
 import gzip
 import os
 import struct
+import warnings
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import Dict, List, Tuple, Union
 
@@ -17,6 +19,21 @@ class Level:
     tumblers: List[Tumbler]
     rules: Dict[Tuple[int, bool], List[Tuple[int, bool, int]]]
 
+    def validate(self):
+        assert all(tumbler.position >= 0 for tumbler in self.tumblers)
+        assert all(0 < tumbler.base_height < self.max_height for tumbler in self.tumblers)
+
+        tumblers = {(tumbler.group, tumbler.upper, tumbler.position) for tumbler in self.tumblers}
+        assert len(tumblers) == len(self.tumblers)
+
+        master_groups = defaultdict(list)
+        for tumbler in self.tumblers:
+            master_groups[tumbler.group].append(tumbler.master)
+
+        for group, tumblers in master_groups.items():
+            if sum(tumblers) != 1:
+                warnings.warn(f"Group {group} doesn't have a master tumbler")
+
     @staticmethod
     def default() -> "Level":
         return Level(NUMBER_OF_PICKS, MAX_HEIGHT, [], {})
@@ -30,6 +47,31 @@ class Level:
             tumblers,
             rules,
         )
+
+    def add_rule(self, initial_pos: int, initial_up: bool, target_pos: int, target_up: bool, difference: int):
+        if difference != 0:
+            key = (initial_pos, initial_up)
+            rule = (target_pos, target_up, difference)
+            if key not in self.rules:
+                self.rules[key] = [rule]
+            else:
+                self.rules[key].append(rule)
+
+    def add_tumbler(self, tumbler: Tumbler):
+        self.tumblers.append(tumbler)
+
+    def remove_tumbler(self, tumbler: Tumbler):
+        position, upper = tumbler.position, tumbler.upper
+        rules = {}
+        for (pos, up), rule in self.rules.items():
+            if (pos, up) == (position, upper):
+                continue
+
+            rules[(pos, up)] = [(p, u, d) for (p, u, d) in rule if p != position or u != upper]
+
+        self.rules = rules
+        self.tumblers.remove(tumbler)
+        del tumbler
 
     def serialize_tumblers(self) -> bytes:
         tumblers_count = struct.pack("I", len(self.tumblers))
@@ -51,9 +93,7 @@ class Level:
         max_height = struct.pack("I", self.max_height)
         serialized_tumblers = self.serialize_tumblers()
         serialized_rules = self.serialize_rules()
-        return (
-            number_of_picks, max_height, serialized_tumblers, serialized_rules
-        )
+        return (number_of_picks, max_height, serialized_tumblers, serialized_rules)
 
     def save(self, filepath: Union[str, os.PathLike]):
         with gzip.open(filepath, "wb") as file:
@@ -74,7 +114,7 @@ class Level:
         tumblers = []
         size = struct.calcsize(Tumbler.struct_format)
         for i in range(tumblers_count):
-            tumbler_data = data[4 + i * size: 4 + (i + 1) * size]
+            tumbler_data = data[4 + i * size : 4 + (i + 1) * size]
             tumbler = Tumbler.deserialize(tumbler_data)
             tumblers.append(tumbler)
 
@@ -86,13 +126,13 @@ class Level:
         rules = {}
         offset = 4
         for i in range(rules_count):
-            position = struct.unpack("I?", data[offset:offset + 5])
+            position = struct.unpack("I?", data[offset : offset + 5])
             offset += 5
-            rule_count = struct.unpack("I", data[offset:offset + 4])[0]
+            rule_count = struct.unpack("I", data[offset : offset + 4])[0]
             offset += 4
             rule_list = []
             for _ in range(rule_count):
-                rule = struct.unpack("I?i", data[offset:offset + 12])
+                rule = struct.unpack("I?i", data[offset : offset + 12])
                 offset += 12
                 rule_list.append(rule)
             rules[position] = rule_list

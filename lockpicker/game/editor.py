@@ -17,6 +17,7 @@ from lockpicker.constants.gui import (
     X_OFFSET,
 )
 from lockpicker.game.base import BaseGame
+from lockpicker.level import Level
 from lockpicker.lock import Lock
 from lockpicker.tumbler import Tumbler
 
@@ -53,6 +54,22 @@ class Editor(BaseGame):
         self.draw_rules()
         self.draw_binding_arrow()
         pygame.display.flip()
+
+    def save_state(self):
+        self.undo_history.append(self.lock.level.serialize())
+        self.redo_history.clear()
+
+    def undo(self):
+        if self.undo_history:
+            self.redo_history.append(self.lock.level.serialize())
+            state = self.undo_history.pop()
+            self.lock.level = Level.deserialize(state)
+
+    def redo(self):
+        if self.redo_history:
+            self.undo_history.append(self.lock.level.serialize())
+            state = self.redo_history.pop()
+            self.lock.level = Level.deserialize(state)
 
     def gather_events(self):
         for event in pygame.event.get():
@@ -101,12 +118,15 @@ class Editor(BaseGame):
                 tumbler = Tumbler(position, upper, self.current_group, height)
                 self.lock.add_tumbler(tumbler)
 
+            self.save_state()
+
     def delete_highlighted_tumbler(self):
         if self.highlighted is not None:
             position, upper = self.highlighted
             tumbler = self.lock.positions[position][upper]
             self.lock.delete_tumbler(tumbler)
             self.highlighted = None
+            self.save_state()
 
     def set_master_tumbler(self):
         if self.highlighted is not None:
@@ -116,6 +136,8 @@ class Editor(BaseGame):
             for tumb in self.lock.groups[tumbler.group]:
                 if tumb is not tumbler:
                     tumb.master = False
+
+            self.save_state()
 
     def handle_binding_key(self):
         if self.binding_initial is None:
@@ -140,6 +162,7 @@ class Editor(BaseGame):
             difference = self.calculate_difference(target_pos, target_up)
             self.lock.add_rule(initial_pos, initial_up, target_pos, target_up, difference)
             self.cancel_binding()
+            self.save_state()
 
     def cancel_binding(self):
         self.binding_initial = None
@@ -170,6 +193,9 @@ class Editor(BaseGame):
                 new_height = self.calculate_new_height(tumbler.position, tumbler.upper, limit=False)
                 tumbler.post_release_height = new_height - self.initial_height
         else:
+            if self.dragging_tumbler is not None:
+                self.save_state()
+
             self.dragging_tumbler = None
             self.initial_height = None
 
@@ -215,7 +241,7 @@ class Editor(BaseGame):
             self.screen.blit(post_release_surface, post_release_rect.topleft)
 
     def draw_rules(self):
-        for (start_pos, start_up), targets in self.lock.rules.items():
+        for (start_pos, start_up), targets in self.lock.level.rules.items():
             start_tumbler = self.lock.positions[start_pos][start_up]
             start_x = self.get_tumbler_x(start_pos)
             start_y = self.get_tumbler_y(start_up, start_tumbler.height)
@@ -278,7 +304,7 @@ class Editor(BaseGame):
         else:
             height = round((HEIGHT - self.mouse_pos[1]) / SCALE)
 
-        max_height = self.lock.max_height
+        max_height = self.lock.level.max_height
         counter = self.lock.positions[position].get(not upper)
         if limit and counter is not None:
             max_height -= counter.base_height
