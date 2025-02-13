@@ -37,7 +37,8 @@ class Editor(BaseGame):
         self.run_game_callback = run_game_callback
         self.current_group = 0
 
-        self.history = deque()
+        self.undo_history = deque()
+        self.redo_history = deque()
 
     def frame(self):
         self.gather_events()
@@ -143,6 +144,7 @@ class Editor(BaseGame):
     def cancel_binding(self):
         self.binding_initial = None
         self.binding_target = None
+        self.highlighted = None
 
     def handle_dragging(self):
         if self.binding_initial is not None:

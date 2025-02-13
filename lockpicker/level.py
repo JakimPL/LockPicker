@@ -46,51 +46,80 @@ class Level:
 
         return rules_data
 
+    def serialize(self) -> Tuple[bytes, ...]:
+        number_of_picks = struct.pack("I", self.number_of_picks)
+        max_height = struct.pack("I", self.max_height)
+        serialized_tumblers = self.serialize_tumblers()
+        serialized_rules = self.serialize_rules()
+        return (
+            number_of_picks, max_height, serialized_tumblers, serialized_rules
+        )
+
     def save(self, filepath: Union[str, os.PathLike]):
         with gzip.open(filepath, "wb") as file:
-            number_of_picks = struct.pack("I", self.number_of_picks)
-            max_height = struct.pack("I", self.max_height)
-            serialized_tumblers = self.serialize_tumblers()
-            serialized_rules = self.serialize_rules()
-
+            number_of_picks, max_height, serialized_tumblers, serialized_rules = self.serialize()
+            tumblers_block_size = struct.pack("I", len(serialized_tumblers))
+            rules_block_size = struct.pack("I", len(serialized_tumblers))
             file.write(number_of_picks)
             file.write(max_height)
+            file.write(tumblers_block_size)
             file.write(serialized_tumblers)
+            file.write(rules_block_size)
             file.write(serialized_rules)
+            print(f"Level saved to {filepath}.")
 
     @staticmethod
-    def deserialize_tumblers(file: gzip.GzipFile) -> List[Tumbler]:
-        tumblers_count = struct.unpack("I", file.read(4))[0]
+    def deserialize_tumblers(data: bytes) -> List[Tumbler]:
+        tumblers_count = struct.unpack("I", data[:4])[0]
         tumblers = []
-        for _ in range(tumblers_count):
-            tumbler_data = file.read(struct.calcsize(Tumbler.struct_format))
+        size = struct.calcsize(Tumbler.struct_format)
+        for i in range(tumblers_count):
+            tumbler_data = data[4 + i * size: 4 + (i + 1) * size]
             tumbler = Tumbler.deserialize(tumbler_data)
             tumblers.append(tumbler)
 
         return tumblers
 
     @staticmethod
-    def deserialize_rules(
-        file: gzip.GzipFile,
-    ) -> Dict[Tuple[int, bool], List[Tuple[int, bool, int]]]:
-        rules_count = struct.unpack("I", file.read(4))[0]
+    def deserialize_rules(data: bytes) -> Dict[Tuple[int, bool], List[Tuple[int, bool, int]]]:
+        rules_count = struct.unpack("I", data[:4])[0]
         rules = {}
-        for _ in range(rules_count):
-            position = struct.unpack("I?", file.read(5))
-            rule_count = struct.unpack("I", file.read(4))[0]
+        offset = 4
+        for i in range(rules_count):
+            position = struct.unpack("I?", data[offset:offset + 5])
+            offset += 5
+            rule_count = struct.unpack("I", data[offset:offset + 4])[0]
+            offset += 4
             rule_list = []
             for _ in range(rule_count):
-                rule = struct.unpack("I?i", file.read(12))
+                rule = struct.unpack("I?i", data[offset:offset + 12])
+                offset += 12
                 rule_list.append(rule)
             rules[position] = rule_list
 
         return rules
 
     @staticmethod
+    def deserialize(data: Tuple[bytes, ...]):
+        number_of_picks_data, max_height_data, tumblers_data, rules_data = data
+        number_of_picks = struct.unpack("I", number_of_picks_data)[0]
+        max_height = struct.unpack("I", max_height_data)[0]
+        tumblers = Level.deserialize_tumblers(tumblers_data)
+        rules = Level.deserialize_rules(rules_data)
+        return Level(number_of_picks, max_height, tumblers, rules)
+
+    @staticmethod
     def load(filepath: Union[str, os.PathLike]) -> "Level":
         with gzip.open(filepath, "rb") as file:
-            number_of_picks = struct.unpack("I", file.read(4))[0]
-            max_height = struct.unpack("I", file.read(4))[0]
-            tumblers = Level.deserialize_tumblers(file)
-            rules = Level.deserialize_rules(file)
+            number_of_picks_data = file.read(4)
+            max_height_data = file.read(4)
+            tumblers_block_size = struct.unpack("I", file.read(4))[0]
+            tumblers_data = file.read(tumblers_block_size)
+            rules_block_size = struct.unpack("I", file.read(4))[0]
+            rules_data = file.read(rules_block_size)
+
+            number_of_picks = struct.unpack("I", number_of_picks_data)[0]
+            max_height = struct.unpack("I", max_height_data)[0]
+            tumblers = Level.deserialize_tumblers(tumblers_data)
+            rules = Level.deserialize_rules(rules_data)
             return Level(number_of_picks, max_height, tumblers, rules)
