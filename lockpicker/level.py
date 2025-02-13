@@ -17,7 +17,7 @@ class Level:
     number_of_picks: int
     max_height: int
     tumblers: List[Tumbler]
-    rules: Dict[Tuple[int, bool], List[Tuple[int, bool, int]]]
+    rules: Dict[Tuple[int, bool], Dict[Tuple[int, bool], int]]
 
     def validate(self):
         assert all(tumbler.position >= 0 for tumbler in self.tumblers)
@@ -51,11 +51,10 @@ class Level:
     def add_rule(self, initial_pos: int, initial_up: bool, target_pos: int, target_up: bool, difference: int):
         if difference != 0:
             key = (initial_pos, initial_up)
-            rule = (target_pos, target_up, difference)
             if key not in self.rules:
-                self.rules[key] = [rule]
+                self.rules[key] = {(target_pos, target_up): difference}
             else:
-                self.rules[key].append(rule)
+                self.rules[key][(target_pos, target_up)] = difference
 
     def add_tumbler(self, tumbler: Tumbler):
         self.tumblers.append(tumbler)
@@ -67,7 +66,7 @@ class Level:
             if (pos, up) == (position, upper):
                 continue
 
-            rules[(pos, up)] = [(p, u, d) for (p, u, d) in rule if p != position or u != upper]
+            rules[(pos, up)] = {(p, u): d for (p, u), d in rule.items() if p != position or u != upper}
 
         self.rules = rules
         self.tumblers.remove(tumbler)
@@ -83,8 +82,8 @@ class Level:
         for position, rules in self.rules.items():
             rules_data += struct.pack("I?", *position)
             rules_data += struct.pack("I", len(rules))
-            for rule in rules:
-                rules_data += struct.pack("I?i", *rule)
+            for (p, u), d in rules.items():
+                rules_data += struct.pack("I?i", p, u, d)
 
         return rules_data
 
@@ -93,7 +92,7 @@ class Level:
         max_height = struct.pack("I", self.max_height)
         serialized_tumblers = self.serialize_tumblers()
         serialized_rules = self.serialize_rules()
-        return (number_of_picks, max_height, serialized_tumblers, serialized_rules)
+        return number_of_picks, max_height, serialized_tumblers, serialized_rules
 
     def save(self, filepath: Union[str, os.PathLike]):
         with gzip.open(filepath, "wb") as file:
@@ -121,7 +120,7 @@ class Level:
         return tumblers
 
     @staticmethod
-    def deserialize_rules(data: bytes) -> Dict[Tuple[int, bool], List[Tuple[int, bool, int]]]:
+    def deserialize_rules(data: bytes) -> Dict[Tuple[int, bool], Dict[Tuple[int, bool], int]]:
         rules_count = struct.unpack("I", data[:4])[0]
         rules = {}
         offset = 4
@@ -130,12 +129,12 @@ class Level:
             offset += 5
             rule_count = struct.unpack("I", data[offset : offset + 4])[0]
             offset += 4
-            rule_list = []
+            rule = {}
             for _ in range(rule_count):
-                rule = struct.unpack("I?i", data[offset : offset + 12])
+                p, u, d = struct.unpack("I?i", data[offset : offset + 12])
                 offset += 12
-                rule_list.append(rule)
-            rules[position] = rule_list
+                rule[(p, u)] = d
+            rules[position] = rule
 
         return rules
 

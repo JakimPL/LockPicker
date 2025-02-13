@@ -246,7 +246,7 @@ class Editor(BaseGame):
             start_x = self.get_tumbler_x(start_pos)
             start_y = self.get_tumbler_y(start_up, start_tumbler.height)
 
-            for end_pos, end_up, difference in targets:
+            for (end_pos, end_up), difference in targets.items():
                 end_tumbler = self.lock.positions[end_pos][end_up]
                 intermediate_y = self.get_tumbler_y(end_up, end_tumbler.height)
                 end_x = self.get_tumbler_x(end_pos)

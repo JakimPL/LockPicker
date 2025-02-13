@@ -86,7 +86,8 @@ class Lock:
 
     def apply_rules(self, position: int, upper: bool, pushed: bool):
         tumbler = self.positions[position][upper]
-        for pos, up, difference in self.level.rules.get((position, upper), []):
+        rule = self.level.rules.get((position, upper), {})
+        for (pos, up), difference in rule.items():
             picks = self.get_picks(pos, up)
             tumb = self.positions[pos][up]
             height = tumb.height
