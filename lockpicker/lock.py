@@ -81,6 +81,8 @@ class Lock:
         position = tumbler.position
         upper = tumbler.upper
         for i in range(position + 1):
+            if i not in self.positions:
+                continue
             tumb = self.positions[i].get(upper)
             counter = self.positions[i].get(not upper)
             if tumb is not None and i < position and tumb.height > 1:
@@ -155,6 +157,9 @@ class Lock:
         if index is not None:
             position, upper = index
             for pos in range(position):
+                if pos not in self.positions:
+                    continue
+
                 tumbler = self.positions[pos].get(upper)
                 if tumbler is not None and tumbler.height > 1:
                     return False

@@ -68,10 +68,14 @@ class Tumbler:
 
     @property
     def height(self) -> int:
+        if self.pushed:
+            return 1
+
         height = self._height + self.difference
         if self._release:
             height += self.post_release_height
-        return height if not self.pushed else 1
+
+        return max(1, height)
 
     @property
     def base_height(self) -> int:

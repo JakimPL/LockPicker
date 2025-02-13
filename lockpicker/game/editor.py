@@ -58,6 +58,9 @@ class Editor(BaseGame):
             if event.type == pygame.QUIT:
                 self.running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    if self.binding_initial is not None:
+                        self.handle_binding_key()
                 if event.button == 3:
                     self.cancel_binding()
             if event.type == pygame.KEYDOWN:
@@ -183,10 +186,9 @@ class Editor(BaseGame):
 
     def draw_tumbler(
         self, tumbler: Tumbler, bounds: Optional[Tuple[int, int, int, int]] = None, highlighted: bool = False
-    ) -> bool:
-        collision = super().draw_tumbler(tumbler, bounds, highlighted)
+    ):
+        super().draw_tumbler(tumbler, bounds, highlighted)
         self.draw_post_release_height(tumbler)
-        return collision
 
     def draw_post_release_height(self, tumbler: Tumbler):
         if tumbler.post_release_height != 0:
@@ -220,7 +222,7 @@ class Editor(BaseGame):
                 end_tumbler = self.lock.positions[end_pos][end_up]
                 intermediate_y = self.get_tumbler_y(end_up, end_tumbler.height)
                 end_x = self.get_tumbler_x(end_pos)
-                end_y = intermediate_y - difference * SCALE
+                end_y = intermediate_y + (difference * SCALE if end_up else -difference * SCALE)
                 self.draw_arrow(start_x, start_y, intermediate_y, end_x, end_y)
 
     def draw_binding_arrow(self):
@@ -240,7 +242,7 @@ class Editor(BaseGame):
             else:
                 intermediate_y = end_y
                 difference = self.calculate_difference(end_pos, end_up)
-                end_y -= difference * SCALE
+                end_y += difference * SCALE if end_up else -difference * SCALE
                 self.draw_arrow(start_x, start_y, intermediate_y, end_x, end_y)
 
     def draw_arrow(self, start_x: int, start_y: int, intermediate_y: int, end_x: int, end_y: int):
@@ -266,8 +268,7 @@ class Editor(BaseGame):
 
     def calculate_difference(self, position: int, upper: bool) -> int:
         tumbler = self.lock.positions[position][upper]
-        difference = tumbler.height - self.calculate_new_height(position, upper, limit=False)
-        return difference if upper else -difference
+        return self.calculate_new_height(position, upper, limit=False) - tumbler.height
 
     def calculate_new_height(self, position: int, upper: bool, limit: bool = True) -> int:
         if upper:
