@@ -48,8 +48,8 @@ class Lock:
             self.positions[tumbler.position] = {}
         self.positions[tumbler.position][tumbler.upper] = tumbler
 
-    def add_rule(self, initial_pos: int, initial_up: bool, target_pos: int, target_up: bool, difference: int):
-        self.level.add_rule(initial_pos, initial_up, target_pos, target_up, difference)
+    def add_binding(self, initial_pos: int, initial_up: bool, target_pos: int, target_up: bool, difference: int):
+        self.level.add_binding(initial_pos, initial_up, target_pos, target_up, difference)
 
     def check_previous_tumblers(self, tumbler: Tumbler) -> bool:
         position = tumbler.position
@@ -84,10 +84,10 @@ class Lock:
         if tumbler.height != height:
             self.changes.append((tumbler.position, tumbler.upper, height, tumbler.height))
 
-    def apply_rules(self, position: int, upper: bool, pushed: bool):
+    def apply_bindings(self, position: int, upper: bool, pushed: bool):
         tumbler = self.positions[position][upper]
-        rule = self.level.rules.get((position, upper), {})
-        for (pos, up), difference in rule.items():
+        binding = self.level.bindings.get((position, upper), {})
+        for (pos, up), difference in binding.items():
             picks = self.get_picks(pos, up)
             tumb = self.positions[pos][up]
             height = tumb.height
@@ -104,10 +104,10 @@ class Lock:
 
             self.add_change(tumb, height)
 
-    def apply_rules_iteratively(self, position: int, upper: bool, pushed: bool):
-        self.apply_rules(position, upper, pushed)
+    def apply_bindings_iteratively(self, position: int, upper: bool, pushed: bool):
+        self.apply_bindings(position, upper, pushed)
         if not self.revise_picks():
-            self.apply_rules(position, upper, pushed)
+            self.apply_bindings(position, upper, pushed)
 
     def apply_master_tumbler(self, tumbler: Tumbler):
         if tumbler.master and tumbler.pushed:
@@ -145,7 +145,7 @@ class Lock:
                 if not self.check_if_pick_is_valid(pick):
                     all_picks_valid = False
                     position, upper = index
-                    self.apply_rules(position, upper, False)
+                    self.apply_bindings(position, upper, False)
                     self.clear_pick(pick)
                     self.release_tumbler(position, upper)
 
@@ -166,7 +166,7 @@ class Lock:
         tumbler.push()
 
         self.add_change(tumbler, height)
-        self.apply_rules_iteratively(position, upper, pushed=True)
+        self.apply_bindings_iteratively(position, upper, pushed=True)
         self.apply_master_tumbler(tumbler)
 
     def release_tumbler(self, position: int, upper: bool):
@@ -176,7 +176,7 @@ class Lock:
             tumbler.release(direct=True)
 
         self.add_change(tumbler, height)
-        self.apply_rules_iteratively(position, upper, False)
+        self.apply_bindings_iteratively(position, upper, False)
 
     def release_current_pick(self):
         current = self.picks[self.current_pick]

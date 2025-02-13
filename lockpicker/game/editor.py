@@ -51,7 +51,7 @@ class Editor(BaseGame):
     def draw(self):
         self.draw_background()
         self.draw_tumblers()
-        self.draw_rules()
+        self.draw_bindings()
         self.draw_binding_arrow()
         pygame.display.flip()
 
@@ -160,7 +160,7 @@ class Editor(BaseGame):
             initial_pos, initial_up = self.binding_initial
             target_pos, target_up = self.binding_target
             difference = self.calculate_difference(target_pos, target_up)
-            self.lock.add_rule(initial_pos, initial_up, target_pos, target_up, difference)
+            self.lock.add_binding(initial_pos, initial_up, target_pos, target_up, difference)
             self.cancel_binding()
             self.save_state()
 
@@ -240,8 +240,8 @@ class Editor(BaseGame):
             post_release_surface.fill((*POST_RELEASE_COLOR, 160))
             self.screen.blit(post_release_surface, post_release_rect.topleft)
 
-    def draw_rules(self):
-        for (start_pos, start_up), targets in self.lock.level.rules.items():
+    def draw_bindings(self):
+        for (start_pos, start_up), targets in self.lock.level.bindings.items():
             start_tumbler = self.lock.positions[start_pos][start_up]
             start_x = self.get_tumbler_x(start_pos)
             start_y = self.get_tumbler_y(start_up, start_tumbler.height)
