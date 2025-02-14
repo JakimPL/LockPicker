@@ -1,4 +1,5 @@
 import struct
+from typing import Optional
 
 
 class Tumbler:
@@ -10,20 +11,25 @@ class Tumbler:
         upper: bool,
         group: int,
         height: int,
+        max_height: int,
         post_release_height: int = 0,
         master: bool = False,
+        counter: Optional["Tumbler"] = None,
     ):
         self._position = position
         self._upper = upper
         self._group = group
         self._master = master
         self._height = height
+        self._max_height = max_height
         self._post_release_height = post_release_height
 
-        self.difference = 0
+        self._difference = 0
+        self._current_height = height
         self._pushed = False
         self._jammed = False
         self._release = False
+        self._counter = counter
 
     def __repr__(self) -> str:
         return f"Tumbler({self.position}, {self.upper}, {self.group}, {self.height}, master={self.master})"
@@ -34,29 +40,36 @@ class Tumbler:
             self.upper,
             self.group,
             self.base_height,
+            self.max_height,
             self.post_release_height,
             self.master,
+            self.counter,
         )
 
     def jam(self):
         self._release = False
         self._jammed = True
         self._pushed = True
+        self._recalculate_current_height()
 
     def push(self):
         self._release = False
         self._pushed = True
+        self._recalculate_current_height()
 
     def unjam(self):
         self._release = False
         self._jammed = False
+        self._recalculate_current_height()
 
     def release(self, direct: bool = False):
         self._jammed = False
         self._pushed = False
         self._release = direct
         if direct:
-            self.difference = 0
+            self._difference = 0
+
+        self._recalculate_current_height()
 
     @property
     def pushed(self) -> bool:
@@ -68,14 +81,18 @@ class Tumbler:
 
     @property
     def height(self) -> int:
+        return self._current_height
+
+    def _recalculate_current_height(self):
         if self.pushed:
-            return 1
+            height = 1
+        else:
+            height = self._height + self.difference
+            if self._release:
+                height += self.post_release_height
 
-        height = self._height + self.difference
-        if self._release:
-            height += self.post_release_height
-
-        return max(1, height)
+        self._counter_height = self._counter.height if self._counter is not None else 0
+        self._current_height = max(1, min(height, self.max_height - self._counter_height))
 
     @property
     def base_height(self) -> int:
@@ -119,6 +136,30 @@ class Tumbler:
     def post_release_height(self, height: int):
         self._post_release_height = round(height)
 
+    @property
+    def difference(self) -> int:
+        return self._difference
+
+    @difference.setter
+    def difference(self, difference: int):
+        self._difference = difference
+        self._recalculate_current_height()
+
+    @property
+    def max_height(self) -> int:
+        return self._max_height
+
+    @property
+    def counter(self) -> Optional["Tumbler"]:
+        return self._counter
+
+    @counter.setter
+    def counter(self, counter: Optional["Tumbler"]):
+        if not isinstance(counter, Tumbler) and not counter is None:
+            raise ValueError(f"Counter must be a Tumbler instance")
+        self._counter = counter
+        self._recalculate_current_height()
+
     def serialize(self) -> bytes:
         return struct.pack(
             self.struct_format,
@@ -131,6 +172,6 @@ class Tumbler:
         )
 
     @classmethod
-    def deserialize(cls, data: bytes) -> "Tumbler":
+    def deserialize(cls, data: bytes, max_height: int) -> "Tumbler":
         position, upper, group, height, post_release_height, master = struct.unpack(cls.struct_format, data)
-        return Tumbler(position, upper, group, height, post_release_height, master)
+        return Tumbler(position, upper, group, height, max_height, post_release_height, master)

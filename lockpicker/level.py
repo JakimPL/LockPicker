@@ -19,6 +19,9 @@ class Level:
     tumblers: List[Tumbler]
     bindings: Dict[Tuple[int, bool], Dict[Tuple[int, bool], int]]
 
+    def __post_init__(self):
+        self._assign_counters()
+
     def validate(self):
         assert all(tumbler.position >= 0 for tumbler in self.tumblers)
         assert all(0 < tumbler.base_height < self.max_height for tumbler in self.tumblers)
@@ -108,13 +111,13 @@ class Level:
             print(f"Level saved to {filepath}.")
 
     @staticmethod
-    def deserialize_tumblers(data: bytes) -> List[Tumbler]:
+    def deserialize_tumblers(data: bytes, max_height: int) -> List[Tumbler]:
         tumblers_count = struct.unpack("I", data[:4])[0]
         tumblers = []
         size = struct.calcsize(Tumbler.struct_format)
         for i in range(tumblers_count):
             tumbler_data = data[4 + i * size : 4 + (i + 1) * size]
-            tumbler = Tumbler.deserialize(tumbler_data)
+            tumbler = Tumbler.deserialize(tumbler_data, max_height)
             tumblers.append(tumbler)
 
         return tumblers
@@ -159,6 +162,11 @@ class Level:
 
             number_of_picks = struct.unpack("I", number_of_picks_data)[0]
             max_height = struct.unpack("I", max_height_data)[0]
-            tumblers = Level.deserialize_tumblers(tumblers_data)
+            tumblers = Level.deserialize_tumblers(tumblers_data, max_height)
             bindings = Level.deserialize_bindings(bindings_data)
             return Level(number_of_picks, max_height, tumblers, bindings)
+
+    def _assign_counters(self):
+        tumblers = {(tumbler.position, tumbler.upper): tumbler for tumbler in self.tumblers}
+        for (position, upper), tumbler in tumblers.items():
+            tumbler.counter = tumblers.get((position, not upper))

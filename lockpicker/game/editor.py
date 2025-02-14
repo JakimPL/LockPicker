@@ -116,10 +116,13 @@ class Editor(BaseGame):
             upper = self.mouse_pos[1] < HEIGHT // 2
             if self.lock.get_tumbler(position, upper) is None:
                 height = self.calculate_new_height(position, upper)
-                tumbler = Tumbler(position, upper, self.current_group, height)
+                tumbler = self.get_temp_tumbler(position, upper, height)
                 self.lock.add_tumbler(tumbler)
 
             self.save_state()
+
+    def get_temp_tumbler(self, position: int, upper: bool, height: int) -> Tumbler:
+        return Tumbler(position, upper, self.current_group, height, self.lock.level.max_height)
 
     def delete_highlighted_tumbler(self):
         if self.highlighted is not None:
@@ -228,7 +231,7 @@ class Editor(BaseGame):
         upper = self.mouse_pos[1] < HEIGHT // 2
         if self.lock.get_tumbler(position, upper) is None:
             height = self.calculate_new_height(position, upper)
-            tumbler = Tumbler(position, upper, self.current_group, height)
+            tumbler = self.get_temp_tumbler(position, upper, height)
             bounds = self.get_tumbler_bounds(tumbler)
             self.draw_tumbler(tumbler, bounds, highlighted=False, alpha=64)
 
