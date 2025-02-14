@@ -50,7 +50,7 @@ class Game(BaseGame):
 
     def toggle_current_pick(self):
         if self.mouse_pressed[2] and not self.mouse_was_pressed[2]:
-            self.lock.current_pick = 1 - self.lock.current_pick
+            self.lock.change_current_pick()
 
     def check_win(self) -> bool:
         if self.lock.check_win():
