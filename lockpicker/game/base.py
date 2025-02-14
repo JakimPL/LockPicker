@@ -67,7 +67,7 @@ class BaseGame:
 
     def draw_tumblers(self):
         self.highlighted = None
-        for position, items in self.lock.positions.items():
+        for position, items in self.lock.get_tumblers_by_position().items():
             for upper, tumbler in items.items():
                 if tumbler is not None:
                     bounds = self.get_tumbler_bounds(tumbler)
@@ -105,18 +105,18 @@ class BaseGame:
         self.screen.blit(surface, rect.topleft)
 
     def draw_picks(self):
-        for pick in self.lock.picks:
+        for pick in range(self.lock.level.number_of_picks):
             self.draw_pick(pick)
 
     def draw_pick(self, pick: int):
-        index = self.lock.picks[pick]
+        index = self.lock.get_pick(pick)
         alpha = 255 if pick == self.lock.current_pick else 160
         if index is None:
             x = PICK_IDLE_OFFSET
             y = HEIGHT // 2 + PICK_DISCREPANCY * (pick - self.lock.level.number_of_picks / 2 + 0.5)
         else:
             position, upper = index
-            tumbler = self.lock.positions[position][upper]
+            tumbler = self.lock.get_tumbler(position, upper)
             height = self.get_current_height(tumbler)
 
             h = height * SCALE

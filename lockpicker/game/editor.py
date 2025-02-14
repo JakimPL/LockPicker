@@ -109,11 +109,8 @@ class Editor(BaseGame):
             if position < 0:
                 return
 
-            if position not in self.lock.positions:
-                self.lock.positions[position] = {}
-
             upper = self.mouse_pos[1] < HEIGHT // 2
-            if self.lock.positions[position].get(upper) is None:
+            if self.lock.get_tumbler(position, upper) is None:
                 height = self.calculate_new_height(position, upper)
                 tumbler = Tumbler(position, upper, self.current_group, height)
                 self.lock.add_tumbler(tumbler)
@@ -123,7 +120,7 @@ class Editor(BaseGame):
     def delete_highlighted_tumbler(self):
         if self.highlighted is not None:
             position, upper = self.highlighted
-            tumbler = self.lock.positions[position][upper]
+            tumbler = self.lock.get_tumbler(position, upper)
             self.lock.delete_tumbler(tumbler)
             self.highlighted = None
             self.save_state()
@@ -131,12 +128,12 @@ class Editor(BaseGame):
     def set_master_tumbler(self):
         if self.highlighted is not None:
             position, upper = self.highlighted
-            tumbler = self.lock.positions[position][upper]
-            tumbler.master = True
-            for tumb in self.lock.groups[tumbler.group]:
-                if tumb is not tumbler:
-                    tumb.master = False
+            tumbler = self.lock.get_tumbler(position, upper)
+            group_tumblers = self.lock.get_tumblers_by_group()[tumbler.group]
+            for tumb in group_tumblers:
+                tumb.master = False
 
+            tumbler.master = True
             self.save_state()
 
     def handle_binding_key(self):
@@ -178,18 +175,18 @@ class Editor(BaseGame):
                 self.dragging_tumbler = self.highlighted
             if self.dragging_tumbler is not None:
                 position, upper = self.dragging_tumbler
-                tumbler = self.lock.positions[position][upper]
+                tumbler = self.lock.get_tumbler(position, upper)
                 new_height = self.calculate_new_height(tumbler.position, tumbler.upper)
                 tumbler.height = new_height
         elif self.mouse_pressed[2]:
             if self.dragging_tumbler is None and self.highlighted is not None:
                 self.dragging_tumbler = self.highlighted
                 position, upper = self.dragging_tumbler
-                tumbler = self.lock.positions[position][upper]
+                tumbler = self.lock.get_tumbler(position, upper)
                 self.initial_height = tumbler.height
             if self.dragging_tumbler is not None:
                 position, upper = self.dragging_tumbler
-                tumbler = self.lock.positions[position][upper]
+                tumbler = self.lock.get_tumbler(position, upper)
                 new_height = self.calculate_new_height(tumbler.position, tumbler.upper, limit=False)
                 tumbler.post_release_height = new_height - self.initial_height
         else:
@@ -201,7 +198,7 @@ class Editor(BaseGame):
 
     def draw_tumblers(self):
         self.highlighted = None
-        for position, items in self.lock.positions.items():
+        for position, items in self.lock.get_tumblers_by_position().items():
             for upper, tumbler in items.items():
                 if tumbler is not None:
                     bounds = self.get_tumbler_bounds(tumbler)
@@ -242,12 +239,12 @@ class Editor(BaseGame):
 
     def draw_bindings(self):
         for (start_pos, start_up), targets in self.lock.level.bindings.items():
-            start_tumbler = self.lock.positions[start_pos][start_up]
+            start_tumbler = self.lock.get_tumbler(start_pos, start_up)
             start_x = self.get_tumbler_x(start_pos)
             start_y = self.get_tumbler_y(start_up, start_tumbler.height)
 
             for (end_pos, end_up), difference in targets.items():
-                end_tumbler = self.lock.positions[end_pos][end_up]
+                end_tumbler = self.lock.get_tumbler(end_pos, end_up)
                 intermediate_y = self.get_tumbler_y(end_up, end_tumbler.height)
                 end_x = self.get_tumbler_x(end_pos)
                 end_y = intermediate_y + (difference * SCALE if end_up else -difference * SCALE)
@@ -256,12 +253,12 @@ class Editor(BaseGame):
     def draw_binding_arrow(self):
         if self.binding_target is not None or self.binding_initial is not None and self.highlighted is not None:
             start_pos, start_up = self.binding_initial
-            start_tumbler = self.lock.positions[start_pos][start_up]
+            start_tumbler = self.lock.get_tumbler(start_pos, start_up)
             start_x = self.get_tumbler_x(start_pos)
             start_y = self.get_tumbler_y(start_up, start_tumbler.height)
 
             end_pos, end_up = self.binding_target if self.binding_target is not None else self.highlighted
-            end_tumbler = self.lock.positions[end_pos][end_up]
+            end_tumbler = self.lock.get_tumbler(end_pos, end_up)
 
             end_x = self.get_tumbler_x(end_pos)
             end_y = self.get_tumbler_y(end_up, end_tumbler.height)
@@ -295,7 +292,7 @@ class Editor(BaseGame):
             return HEIGHT - height * SCALE
 
     def calculate_difference(self, position: int, upper: bool) -> int:
-        tumbler = self.lock.positions[position][upper]
+        tumbler = self.lock.get_tumbler(position, upper)
         return self.calculate_new_height(position, upper, limit=False) - tumbler.height
 
     def calculate_new_height(self, position: int, upper: bool, limit: bool = True) -> int:
@@ -305,7 +302,7 @@ class Editor(BaseGame):
             height = round((HEIGHT - self.mouse_pos[1]) / SCALE)
 
         max_height = self.lock.level.max_height
-        counter = self.lock.positions[position].get(not upper)
+        counter = self.lock.get_tumbler(position, not upper)
         if limit and counter is not None:
             max_height -= counter.base_height
 
