@@ -51,6 +51,7 @@ class Editor(BaseGame):
     def draw(self):
         self.draw_background()
         self.draw_tumblers()
+        self.draw_transparent_tumbler()
         self.draw_bindings()
         self.draw_binding_arrow()
         pygame.display.flip()
@@ -104,7 +105,7 @@ class Editor(BaseGame):
                 if event.key == pygame.K_DELETE:
                     self.delete_highlighted_tumbler()
                 if event.key in (pygame.K_1, pygame.K_2, pygame.K_3):
-                    self.current_group = event.key - pygame.K_1
+                    self.change_group(event.key - pygame.K_1)
 
     def add_new_tumbler(self):
         if self.highlighted is None:
@@ -138,6 +139,11 @@ class Editor(BaseGame):
 
             tumbler.master = True
             self.save_state()
+
+    def change_group(self, group: int):
+        self.current_group = group
+        if self.highlighted is not None:
+            self.lock.get_tumbler(*self.highlighted).group = group
 
     def handle_binding_key(self):
         if self.binding_initial is None:
@@ -205,20 +211,39 @@ class Editor(BaseGame):
             for upper, tumbler in items.items():
                 if tumbler is not None:
                     bounds = self.get_tumbler_bounds(tumbler)
-                    highlighted = self.is_mouse_hovering_tumbler(tumbler, bounds)
+                    highlighted = self.is_mouse_hovering_tumbler(tumbler, bounds) and self.dragging_tumbler is None
+                    highlighted |= self.dragging_tumbler == (position, upper)
                     if highlighted:
                         self.highlighted = position, upper
 
-                    highlighted |= self.binding_initial == (position, upper) or self.binding_target == (position, upper)
+                    highlighted |= self.binding_initial == (position, upper)
+                    highlighted |= self.binding_target == (position, upper)
                     self.draw_tumbler(tumbler, bounds, highlighted)
 
-    def draw_tumbler(
-        self, tumbler: Tumbler, bounds: Optional[Tuple[int, int, int, int]] = None, highlighted: bool = False
-    ):
-        super().draw_tumbler(tumbler, bounds, highlighted)
-        self.draw_post_release_height(tumbler)
+    def draw_transparent_tumbler(self):
+        position = (self.mouse_pos[0] - X_OFFSET) // (BAR_WIDTH + BAR_OFFSET)
+        if position < 0:
+            return
 
-    def draw_post_release_height(self, tumbler: Tumbler):
+        upper = self.mouse_pos[1] < HEIGHT // 2
+        if self.lock.get_tumbler(position, upper) is None:
+            height = self.calculate_new_height(position, upper)
+            tumbler = Tumbler(position, upper, self.current_group, height)
+            bounds = self.get_tumbler_bounds(tumbler)
+            self.draw_tumbler(tumbler, bounds, highlighted=False, alpha=64)
+
+    def draw_tumbler(
+        self,
+        tumbler: Tumbler,
+        bounds: Optional[Tuple[int, int, int, int]] = None,
+        highlighted: bool = False,
+        alpha: Optional[int] = None,
+    ):
+        super().draw_tumbler(tumbler, bounds, highlighted, alpha)
+        self.draw_post_release_height(tumbler, alpha)
+
+    def draw_post_release_height(self, tumbler: Tumbler, alpha: Optional[int] = None):
+        alpha = 160 if alpha is None else alpha
         if tumbler.post_release_height != 0:
             p = tumbler.post_release_height * self.scale
             x = tumbler.position * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET
@@ -237,7 +262,7 @@ class Editor(BaseGame):
                 post_release_rect = pygame.Rect(x, y + p, BAR_WIDTH, -p)
 
             post_release_surface = pygame.Surface((post_release_rect.width, post_release_rect.height), pygame.SRCALPHA)
-            post_release_surface.fill((*POST_RELEASE_COLOR, 160))
+            post_release_surface.fill((*POST_RELEASE_COLOR, alpha))
             self.screen.blit(post_release_surface, post_release_rect.topleft)
 
     def draw_bindings(self):

@@ -97,6 +97,12 @@ class Tumbler:
     def group(self) -> int:
         return self._group
 
+    @group.setter
+    def group(self, group: int):
+        if group < 0:
+            raise ValueError(f"Group must be non-negative, got {group}")
+        self._group = group
+
     @property
     def master(self) -> bool:
         return self._master

@@ -94,12 +94,17 @@ class BaseGame:
         return rect.collidepoint(self.mouse_pos)
 
     def draw_tumbler(
-        self, tumbler: Tumbler, bounds: Optional[Tuple[int, int, int, int]] = None, highlighted: bool = False
+        self,
+        tumbler: Tumbler,
+        bounds: Optional[Tuple[int, int, int, int]] = None,
+        highlighted: bool = False,
+        alpha: Optional[int] = None,
     ):
-        alpha = 255 if tumbler.master else 160
-        alpha /= 3 if tumbler.jammed else 1
-        color = HIGHLIGHT_COLOR if highlighted else TUMBLERS_COLORS[tumbler.group]
+        if alpha is None:
+            alpha = 255 if tumbler.master else 160
+            alpha /= 3 if tumbler.jammed else 1
 
+        color = HIGHLIGHT_COLOR if highlighted else TUMBLERS_COLORS[tumbler.group]
         rect = pygame.Rect(*self.get_tumbler_bounds(tumbler) if bounds is None else bounds)
         surface = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
         surface.fill((*color, alpha))
