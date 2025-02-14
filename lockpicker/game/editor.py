@@ -13,7 +13,6 @@ from lockpicker.constants.gui import (
     BAR_WIDTH,
     HEIGHT,
     POST_RELEASE_COLOR,
-    SCALE,
     X_OFFSET,
 )
 from lockpicker.game.base import BaseGame
@@ -221,15 +220,15 @@ class Editor(BaseGame):
 
     def draw_post_release_height(self, tumbler: Tumbler):
         if tumbler.post_release_height != 0:
-            p = tumbler.post_release_height * SCALE
+            p = tumbler.post_release_height * self.scale
             x = tumbler.position * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET
             height = self.get_current_height(tumbler)
             if tumbler.upper:
-                h = height * SCALE
+                h = height * self.scale
                 y = h
 
             else:
-                h = height * SCALE
+                h = height * self.scale
                 y = HEIGHT - h - p
 
             if p > 0:
@@ -251,7 +250,7 @@ class Editor(BaseGame):
                 end_tumbler = self.lock.get_tumbler(end_pos, end_up)
                 intermediate_y = self.get_tumbler_y(end_up, end_tumbler.height)
                 end_x = self.get_tumbler_x(end_pos)
-                end_y = intermediate_y + (difference * SCALE if end_up else -difference * SCALE)
+                end_y = intermediate_y + self.scale * (difference if end_up else -difference)
                 self.draw_arrow(start_x, start_y, intermediate_y, end_x, end_y)
 
     def draw_binding_arrow(self):
@@ -271,7 +270,7 @@ class Editor(BaseGame):
             else:
                 intermediate_y = end_y
                 difference = self.calculate_difference(end_pos, end_up)
-                end_y += difference * SCALE if end_up else -difference * SCALE
+                end_y += difference * self.scale if end_up else -difference * self.scale
                 self.draw_arrow(start_x, start_y, intermediate_y, end_x, end_y)
 
     def draw_arrow(self, start_x: int, start_y: int, intermediate_y: int, end_x: int, end_y: int):
@@ -284,26 +283,15 @@ class Editor(BaseGame):
             self.screen, ARROW_COLOR, (end_x - ARROW_SIZE, end_y), (end_x + ARROW_SIZE, end_y), ARROW_WIDTH
         )
 
-    @staticmethod
-    def get_tumbler_x(position: int) -> int:
-        return position * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET + BAR_WIDTH // 2
-
-    @staticmethod
-    def get_tumbler_y(upper: bool, height: int) -> int:
-        if upper:
-            return height * SCALE
-        else:
-            return HEIGHT - height * SCALE
-
     def calculate_difference(self, position: int, upper: bool) -> int:
         tumbler = self.lock.get_tumbler(position, upper)
         return self.calculate_new_height(position, upper, limit=False) - tumbler.height
 
     def calculate_new_height(self, position: int, upper: bool, limit: bool = True) -> int:
         if upper:
-            height = round(self.mouse_pos[1] / SCALE)
+            height = round(self.mouse_pos[1] / self.scale)
         else:
-            height = round((HEIGHT - self.mouse_pos[1]) / SCALE)
+            height = round((HEIGHT - self.mouse_pos[1]) / self.scale)
 
         max_height = self.lock.level.max_height
         counter = self.lock.get_tumbler(position, not upper)

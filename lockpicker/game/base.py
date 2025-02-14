@@ -6,6 +6,7 @@ from lockpicker.constants.gui import (
     BACKGROUND_COLOR,
     BAR_OFFSET,
     BAR_WIDTH,
+    BAR_Y_OFFSET,
     HEIGHT,
     HIGHLIGHT_COLOR,
     PICK_COLORS,
@@ -14,7 +15,6 @@ from lockpicker.constants.gui import (
     PICK_OFFSET,
     PICK_SIZE,
     PICK_WIDTH,
-    SCALE,
     TUMBLERS_COLORS,
     WIDTH,
     X_OFFSET,
@@ -35,6 +35,7 @@ class BaseGame:
         self.highlighted = None
         self.animation = 0.0
         self.animation_items = {}
+        self.scale = (HEIGHT - BAR_Y_OFFSET) / self.lock.level.max_height
 
     def run(self):
         self.running = True
@@ -80,10 +81,10 @@ class BaseGame:
         height = self.get_current_height(tumbler)
         x = tumbler.position * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET
         if tumbler.upper:
-            h = height * SCALE
+            h = height * self.scale
             y = 0
         else:
-            h = height * SCALE
+            h = height * self.scale
             y = HEIGHT - h
 
         return x, y, BAR_WIDTH, h
@@ -119,7 +120,7 @@ class BaseGame:
             tumbler = self.lock.get_tumbler(position, upper)
             height = self.get_current_height(tumbler)
 
-            h = height * SCALE
+            h = height * self.scale
             x = position * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET + BAR_WIDTH // 2
             y = h + PICK_OFFSET if upper else HEIGHT - h - PICK_OFFSET
 
@@ -140,6 +141,15 @@ class BaseGame:
         rect = pygame.Rect(0, y - PICK_WIDTH // 2, x, PICK_WIDTH)
         pygame.draw.rect(shape_surface, color, rect)
         self.screen.blit(shape_surface, (0, 0))
+
+    def get_tumbler_x(self, position: int) -> int:
+        return position * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET + BAR_WIDTH // 2
+
+    def get_tumbler_y(self, upper: bool, height: int) -> int:
+        if upper:
+            return height * self.scale
+        else:
+            return HEIGHT - height * self.scale
 
     def get_current_height(self, tumbler: Tumbler) -> int:
         if (tumbler.position, tumbler.upper) in self.animation_items:

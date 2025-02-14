@@ -1,28 +1,38 @@
 import argparse
 from pathlib import Path
+from typing import Optional
 
 import pygame
 
 from lockpicker.constants.gui import HEIGHT, WIDTH
 from lockpicker.game.editor import Editor
 from lockpicker.game.game import Game
+from lockpicker.level import MAX_HEIGHT, NUMBER_OF_PICKS
 from lockpicker.lock import Level, Lock
 
 
-def load_level(path: Path) -> Level:
+def load_level(path: Path, number_of_picks: Optional[int], max_height: Optional[int]) -> Level:
     if path.exists() and path.is_file():
         return Level.load(path)
     else:
-        return Level.default()
+        if number_of_picks < 1:
+            raise ValueError("number_of_picks must be at least 1")
+        if max_height < 3:
+            raise ValueError("max_height must be at least 3")
+
+        return Level.create(number_of_picks, max_height)
 
 
 def main():
     parser = argparse.ArgumentParser(description="Load a level from a file.")
     parser.add_argument("level_file", type=str, help="Path to the level file")
     parser.add_argument("--edit", action="store_true", help="Run the level editor")
+    parser.add_argument("--number_of_picks", type=int, default=NUMBER_OF_PICKS, help="Number of picks (at least 1)")
+    parser.add_argument("--max_height", type=int, default=MAX_HEIGHT, help="Maximum height (at least 2)")
     args = parser.parse_args()
+
     path = Path(args.level_file)
-    lock = Lock(load_level(path))
+    lock = Lock(load_level(path, number_of_picks=args.number_of_picks, max_height=args.max_height))
 
     def run_game():
         lock_copy = Lock(lock.level.copy())

@@ -35,8 +35,8 @@ class Level:
                 warnings.warn(f"Group {group} doesn't have a master tumbler")
 
     @staticmethod
-    def default() -> "Level":
-        return Level(NUMBER_OF_PICKS, MAX_HEIGHT, [], {})
+    def create(number_of_picks: int = NUMBER_OF_PICKS, max_height: int = MAX_HEIGHT) -> "Level":
+        return Level(number_of_picks, max_height, [], {})
 
     def copy(self) -> "Level":
         tumblers = [tumbler.copy() for tumbler in self.tumblers]
