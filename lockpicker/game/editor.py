@@ -222,7 +222,7 @@ class Editor(BaseGame):
 
     def draw_transparent_tumbler(self):
         position = (self.mouse_pos[0] - X_OFFSET) // (BAR_WIDTH + BAR_OFFSET)
-        if position < 0:
+        if position < 0 or self.binding_initial is not None or self.dragging_tumbler is not None:
             return
 
         upper = self.mouse_pos[1] < HEIGHT // 2
@@ -251,7 +251,6 @@ class Editor(BaseGame):
             if tumbler.upper:
                 h = height * self.scale
                 y = h
-
             else:
                 h = height * self.scale
                 y = HEIGHT - h - p
