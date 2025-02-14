@@ -26,12 +26,14 @@ from lockpicker.tumbler import Tumbler
 class BaseGame:
     def __init__(self, screen: pygame.surface.Surface, lock: Lock):
         self.screen = screen
-        self.lock = lock
         self.running = False
-        self.screen = self.init_pygame()
+
+        self.lock = lock
+
         self.mouse_pos = None
         self.mouse_pressed = (False, False, False)
         self.mouse_was_pressed = (False, False, False)
+
         self.highlighted = None
         self.animation = 0.0
         self.animation_items = {}

@@ -67,13 +67,13 @@ class Editor(BaseGame):
         if self.undo_history:
             self.redo_history.append(self.lock.level.serialize())
             state = self.undo_history.pop()
-            self.lock.level = Level.deserialize(state)
+            self.lock.level = self.lock.level.deserialize(state)
 
     def redo(self):
         if self.redo_history:
             self.undo_history.append(self.lock.level.serialize())
             state = self.redo_history.pop()
-            self.lock.level = Level.deserialize(state)
+            self.lock.level = self.lock.level.deserialize(state)
 
     def gather_events(self):
         for event in pygame.event.get():

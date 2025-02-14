@@ -141,12 +141,11 @@ class Level:
 
         return bindings
 
-    @staticmethod
-    def deserialize(data: Tuple[bytes, ...]):
+    def deserialize(self, data: Tuple[bytes, ...]) -> "Level":
         number_of_picks_data, max_height_data, tumblers_data, bindings_data = data
         number_of_picks = struct.unpack("I", number_of_picks_data)[0]
         max_height = struct.unpack("I", max_height_data)[0]
-        tumblers = Level.deserialize_tumblers(tumblers_data)
+        tumblers = Level.deserialize_tumblers(tumblers_data, self.max_height)
         bindings = Level.deserialize_bindings(bindings_data)
         return Level(number_of_picks, max_height, tumblers, bindings)
 

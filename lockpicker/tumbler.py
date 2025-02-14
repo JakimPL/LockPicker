@@ -101,6 +101,7 @@ class Tumbler:
     @height.setter
     def height(self, height: int):
         self._height = height
+        self._recalculate_current_height()
 
     @property
     def position(self) -> int:
