@@ -40,6 +40,7 @@ class Editor(BaseGame):
 
         self.undo_history = deque()
         self.redo_history = deque()
+        self.save_state()
 
     def frame(self):
         self.gather_events()
@@ -56,8 +57,11 @@ class Editor(BaseGame):
         pygame.display.flip()
 
     def save_state(self):
-        self.undo_history.append(self.lock.level.serialize())
-        self.redo_history.clear()
+        last_state = self.undo_history[-1] if self.undo_history else None
+        state = self.lock.level.serialize()
+        if last_state != state:
+            self.undo_history.append(state)
+            self.redo_history.clear()
 
     def undo(self):
         if self.undo_history:
