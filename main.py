@@ -27,6 +27,7 @@ def main():
     parser = argparse.ArgumentParser(description="Load a level from a file.")
     parser.add_argument("level_file", type=str, help="Path to the level file")
     parser.add_argument("--edit", action="store_true", help="Run the level editor")
+    parser.add_argument("--random_moves", action="store_true", help="Plays random moves")
     parser.add_argument("--number_of_picks", type=int, default=NUMBER_OF_PICKS, help="Number of picks (at least 1)")
     parser.add_argument("--max_height", type=int, default=MAX_HEIGHT, help="Maximum height (at least 2)")
     args = parser.parse_args()
@@ -36,7 +37,7 @@ def main():
 
     def run_game():
         lock_copy = Lock(lock.level.copy())
-        game = Game(screen, lock_copy)
+        game = Game(screen, lock_copy, random_moves=args.random_moves)
         game.run()
 
     pygame.init()

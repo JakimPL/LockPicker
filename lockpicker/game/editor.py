@@ -86,6 +86,8 @@ class Editor(BaseGame):
                 if event.button == 3:
                     self.cancel_binding()
             if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    self.terminate()
                 if event.key == pygame.K_b:
                     self.handle_binding_key()
                 if event.key == pygame.K_m:

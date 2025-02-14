@@ -56,7 +56,10 @@ class BaseGame:
     def gather_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                self.running = False
+                self.terminate()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    self.terminate()
 
     def get_mouse_state(self):
         self.mouse_pos = pygame.mouse.get_pos()
@@ -170,6 +173,5 @@ class BaseGame:
 
         return height
 
-    @staticmethod
-    def terminate():
-        pygame.quit()
+    def terminate(self):
+        self.running = False

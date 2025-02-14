@@ -50,7 +50,6 @@ class Tumbler:
         self._release = False
         self._jammed = True
         self._pushed = True
-        self._recalculate_current_height()
 
     def push(self):
         self._release = False
@@ -60,7 +59,6 @@ class Tumbler:
     def unjam(self):
         self._release = False
         self._jammed = False
-        self._recalculate_current_height()
 
     def release(self, direct: bool = False):
         self._jammed = False
@@ -135,16 +133,16 @@ class Tumbler:
 
     @post_release_height.setter
     def post_release_height(self, height: int):
-        self._post_release_height = round(height)
+        self._post_release_height = height
 
     @property
     def difference(self) -> int:
         return self._difference
 
-    @difference.setter
-    def difference(self, difference: int):
+    def set_difference(self, difference: int, recalculate: bool = True):
         self._difference = difference
-        self._recalculate_current_height()
+        if recalculate:
+            self._recalculate_current_height()
 
     @property
     def max_height(self) -> int:

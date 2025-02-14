@@ -72,6 +72,9 @@ class Lock:
     def change_current_pick(self):
         self._current_pick = (self._current_pick + 1) % self.level.number_of_picks
 
+    def select_pick(self, pick: int):
+        self._current_pick = pick
+
     def get_tumbler(self, position: int, upper: bool) -> Optional[Tumbler]:
         return self._positions.get(position, {}).get(upper)
 
@@ -163,7 +166,7 @@ class Lock:
                 jammed = True
 
             if not jammed:
-                tumb.difference = difference if tumbler.pushed else 0
+                tumb.set_difference(difference if tumbler.pushed else 0, pushed)
                 if pushed and not tumbler.jammed:
                     tumb.release()
 
