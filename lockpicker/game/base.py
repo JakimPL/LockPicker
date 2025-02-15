@@ -152,7 +152,8 @@ class BaseGame:
         pygame.draw.rect(shape_surface, color, rect)
         self.screen.blit(shape_surface, (0, 0))
 
-    def get_tumbler_x(self, position: int) -> int:
+    @staticmethod
+    def get_tumbler_x(position: int) -> int:
         return position * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET + BAR_WIDTH // 2
 
     def get_tumbler_y(self, upper: bool, height: int) -> int:

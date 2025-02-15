@@ -43,6 +43,7 @@ class Game(BaseGame):
             pick = random.choice(range(self.lock.level.number_of_picks))
             self.lock.select_pick(pick)
             self.lock.push(*move)
+            print(pick, *move)
 
     def animation_frame(self) -> bool:
         if self.animation_items:
@@ -57,9 +58,10 @@ class Game(BaseGame):
 
     def handle_selected_tumbler(self):
         if self.mouse_pressed[0] and not self.mouse_was_pressed[0]:
-            self.lock.release_current_pick()
             if self.highlighted is not None:
                 self.lock.push(*self.highlighted)
+            else:
+                self.lock.release_current_pick()
 
     def toggle_current_pick(self):
         if self.mouse_pressed[2] and not self.mouse_was_pressed[2]:

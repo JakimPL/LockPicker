@@ -16,7 +16,6 @@ from lockpicker.constants.gui import (
     X_OFFSET,
 )
 from lockpicker.game.base import BaseGame
-from lockpicker.level import Level
 from lockpicker.lock import Lock
 from lockpicker.tumbler import Tumbler
 
@@ -280,7 +279,8 @@ class Editor(BaseGame):
                 intermediate_y = self.get_tumbler_y(end_up, end_tumbler.height)
                 end_x = self.get_tumbler_x(end_pos)
                 end_y = intermediate_y + self.scale * (difference if end_up else -difference)
-                self.draw_arrow(start_x, start_y, intermediate_y, end_x, end_y)
+                alpha = 255 if self.is_tumbler_bound(start_pos, start_up, end_pos, end_up) else None
+                self.draw_arrow(start_x, start_y, intermediate_y, end_x, end_y, alpha=alpha)
 
     def draw_binding_arrow(self):
         if self.binding_target is not None or self.binding_initial is not None and self.highlighted is not None:
@@ -295,22 +295,27 @@ class Editor(BaseGame):
             end_x = self.get_tumbler_x(end_pos)
             end_y = self.get_tumbler_y(end_up, end_tumbler.height)
             if self.binding_target is None:
-                self.draw_arrow(start_x, start_y, end_y, end_x, end_y)
+                alpha = 255 if self.binding_initial is not None else None
+                self.draw_arrow(start_x, start_y, end_y, end_x, end_y, alpha=alpha)
             else:
                 intermediate_y = end_y
                 difference = self.calculate_difference(end_pos, end_up)
                 end_y += difference * self.scale if end_up else -difference * self.scale
-                self.draw_arrow(start_x, start_y, intermediate_y, end_x, end_y)
+                self.draw_arrow(start_x, start_y, intermediate_y, end_x, end_y, alpha=255)
 
-    def draw_arrow(self, start_x: int, start_y: int, intermediate_y: int, end_x: int, end_y: int):
+    def draw_arrow(
+        self, start_x: int, start_y: int, intermediate_y: int, end_x: int, end_y: int, alpha: Optional[int] = None
+    ):
+        alpha = 64 if alpha is None else alpha
         if start_x == end_x and start_y == intermediate_y:
             return
 
-        pygame.draw.line(self.screen, ARROW_COLOR, (start_x, start_y), (end_x, intermediate_y), ARROW_WIDTH)
-        pygame.draw.line(self.screen, ARROW_COLOR, (end_x, intermediate_y), (end_x, end_y), ARROW_WIDTH)
-        pygame.draw.line(
-            self.screen, ARROW_COLOR, (end_x - ARROW_SIZE, end_y), (end_x + ARROW_SIZE, end_y), ARROW_WIDTH
-        )
+        color = (*ARROW_COLOR, alpha)
+        surface = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
+        pygame.draw.line(surface, color, (start_x, start_y), (end_x, intermediate_y), ARROW_WIDTH)
+        pygame.draw.line(surface, color, (end_x, intermediate_y), (end_x, end_y), ARROW_WIDTH)
+        pygame.draw.line(surface, color, (end_x - ARROW_SIZE, end_y), (end_x + ARROW_SIZE, end_y), ARROW_WIDTH)
+        self.screen.blit(surface, (0, 0))
 
     def calculate_difference(self, position: int, upper: bool) -> int:
         tumbler = self.lock.get_tumbler(position, upper)
@@ -328,6 +333,9 @@ class Editor(BaseGame):
             max_height -= counter.base_height
 
         return max(1, min(height, max_height))
+
+    def is_tumbler_bound(self, start_pos: int, start_up: bool, end_pos: int, end_up: bool):
+        return (start_pos, start_up) == self.highlighted or (end_pos, end_up) == self.highlighted
 
     def save_level(self):
         self.lock.level.save(self.path)

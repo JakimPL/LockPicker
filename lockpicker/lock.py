@@ -20,6 +20,7 @@ class Lock:
     def push(self, position: int, upper: bool):
         tumbler = self.get_tumbler(position, upper)
         if self._can_push_tumbler(tumbler):
+            self.release_current_pick()
             self._push_tumbler(tumbler)
 
     def release_current_pick(self):
@@ -166,7 +167,7 @@ class Lock:
                 jammed = True
 
             if not jammed:
-                tumb.set_difference(difference if tumbler.pushed else 0, pushed)
+                tumb.set_difference(difference if tumbler.pushed else 0, not tumbler.jammed)
                 if pushed and not tumbler.jammed:
                     tumb.release()
 
@@ -182,7 +183,7 @@ class Lock:
             for tumb in self._groups[tumbler.group]:
                 height = tumb.height
                 tumb.jam()
-                tumb.difference = 0
+                tumb.set_difference(0)
                 self._add_change(tumb, height)
 
     def _release_tumbler(self, position: int, upper: bool):

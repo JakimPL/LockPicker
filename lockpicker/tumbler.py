@@ -154,7 +154,7 @@ class Tumbler:
 
     @counter.setter
     def counter(self, counter: Optional["Tumbler"]):
-        if not isinstance(counter, Tumbler) and not counter is None:
+        if not isinstance(counter, Tumbler) and counter is not None:
             raise ValueError(f"Counter must be a Tumbler instance")
         self._counter = counter
         self._recalculate_current_height()
