@@ -60,6 +60,8 @@ class BaseGame:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     self.terminate()
+                if event.key == pygame.K_r:
+                    self.lock.reset()
 
     def get_mouse_state(self):
         self.mouse_pos = pygame.mouse.get_pos()

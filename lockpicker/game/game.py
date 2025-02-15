@@ -1,5 +1,3 @@
-import random
-
 import pygame
 
 from lockpicker.constants.gui import ANIMATION_SPEED
@@ -34,16 +32,7 @@ class Game(BaseGame):
             self.handle_selected_tumbler()
             self.animation_items = self.lock.get_recent_changes()
             if self.random_moves:
-                self.play_random_move()
-
-    def play_random_move(self):
-        moves = self.lock.get_possible_moves()
-        if moves:
-            move = random.choice(moves)
-            pick = random.choice(range(self.lock.level.number_of_picks))
-            self.lock.select_pick(pick)
-            self.lock.push(*move)
-            print(pick, *move)
+                self.lock.play_random_move()
 
     def animation_frame(self) -> bool:
         if self.animation_items:

@@ -1,3 +1,4 @@
+import random
 from collections import defaultdict
 from typing import DefaultDict, Dict, List, Optional, Tuple
 
@@ -8,6 +9,7 @@ from lockpicker.tumbler import Tumbler
 class Lock:
     def __init__(self, level: Level):
         self._level = level
+        self._level_copy = level.copy()
         self._validate_level()
 
         self._groups = self._create_groups()
@@ -46,6 +48,17 @@ class Lock:
         changes = self.changes.copy()
         self.changes.clear()
         return {(pos, up): (start, end) for pos, up, start, end in changes}
+
+    def reset(self):
+        self.level = self._level_copy
+
+    def play_random_move(self):
+        moves = self.get_possible_moves()
+        if moves:
+            move = random.choice(moves)
+            pick = random.choice(range(self.level.number_of_picks))
+            self.select_pick(pick)
+            self.push(*move)
 
     def check_win(self) -> bool:
         for items in self._positions.values():
@@ -263,5 +276,6 @@ class Lock:
     @level.setter
     def level(self, level: Level):
         self._level = level
+        self._level_copy = level.copy()
         self._level.validate()
         self._initialize_state()

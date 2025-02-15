@@ -64,12 +64,14 @@ class Editor(BaseGame):
 
     def undo(self):
         if self.undo_history:
+            self.reset_selections()
             self.redo_history.append(self.lock.level.serialize())
             state = self.undo_history.pop()
             self.lock.level = self.lock.level.deserialize(state)
 
     def redo(self):
         if self.redo_history:
+            self.reset_selections()
             self.undo_history.append(self.lock.level.serialize())
             state = self.redo_history.pop()
             self.lock.level = self.lock.level.deserialize(state)
@@ -342,6 +344,13 @@ class Editor(BaseGame):
             highlighted = (start_pos, start_up) == self.highlighted or (end_pos, end_up) == self.highlighted
 
         return highlighted
+
+    def reset_selections(self):
+        self.highlighted = None
+        self.binding_initial = None
+        self.binding_target = None
+        self.dragging_tumbler = None
+        self.initial_height = None
 
     def save_level(self):
         self.lock.level.save(self.path)
