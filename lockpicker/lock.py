@@ -19,8 +19,8 @@ class Lock:
 
     def push(self, position: int, upper: bool):
         tumbler = self.get_tumbler(position, upper)
+        self.release_current_pick()
         if self._can_push_tumbler(tumbler):
-            self.release_current_pick()
             self._push_tumbler(tumbler)
 
     def release_current_pick(self):

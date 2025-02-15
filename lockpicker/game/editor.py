@@ -294,8 +294,8 @@ class Editor(BaseGame):
 
             end_x = self.get_tumbler_x(end_pos)
             end_y = self.get_tumbler_y(end_up, end_tumbler.height)
+            alpha = 255 if self.is_tumbler_bound(start_pos, start_up, end_pos, end_up) else None
             if self.binding_target is None:
-                alpha = 255 if self.binding_initial is not None else None
                 self.draw_arrow(start_x, start_y, end_y, end_x, end_y, alpha=alpha)
             else:
                 intermediate_y = end_y
@@ -335,7 +335,13 @@ class Editor(BaseGame):
         return max(1, min(height, max_height))
 
     def is_tumbler_bound(self, start_pos: int, start_up: bool, end_pos: int, end_up: bool):
-        return (start_pos, start_up) == self.highlighted or (end_pos, end_up) == self.highlighted
+        if self.binding_initial is not None:
+            target = self.binding_target if self.binding_target is not None else self.highlighted
+            highlighted = (start_pos, start_up) == self.binding_initial and (end_pos, end_up) == target
+        else:
+            highlighted = (start_pos, start_up) == self.highlighted or (end_pos, end_up) == self.highlighted
+
+        return highlighted
 
     def save_level(self):
         self.lock.level.save(self.path)
