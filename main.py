@@ -3,8 +3,8 @@ from pathlib import Path
 from typing import Optional
 
 import pygame
-from random_player import play_random_games
 
+from lockpicker.agents.random import play_random_games
 from lockpicker.constants.gui import HEIGHT, WIDTH
 from lockpicker.game.editor import Editor
 from lockpicker.game.game import Game
@@ -31,13 +31,13 @@ def main():
     parser.add_argument("--random_moves", action="store_true", help="Plays random moves")
     parser.add_argument("--number_of_picks", type=int, default=NUMBER_OF_PICKS, help="Number of picks (at least 1)")
     parser.add_argument("--max_height", type=int, default=MAX_HEIGHT, help="Maximum height (at least 2)")
-    parser.add_argument("--disable_gui", action="store_true", help="Disable the GUI")
+    parser.add_argument("--random_agent", action="store_true", help="Random simulation agent")
     args = parser.parse_args()
 
     path = Path(args.level_file)
     lock = Lock(load_level(path, number_of_picks=args.number_of_picks, max_height=args.max_height))
 
-    if args.disable_gui:
+    if args.random_agent:
         print(play_random_games(lock))
         return
 
