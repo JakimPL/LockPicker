@@ -54,7 +54,7 @@ class Game(BaseGame):
     def handle_selected_tumbler(self):
         if self.mouse_pressed[0] and not self.mouse_was_pressed[0]:
             if self.highlighted is not None:
-                self.lock.push(*self.highlighted)
+                self.lock.push(self.highlighted)
             else:
                 self.lock.release_current_pick()
 

@@ -1,14 +1,15 @@
 import struct
 from typing import Optional
 
+from lockpicker.location import Location
+
 
 class Tumbler:
     struct_format = "i?iii?"
 
     def __init__(
         self,
-        position: int,
-        upper: bool,
+        location: Location,
         group: int,
         height: int,
         max_height: int,
@@ -16,8 +17,7 @@ class Tumbler:
         master: bool = False,
         counter: Optional["Tumbler"] = None,
     ):
-        self._position = position
-        self._upper = upper
+        self._location = location
         self._group = group
         self._master = master
         self._height = height
@@ -32,12 +32,11 @@ class Tumbler:
         self._counter = counter
 
     def __repr__(self) -> str:
-        return f"Tumbler({self.position}, {self.upper}, {self.group}, {self.height}, master={self.master})"
+        return f"Tumbler({self.location.position}, {self.location.upper}, {self.group}, {self.height}, master={self.master})"
 
     def copy(self) -> "Tumbler":
         return Tumbler(
-            self.position,
-            self.upper,
+            self.location,
             self.group,
             self.base_height,
             self.max_height,
@@ -102,12 +101,16 @@ class Tumbler:
         self._recalculate_current_height()
 
     @property
+    def location(self) -> Location:
+        return self._location
+
+    @property
     def position(self) -> int:
-        return self._position
+        return self._location.position
 
     @property
     def upper(self) -> bool:
-        return self._upper
+        return self._location.upper
 
     @property
     def group(self) -> int:
@@ -170,7 +173,11 @@ class Tumbler:
             self.master,
         )
 
+    @property
+    def free(self) -> bool:
+        return self.height <= 1
+
     @classmethod
     def deserialize(cls, data: bytes, max_height: int) -> "Tumbler":
         position, upper, group, height, post_release_height, master = struct.unpack(cls.struct_format, data)
-        return Tumbler(position, upper, group, height, max_height, post_release_height, master)
+        return Tumbler(Location(position, upper), group, height, max_height, post_release_height, master)

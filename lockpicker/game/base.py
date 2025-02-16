@@ -19,6 +19,7 @@ from lockpicker.constants.gui import (
     WIDTH,
     X_OFFSET,
 )
+from lockpicker.location import Location
 from lockpicker.lock import Lock
 from lockpicker.tumbler import Tumbler
 
@@ -78,14 +79,13 @@ class BaseGame:
 
     def draw_tumblers(self):
         self.highlighted = None
-        for position, items in self.lock.get_tumblers_by_position().items():
-            for upper, tumbler in items.items():
-                if tumbler is not None:
-                    bounds = self.get_tumbler_bounds(tumbler)
-                    highlighted = self.is_mouse_hovering_tumbler(tumbler, bounds)
-                    self.draw_tumbler(tumbler, bounds, highlighted)
-                    if highlighted:
-                        self.highlighted = position, upper
+        for location, tumbler in self.lock.get_tumblers_by_location().items():
+            if tumbler is not None:
+                bounds = self.get_tumbler_bounds(tumbler)
+                highlighted = self.is_mouse_hovering_tumbler(tumbler, bounds)
+                self.draw_tumbler(tumbler, bounds, highlighted)
+                if highlighted:
+                    self.highlighted = location
 
     def get_tumbler_bounds(self, tumbler: Tumbler) -> Tuple[int, int, int, int]:
         height = self.get_current_height(tumbler)
@@ -125,14 +125,14 @@ class BaseGame:
             self.draw_pick(pick)
 
     def draw_pick(self, pick: int):
-        index = self.lock.get_pick(pick)
+        location = self.lock.get_pick(pick)
         alpha = 255 if pick == self.lock.current_pick else 160
-        if index is None:
+        if location is None:
             x = PICK_IDLE_OFFSET
             y = HEIGHT // 2 + PICK_DISCREPANCY * (pick - self.lock.level.number_of_picks / 2 + 0.5)
         else:
-            position, upper = index
-            tumbler = self.lock.get_tumbler(position, upper)
+            position, upper = location
+            tumbler = self.lock.get_tumbler(location)
             height = self.get_current_height(tumbler)
 
             h = height * self.scale
@@ -158,18 +158,18 @@ class BaseGame:
         self.screen.blit(shape_surface, (0, 0))
 
     @staticmethod
-    def get_tumbler_x(position: int) -> int:
-        return position * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET + BAR_WIDTH // 2
+    def get_tumbler_x(location: Location) -> int:
+        return location.position * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET + BAR_WIDTH // 2
 
-    def get_tumbler_y(self, upper: bool, height: int) -> int:
-        if upper:
+    def get_tumbler_y(self, location: Location, height: int) -> int:
+        if location.upper:
             return height * self.scale
         else:
             return HEIGHT - height * self.scale
 
     def get_current_height(self, tumbler: Tumbler) -> int:
-        if (tumbler.position, tumbler.upper) in self.current_animation_item:
-            start, end = self.current_animation_item[(tumbler.position, tumbler.upper)]
+        if tumbler.location in self.current_animation_item:
+            start, end = self.current_animation_item[tumbler.location]
             if end > start:
                 height = start + min(self.animation, end - start)
             else:

@@ -6,6 +6,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Dict, List, Tuple, Union
 
+from lockpicker.location import Location
 from lockpicker.tumbler import Tumbler
 
 MAX_HEIGHT = 11
@@ -17,7 +18,7 @@ class Level:
     number_of_picks: int
     max_height: int
     tumblers: List[Tumbler]
-    bindings: Dict[Tuple[int, bool], Dict[Tuple[int, bool], int]]
+    bindings: Dict[Location, Dict[Location, int]]
 
     def __post_init__(self):
         self._assign_counters()
@@ -26,7 +27,7 @@ class Level:
         assert all(tumbler.position >= 0 for tumbler in self.tumblers)
         assert all(0 < tumbler.base_height < self.max_height for tumbler in self.tumblers)
 
-        tumblers = {(tumbler.group, tumbler.upper, tumbler.position) for tumbler in self.tumblers}
+        tumblers = {(tumbler.group, tumbler.location) for tumbler in self.tumblers}
         assert len(tumblers) == len(self.tumblers)
 
         master_groups = defaultdict(list)
@@ -43,7 +44,7 @@ class Level:
 
     def copy(self) -> "Level":
         tumblers = [tumbler.copy() for tumbler in self.tumblers]
-        bindings = {position: bindings.copy() for position, bindings in self.bindings.items()}
+        bindings = {location: bindings.copy() for location, bindings in self.bindings.items()}
         return Level(
             self.number_of_picks,
             self.max_height,
@@ -51,25 +52,24 @@ class Level:
             bindings,
         )
 
-    def add_binding(self, initial_pos: int, initial_up: bool, target_pos: int, target_up: bool, difference: int):
+    def add_binding(self, initial_location: Location, target_location: Location, difference: int):
         if difference != 0:
-            key = (initial_pos, initial_up)
-            if key not in self.bindings:
-                self.bindings[key] = {(target_pos, target_up): difference}
+            if initial_location not in self.bindings:
+                self.bindings[initial_location] = {target_location: difference}
             else:
-                self.bindings[key][(target_pos, target_up)] = difference
+                self.bindings[initial_location][target_location] = difference
 
     def add_tumbler(self, tumbler: Tumbler):
         self.tumblers.append(tumbler)
 
     def remove_tumbler(self, tumbler: Tumbler):
-        position, upper = tumbler.position, tumbler.upper
+        location = tumbler.location
         bindings = {}
-        for (pos, up), binding in self.bindings.items():
-            if (pos, up) == (position, upper):
+        for loc, binding in self.bindings.items():
+            if loc == location:
                 continue
 
-            bindings[(pos, up)] = {(p, u): d for (p, u), d in binding.items() if p != position or u != upper}
+            bindings[loc] = {l: d for l, d in binding.items() if l != location}
 
         self.bindings = bindings
         self.tumblers.remove(tumbler)
@@ -123,12 +123,12 @@ class Level:
         return tumblers
 
     @staticmethod
-    def deserialize_bindings(data: bytes) -> Dict[Tuple[int, bool], Dict[Tuple[int, bool], int]]:
+    def deserialize_bindings(data: bytes) -> Dict[Location, Dict[Location, int]]:
         bindings_count = struct.unpack("I", data[:4])[0]
         bindings = {}
         offset = 4
         for i in range(bindings_count):
-            position = struct.unpack("I?", data[offset : offset + 5])
+            location = struct.unpack("I?", data[offset : offset + 5])
             offset += 5
             binding_count = struct.unpack("I", data[offset : offset + 4])[0]
             offset += 4
@@ -136,8 +136,8 @@ class Level:
             for _ in range(binding_count):
                 p, u, d = struct.unpack("I?i", data[offset : offset + 12])
                 offset += 12
-                binding[(p, u)] = d
-            bindings[position] = binding
+                binding[Location(p, u)] = d
+            bindings[Location(*location)] = binding
 
         return bindings
 
@@ -166,6 +166,6 @@ class Level:
             return Level(number_of_picks, max_height, tumblers, bindings)
 
     def _assign_counters(self):
-        tumblers = {(tumbler.position, tumbler.upper): tumbler for tumbler in self.tumblers}
-        for (position, upper), tumbler in tumblers.items():
-            tumbler.counter = tumblers.get((position, not upper))
+        tumblers = {tumbler.location: tumbler for tumbler in self.tumblers}
+        for location, tumbler in tumblers.items():
+            tumbler.counter = tumblers.get(location.counter)
