@@ -35,8 +35,11 @@ class BaseGame:
         self.mouse_was_pressed = (False, False, False)
 
         self.highlighted = None
+
         self.animation = 0.0
-        self.animation_items = {}
+        self.animation_items = []
+        self.current_animation_item = {}
+
         self.scale = (HEIGHT - BAR_Y_OFFSET) / self.lock.level.max_height
 
     def run(self):
@@ -61,7 +64,7 @@ class BaseGame:
                 if event.key == pygame.K_ESCAPE:
                     self.terminate()
                 if event.key == pygame.K_r:
-                    self.lock.reset()
+                    self.restart()
 
     def get_mouse_state(self):
         self.mouse_pos = pygame.mouse.get_pos()
@@ -165,8 +168,8 @@ class BaseGame:
             return HEIGHT - height * self.scale
 
     def get_current_height(self, tumbler: Tumbler) -> int:
-        if (tumbler.position, tumbler.upper) in self.animation_items:
-            start, end = self.animation_items[(tumbler.position, tumbler.upper)]
+        if (tumbler.position, tumbler.upper) in self.current_animation_item:
+            start, end = self.current_animation_item[(tumbler.position, tumbler.upper)]
             if end > start:
                 height = start + min(self.animation, end - start)
             else:
@@ -175,6 +178,11 @@ class BaseGame:
             height = tumbler.height
 
         return height
+
+    def restart(self):
+        self.lock.reset()
+        self.animation_items = []
+        self.current_animation_item = {}
 
     def terminate(self):
         self.running = False

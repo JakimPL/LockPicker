@@ -30,20 +30,26 @@ class Game(BaseGame):
         self.toggle_current_pick()
         if not self.animation_frame():
             self.handle_selected_tumbler()
-            self.animation_items = self.lock.get_recent_changes()
             if self.random_moves:
                 self.lock.play_random_move()
+            self.animation_items = self.lock.get_recent_changes()
 
     def animation_frame(self) -> bool:
-        if self.animation_items:
+        if self.animation_items or self.current_animation_item:
             self.animation += ANIMATION_SPEED
-            if self.animation >= self.get_max_animation_value():
+            if self.current_animation_item and self.animation >= self.get_max_animation_value():
+                self.current_animation_item = {}
+
+            if self.animation_items and not self.current_animation_item:
+                self.current_animation_item = self.animation_items.pop()
                 self.animation = 0.0
-                self.animation_items = {}
-        return bool(self.animation_items)
+
+            return True
+
+        return False
 
     def get_max_animation_value(self) -> int:
-        return max(abs(end - start) for start, end in self.animation_items.values())
+        return max(abs(end - start) for start, end in self.current_animation_item.values())
 
     def handle_selected_tumbler(self):
         if self.mouse_pressed[0] and not self.mouse_was_pressed[0]:

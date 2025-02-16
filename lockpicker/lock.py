@@ -17,7 +17,7 @@ class Lock:
         self._picks = self._create_picks()
 
         self._current_pick = 0
-        self.changes = []
+        self._states = [self._get_state()]
 
     def push(self, position: int, upper: bool):
         tumbler = self.get_tumbler(position, upper)
@@ -44,10 +44,20 @@ class Lock:
     def add_binding(self, initial_pos: int, initial_up: bool, target_pos: int, target_up: bool, difference: int):
         self.level.add_binding(initial_pos, initial_up, target_pos, target_up, difference)
 
-    def get_recent_changes(self) -> Dict[Tuple[int, bool], Tuple[int, int]]:
-        changes = self.changes.copy()
-        self.changes.clear()
-        return {(pos, up): (start, end) for pos, up, start, end in changes}
+    def get_recent_changes(self) -> List[Dict[Tuple[int, bool], Tuple[int, int]]]:
+        changes = []
+        for i in range(len(self._states) - 1):
+            current_state = self._states[i]
+            next_state = self._states[i + 1]
+            state_changes = {}
+            for (pos, up), height in current_state.items():
+                state_changes[(pos, up)] = (height, next_state.get((pos, up)))
+
+            if state_changes:
+                changes.append(state_changes)
+
+        self._states = [self._states[-1]]
+        return list(reversed(changes))
 
     def reset(self):
         self.level = self._level_copy
@@ -104,7 +114,7 @@ class Lock:
         self._picks = self._create_picks()
 
         self._current_pick = 0
-        self.changes = []
+        self._states = [self._get_state()]
 
     def _create_groups(self):
         groups = defaultdict(list)
@@ -134,7 +144,6 @@ class Lock:
     def _push_tumbler(self, tumbler: Tumbler):
         position = tumbler.position
         upper = tumbler.upper
-        height = tumbler.height
         self._set_current_pick(position, upper)
         if tumbler.jammed:
             tumbler.unjam()
@@ -143,9 +152,17 @@ class Lock:
         tumbler.unjam()
         tumbler.push()
 
-        self._add_change(tumbler, height)
         self._apply_bindings_iteratively(position, upper, pushed=True)
+        self._add_current_state()
         self._apply_master_tumbler(tumbler)
+
+    def _release_tumbler(self, position: int, upper: bool):
+        tumbler = self._positions[position][upper]
+        if not tumbler.jammed and not self._get_other_picks(position, upper):
+            tumbler.release(direct=True)
+
+        self._apply_bindings_iteratively(position, upper, False)
+        self._add_current_state()
 
     def _check_previous_tumblers(self, tumbler: Tumbler) -> bool:
         position = tumbler.position
@@ -162,9 +179,17 @@ class Lock:
 
         return True
 
-    def _add_change(self, tumbler: Tumbler, height: int):
-        if tumbler.height != height:
-            self.changes.append((tumbler.position, tumbler.upper, height, tumbler.height))
+    def _get_state(self):
+        state = {}
+        for position, items in self._positions.items():
+            for upper, tumbler in items.items():
+                if tumbler is not None:
+                    state[(position, upper)] = tumbler.height
+
+        return state
+
+    def _add_current_state(self):
+        self._states.append(self._get_state())
 
     def _apply_bindings(self, position: int, upper: bool, pushed: bool):
         tumbler = self._positions[position][upper]
@@ -172,7 +197,6 @@ class Lock:
         for (pos, up), difference in binding.items():
             picks = self._get_other_picks(pos, up)
             tumb = self._positions[pos][up]
-            height = tumb.height
 
             jammed = False
             if picks and pushed:
@@ -184,29 +208,19 @@ class Lock:
                 if pushed and not tumbler.jammed:
                     tumb.release()
 
-            self._add_change(tumb, height)
-
     def _apply_bindings_iteratively(self, position: int, upper: bool, pushed: bool):
         self._apply_bindings(position, upper, pushed)
         if not self._revise_picks():
+            self._add_current_state()
             self._apply_bindings(position, upper, pushed)
 
     def _apply_master_tumbler(self, tumbler: Tumbler):
         if tumbler.master and tumbler.pushed:
             for tumb in self._groups[tumbler.group]:
-                height = tumb.height
                 tumb.jam()
                 tumb.set_difference(0)
-                self._add_change(tumb, height)
 
-    def _release_tumbler(self, position: int, upper: bool):
-        tumbler = self._positions[position][upper]
-        height = tumbler.height
-        if not tumbler.jammed and not self._get_other_picks(position, upper):
-            tumbler.release(direct=True)
-
-        self._add_change(tumbler, height)
-        self._apply_bindings_iteratively(position, upper, False)
+        self._add_current_state()
 
     def _create_picks(self) -> Dict[int, Optional[Tuple[int, bool]]]:
         return {pick: None for pick in range(self.level.number_of_picks)}
@@ -255,6 +269,7 @@ class Lock:
                     self._apply_bindings(position, upper, False)
                     self._clear_pick(pick)
                     self._release_tumbler(position, upper)
+                    self._add_current_state()
 
         return number_of_revisions == 1
 
