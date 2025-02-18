@@ -18,6 +18,7 @@ from lockpicker.constants.gui import (
 from lockpicker.game.base import BaseGame
 from lockpicker.location import Location
 from lockpicker.lock import Lock
+from lockpicker.tumblers.base import BaseTumbler
 from lockpicker.tumblers.tumbler import Tumbler
 
 
@@ -127,7 +128,8 @@ class Editor(BaseGame):
             self.save_state()
 
     def get_temp_tumbler(self, location: Location, height: int) -> Tumbler:
-        return Tumbler(location, self.current_group, height, self.lock.level.max_height)
+        base = BaseTumbler(location, self.current_group, height, self.lock.level.max_height)
+        return Tumbler(base)
 
     def delete_highlighted_tumbler(self):
         if self.highlighted is not None:
