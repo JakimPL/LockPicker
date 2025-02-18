@@ -18,7 +18,7 @@ from lockpicker.constants.gui import (
 from lockpicker.game.base import BaseGame
 from lockpicker.location import Location
 from lockpicker.lock import Lock
-from lockpicker.tumbler import Tumbler
+from lockpicker.tumblers.tumbler import Tumbler
 
 
 class Editor(BaseGame):
@@ -132,7 +132,7 @@ class Editor(BaseGame):
     def delete_highlighted_tumbler(self):
         if self.highlighted is not None:
             tumbler = self.lock.get_tumbler(self.highlighted)
-            self.lock.delete_tumbler(tumbler)
+            self.lock.remove_tumbler(tumbler)
             self.highlighted = None
             self.save_state()
 
@@ -140,7 +140,8 @@ class Editor(BaseGame):
         if self.highlighted is not None:
             tumbler = self.lock.get_tumbler(self.highlighted)
             group_tumblers = self.lock.get_tumblers_by_group()[tumbler.group]
-            for tumb in group_tumblers:
+            for location in group_tumblers:
+                tumb = self.lock.get_tumbler(location)
                 tumb.master = False
 
             tumbler.master = True

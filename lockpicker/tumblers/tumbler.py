@@ -23,13 +23,13 @@ class Tumbler:
         self._height = height
         self._max_height = max_height
         self._post_release_height = post_release_height
+        self._counter = counter
 
-        self._difference = 0
-        self._current_height = height
         self._pushed = False
         self._jammed = False
         self._release = False
-        self._counter = counter
+        self._difference = 0
+        self._current_height = height
 
     def __repr__(self) -> str:
         return f"Tumbler({self.location.position}, {self.location.upper}, {self.group}, {self.height}, master={self.master})"

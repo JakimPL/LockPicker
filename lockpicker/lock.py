@@ -1,10 +1,9 @@
 import random
-from collections import defaultdict
 from typing import Dict, List, Optional, Tuple
 
 from lockpicker.level import Level
 from lockpicker.location import Location
-from lockpicker.tumbler import Tumbler
+from lockpicker.tumblers.tumbler import Tumbler
 
 
 class Lock:
@@ -13,8 +12,6 @@ class Lock:
         self._level_copy = level.copy()
         self._validate_level()
 
-        self._groups = self._create_groups()
-        self._locations = self._create_locations()
         self._picks = self._create_picks()
 
         self._current_pick = 0
@@ -36,10 +33,8 @@ class Lock:
     def add_tumbler(self, tumbler: Tumbler):
         if tumbler not in self.level.tumblers:
             self.level.add_tumbler(tumbler)
-        self._add_tumbler_to_collections(tumbler)
 
-    def delete_tumbler(self, tumbler: Tumbler):
-        self._remove_tumbler_from_collections(tumbler)
+    def remove_tumbler(self, tumbler: Tumbler):
         self.level.remove_tumbler(tumbler)
 
     def add_binding(self, initial_location: Location, target_location: Location, difference: int):
@@ -72,7 +67,7 @@ class Lock:
             self.push(move)
 
     def check_win(self) -> bool:
-        for tumbler in self._locations.values():
+        for tumbler in self._level.tumblers.values():
             if tumbler is not None and not tumbler.free:
                 return False
 
@@ -81,7 +76,7 @@ class Lock:
     def get_possible_moves(self) -> List[Tuple[int, bool]]:
         # TODO: consider state change after each move
         moves = []
-        max_position = max([position for position, upper in self._locations.keys()])
+        max_position = max([position for position, upper in self._level.tumblers])
         for upper in [True, False]:
             for position in reversed(range(max_position + 1)):
                 tumbler = self.get_tumbler(Location(position, upper))
@@ -101,43 +96,18 @@ class Lock:
         self._current_pick = pick
 
     def get_tumbler(self, location: Location) -> Optional[Tumbler]:
-        return self._locations.get(location)
+        return self._level.tumblers.get(location)
 
-    def get_tumblers_by_group(self) -> Dict[int, List[Tumbler]]:
-        return self._groups
+    def get_tumblers_by_group(self) -> Dict[int, List[Location]]:
+        return self._level.groups
 
     def get_tumblers_by_location(self) -> Dict[Location, Optional[Tumbler]]:
-        return self._locations
+        return self._level.tumblers
 
     def _initialize_state(self):
-        self._groups = self._create_groups()
-        self._locations = self._create_locations()
-        self._picks = self._create_picks()
-
         self._current_pick = 0
+        self._picks = self._create_picks()
         self._states = [self._get_state()]
-
-    def _create_groups(self) -> Dict[int, List[Tumbler]]:
-        groups = defaultdict(list)
-        for tumbler in self.level.tumblers:
-            groups[tumbler.group].append(tumbler)
-
-        return dict(groups.items())
-
-    def _create_locations(self) -> Dict[Location, Optional[Tumbler]]:
-        locations = {}
-        for tumbler in self.level.tumblers:
-            locations[tumbler.location] = tumbler
-
-        return locations
-
-    def _add_tumbler_to_collections(self, tumbler: Tumbler):
-        self._groups.setdefault(tumbler.group, []).append(tumbler)
-        self._locations[tumbler.location] = tumbler
-
-    def _remove_tumbler_from_collections(self, tumbler: Tumbler):
-        self._groups[tumbler.group].remove(tumbler)
-        del self._locations[tumbler.location]
 
     def _can_push_tumbler(self, tumbler: Optional[Tumbler]) -> bool:
         return tumbler is not None and self._check_previous_tumblers(tumbler)
@@ -180,7 +150,7 @@ class Lock:
 
     def _get_state(self):
         state = {}
-        for location, tumbler in self._locations.items():
+        for location, tumbler in self._level.tumblers.items():
             if tumbler is not None:
                 state[location] = tumbler.height
 
@@ -214,7 +184,8 @@ class Lock:
 
     def _apply_master_tumbler(self, tumbler: Tumbler):
         if tumbler.master and tumbler.pushed:
-            for tumb in self._groups[tumbler.group]:
+            for location in self._level.groups[tumbler.group]:
+                tumb = self.get_tumbler(location)
                 tumb.jam()
                 tumb.set_difference(0)
 
