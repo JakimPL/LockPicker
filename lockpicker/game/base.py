@@ -64,8 +64,13 @@ class BaseGame:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     self.terminate()
-                if event.key == pygame.K_r:
-                    self.restart()
+                if pygame.key.get_mods() & pygame.KMOD_CTRL:
+                    if event.key == pygame.K_z:
+                        self.undo()
+                    if event.key == pygame.K_y:
+                        self.redo()
+                    if event.key == pygame.K_r:
+                        self.restart()
 
     def get_mouse_state(self):
         self.mouse_pos = pygame.mouse.get_pos()
@@ -181,8 +186,18 @@ class BaseGame:
 
     def restart(self):
         self.lock.reset()
+        self.reset_animation()
+
+    def reset_animation(self):
+        self.animation = 0.0
         self.animation_items = []
         self.current_animation_item = {}
 
     def terminate(self):
         self.running = False
+
+    def undo(self):
+        raise NotImplementedError("undo method must be implemented in child class")
+
+    def redo(self):
+        raise NotImplementedError("redo method must be implemented in child class")

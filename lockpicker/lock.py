@@ -1,7 +1,9 @@
 import random
+from dataclasses import replace
 from typing import Dict, List, Optional, Tuple
 
 from lockpicker.level.level import Level
+from lockpicker.state.state import State
 from lockpicker.tumbler.location import Location
 from lockpicker.tumbler.tumbler import Tumbler
 
@@ -245,6 +247,20 @@ class Lock:
     @property
     def current_pick(self) -> int:
         return self._current_pick
+
+    def get_state(self) -> State:
+        tumblers = tuple((location, replace(tumbler.state)) for location, tumbler in self._level.tumblers.items())
+        picks = tuple((pick, location) for pick, location in self._picks.items())
+        return State(self.current_pick, tumblers, picks)
+
+    def load_state(self, state: State):
+        self._current_pick = state.current_pick
+        for location, tumbler_state in state.tumblers:
+            tumbler = self.get_tumbler(location)
+            tumbler.load_state(tumbler_state)
+
+        for pick, location in state.picks:
+            self._picks[pick] = location
 
     @property
     def level(self) -> Level:

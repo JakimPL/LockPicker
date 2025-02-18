@@ -188,3 +188,7 @@ class Tumbler:
     def deserialize(cls, data: bytes, max_height: int) -> "Tumbler":
         base = BaseTumbler.deserialize(data, max_height)
         return Tumbler(base)
+
+    def load_state(self, state: TumblerState):
+        self._state = state
+        self._recalculate_current_height()

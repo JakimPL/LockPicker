@@ -1,7 +1,7 @@
 import os
 from collections import deque
 from pathlib import Path
-from typing import Callable, Optional, Tuple, Union
+from typing import Callable, Deque, Optional, Tuple, Union
 
 import pygame
 
@@ -16,6 +16,7 @@ from lockpicker.constants.gui import (
     X_OFFSET,
 )
 from lockpicker.game.base import BaseGame
+from lockpicker.level.data import LevelData
 from lockpicker.lock import Lock
 from lockpicker.tumbler.base import BaseTumbler
 from lockpicker.tumbler.location import Location
@@ -38,8 +39,8 @@ class Editor(BaseGame):
         self.run_game_callback = run_game_callback
         self.current_group = 0
 
-        self.undo_history = deque()
-        self.redo_history = deque()
+        self.undo_history: Deque[LevelData] = deque()
+        self.redo_history: Deque[LevelData] = deque()
         self.save_state()
 
     def frame(self):

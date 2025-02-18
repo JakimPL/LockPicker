@@ -1,8 +1,12 @@
+from collections import deque
+from typing import Deque
+
 import pygame
 
 from lockpicker.constants.gui import ANIMATION_SPEED
 from lockpicker.game.base import BaseGame
 from lockpicker.lock import Lock
+from lockpicker.state.state import State
 
 
 class Game(BaseGame):
@@ -11,6 +15,10 @@ class Game(BaseGame):
         self.win = False
         self.loss = False
         self.random_moves = random_moves
+
+        self.undo_history: Deque[State] = deque()
+        self.redo_history: Deque[State] = deque()
+        self.save_state()
 
     def frame(self):
         self.gather_events()
@@ -58,6 +66,8 @@ class Game(BaseGame):
             else:
                 self.lock.release_current_pick()
 
+            self.save_state()
+
     def toggle_current_pick(self):
         if self.mouse_pressed[2] and not self.mouse_was_pressed[2]:
             self.lock.change_current_pick()
@@ -68,3 +78,24 @@ class Game(BaseGame):
             self.running = False
             return True
         return False
+
+    def save_state(self):
+        last_state = self.undo_history[-1] if self.undo_history else None
+        state = self.lock.get_state()
+        if last_state != state:
+            self.undo_history.append(state)
+            self.redo_history.clear()
+
+    def undo(self):
+        if self.undo_history:
+            self.reset_animation()
+            self.redo_history.append(self.lock.get_state())
+            state = self.undo_history.pop()
+            self.lock.load_state(state)
+
+    def redo(self):
+        if self.redo_history:
+            self.reset_animation()
+            self.undo_history.append(self.lock.get_state())
+            state = self.redo_history.pop()
+            self.lock.load_state(state)

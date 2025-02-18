@@ -4,7 +4,7 @@ import struct
 import warnings
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import DefaultDict, Dict, List, Optional, Tuple, Union
+from typing import DefaultDict, Dict, List, Optional, Union
 
 from lockpicker.level import MAX_HEIGHT, NUMBER_OF_PICKS
 from lockpicker.level.data import LevelData
