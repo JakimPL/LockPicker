@@ -1,9 +1,9 @@
 import random
 from typing import Dict, List, Optional, Tuple
 
-from lockpicker.level import Level
-from lockpicker.location import Location
-from lockpicker.tumblers.tumbler import Tumbler
+from lockpicker.level.level import Level
+from lockpicker.tumbler.location import Location
+from lockpicker.tumbler.tumbler import Tumbler
 
 
 class Lock:

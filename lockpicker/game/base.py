@@ -19,9 +19,9 @@ from lockpicker.constants.gui import (
     WIDTH,
     X_OFFSET,
 )
-from lockpicker.location import Location
 from lockpicker.lock import Lock
-from lockpicker.tumblers.tumbler import Tumbler
+from lockpicker.tumbler.location import Location
+from lockpicker.tumbler.tumbler import Tumbler
 
 
 class BaseGame:

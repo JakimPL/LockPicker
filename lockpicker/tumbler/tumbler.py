@@ -1,14 +1,12 @@
 from dataclasses import replace
 from typing import Optional
 
-from lockpicker.location import Location
-from lockpicker.tumblers.base import BaseTumbler
-from lockpicker.tumblers.state import TumblerState
+from lockpicker.tumbler.base import BaseTumbler
+from lockpicker.tumbler.location import Location
+from lockpicker.tumbler.state import TumblerState
 
 
 class Tumbler:
-    struct_format = "i?iii?"
-
     def __init__(
         self,
         base: BaseTumbler,

@@ -1,9 +1,8 @@
 import struct
 from dataclasses import dataclass
 
-from lockpicker.location import Location
-
-STRUCT_FORMAT = "i?iii?"
+from lockpicker.tumbler import STRUCT_FORMAT
+from lockpicker.tumbler.location import Location
 
 
 @dataclass(frozen=True)

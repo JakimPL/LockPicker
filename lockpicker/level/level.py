@@ -6,11 +6,11 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import DefaultDict, Dict, List, Optional, Tuple, Union
 
-from lockpicker.location import Location
-from lockpicker.tumblers.tumbler import Tumbler
-
-MAX_HEIGHT = 11
-NUMBER_OF_PICKS = 2
+from lockpicker.level import MAX_HEIGHT, NUMBER_OF_PICKS
+from lockpicker.level.data import LevelData
+from lockpicker.tumbler import STRUCT_FORMAT
+from lockpicker.tumbler.location import Location
+from lockpicker.tumbler.tumbler import Tumbler
 
 
 @dataclass
@@ -99,12 +99,12 @@ class Level:
 
         return bindings_data
 
-    def serialize(self) -> Tuple[bytes, ...]:
+    def serialize(self) -> LevelData:
         number_of_picks = struct.pack("I", self.number_of_picks)
         max_height = struct.pack("I", self.max_height)
         serialized_tumblers = self.serialize_tumblers()
         serialized_bindings = self.serialize_bindings()
-        return number_of_picks, max_height, serialized_tumblers, serialized_bindings
+        return LevelData(number_of_picks, max_height, serialized_tumblers, serialized_bindings)
 
     def save(self, filepath: Union[str, os.PathLike]):
         with gzip.open(filepath, "wb") as file:
@@ -123,7 +123,7 @@ class Level:
     def deserialize_tumblers(data: bytes, max_height: int) -> Dict[Location, Tumbler]:
         tumblers_count = struct.unpack("I", data[:4])[0]
         tumblers = {}
-        size = struct.calcsize(Tumbler.struct_format)
+        size = struct.calcsize(STRUCT_FORMAT)
         for i in range(tumblers_count):
             tumbler_data = data[4 + i * size : 4 + (i + 1) * size]
             tumbler = Tumbler.deserialize(tumbler_data, max_height)
@@ -150,7 +150,7 @@ class Level:
 
         return bindings
 
-    def deserialize(self, data: Tuple[bytes, ...]) -> "Level":
+    def deserialize(self, data: LevelData) -> "Level":
         number_of_picks_data, max_height_data, tumblers_data, bindings_data = data
         number_of_picks = struct.unpack("I", number_of_picks_data)[0]
         max_height = struct.unpack("I", max_height_data)[0]

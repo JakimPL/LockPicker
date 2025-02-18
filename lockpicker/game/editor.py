@@ -16,10 +16,10 @@ from lockpicker.constants.gui import (
     X_OFFSET,
 )
 from lockpicker.game.base import BaseGame
-from lockpicker.location import Location
 from lockpicker.lock import Lock
-from lockpicker.tumblers.base import BaseTumbler
-from lockpicker.tumblers.tumbler import Tumbler
+from lockpicker.tumbler.base import BaseTumbler
+from lockpicker.tumbler.location import Location
+from lockpicker.tumbler.tumbler import Tumbler
 
 
 class Editor(BaseGame):
