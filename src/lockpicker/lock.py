@@ -9,7 +9,7 @@ from lockpicker.tumbler.tumbler import Tumbler
 
 
 class Lock:
-    def __init__(self, level: Level):
+    def __init__(self, level: Level) -> None:
         self._level = level
         self._level_copy = level.copy()
         self._validate_level()
@@ -53,7 +53,7 @@ class Lock:
             for position in reversed(range(max_position + 1)):
                 tumbler = self.get_tumbler(Location(position, upper))
                 if tumbler is not None and self._check_previous_tumblers(tumbler):
-                    moves.extend([Location(pos, upper) for pos in range(position + 1)])
+                    moves.extend([Location(lower_position, upper) for lower_position in range(position + 1)])
                     break
 
         return moves
@@ -109,11 +109,11 @@ class Lock:
     def _check_previous_tumblers(self, tumbler: Tumbler) -> bool:
         location = tumbler.location
         position = tumbler.position
-        for i in range(position + 1):
-            loc = Location(i, location.upper)
-            tumb = self.get_tumbler(loc)
-            counter = self.get_tumbler(loc.counter)
-            if tumb is not None and i < position and not tumb.free:
+        for index in range(position + 1):
+            previous_location = Location(index, location.upper)
+            previous_tumbler = self.get_tumbler(previous_location)
+            counter = self.get_tumbler(previous_location.counter)
+            if previous_tumbler is not None and index < position and not previous_tumbler.free:
                 return False
             if counter is not None and tumbler.height + counter.height >= self.level.max_height:
                 return False
@@ -133,19 +133,19 @@ class Lock:
     def _apply_bindings(self, location: Location, pushed: bool) -> None:
         tumbler = self._require_tumbler(location)
         binding = self.level.bindings.get(location, {})
-        for loc, difference in binding.items():
-            picks = self._picks.other_picks(loc)
-            tumb = self._require_tumbler(loc)
+        for target_location, difference in binding.items():
+            picks = self._picks.other_picks(target_location)
+            target_tumbler = self._require_tumbler(target_location)
 
             jammed = False
             if picks and pushed:
-                tumb.jam()
+                target_tumbler.jam()
                 jammed = True
 
             if not jammed:
-                tumb.set_difference(difference if tumbler.pushed else 0, recalculate=not tumbler.jammed)
+                target_tumbler.set_difference(difference if tumbler.pushed else 0, recalculate=not tumbler.jammed)
                 if pushed and not tumbler.jammed:
-                    tumb.release()
+                    target_tumbler.release()
 
     def _apply_bindings_iteratively(self, location: Location, pushed: bool) -> None:
         self._apply_bindings(location, pushed)
@@ -156,9 +156,9 @@ class Lock:
     def _apply_master_tumbler(self, tumbler: Tumbler) -> None:
         if tumbler.master and tumbler.pushed:
             for location in self._level.get_group(tumbler.group):
-                tumb = self._require_tumbler(location)
-                tumb.jam()
-                tumb.set_difference(0)
+                group_tumbler = self._require_tumbler(location)
+                group_tumbler.jam()
+                group_tumbler.set_difference(0)
 
         self._add_current_state()
 
@@ -166,9 +166,9 @@ class Lock:
         location = self._picks.get(pick)
         if location is not None:
             position, upper = location
-            for pos in range(position):
-                loc = Location(pos, upper)
-                tumbler = self.get_tumbler(loc)
+            for lower_position in range(position):
+                lower_location = Location(lower_position, upper)
+                tumbler = self.get_tumbler(lower_location)
                 if tumbler is not None and not tumbler.free:
                     return False
 

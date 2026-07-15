@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Tuple, Union
 
 from lockpicker.game.animation import compute_animation_steps
 from lockpicker.level.level import Level
@@ -23,8 +23,8 @@ def _key(location: Location) -> str:
     return f"{location.position}:{int(location.upper)}"
 
 
-def scripted_moves(level: Level) -> List[tuple[str, object]]:
-    moves: List[tuple[str, object]] = []
+def scripted_moves(level: Level) -> List[Tuple[str, Union[int, Location]]]:
+    moves: List[Tuple[str, Union[int, Location]]] = []
     for pick in range(level.number_of_picks):
         moves.append(("select", pick))
         for location in sorted(level.tumblers.keys()):
@@ -33,13 +33,13 @@ def scripted_moves(level: Level) -> List[tuple[str, object]]:
     return moves
 
 
-def replay_state(path: Path) -> Dict[str, object]:
+def replay_state(path: Path) -> Dict[str, Union[Dict[str, int], bool]]:
     level = Level.load(path)
     lock = Lock(level)
     for kind, arg in scripted_moves(level):
-        if kind == "select":
+        if kind == "select" and isinstance(arg, int):
             lock.select_pick(arg)
-        else:
+        elif isinstance(arg, Location):
             lock.push(arg)
 
     heights = {_key(loc): tumbler.height for loc, tumbler in sorted(level.tumblers.items())}

@@ -13,9 +13,10 @@ class Tumbler:
         self,
         definition: TumblerDefinition,
         max_height: int,
+        *,
         state: Optional[TumblerState] = None,
         counter: Optional[Tumbler] = None,
-    ):
+    ) -> None:
         self._definition = definition
         self._max_height = max_height
         self._state = TumblerState(definition.height) if state is None else state
@@ -33,8 +34,8 @@ class Tumbler:
         return Tumbler(
             self._definition,
             self._max_height,
-            self._state.copy(),
-            self._counter,
+            state=self._state.copy(),
+            counter=self._counter,
         )
 
     def jam(self) -> None:
@@ -51,7 +52,7 @@ class Tumbler:
         self._state.release = False
         self._state.jammed = False
 
-    def release(self, direct: bool = False) -> None:
+    def release(self, *, direct: bool = False) -> None:
         self._state.jammed = False
         self._state.pushed = False
         self._state.release = direct

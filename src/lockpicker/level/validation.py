@@ -3,10 +3,12 @@ from __future__ import annotations
 import warnings
 from typing import Dict, List, Set, Tuple
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class TumblerSpec(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     position: int = Field(ge=0)
     upper: bool
     group: int = Field(ge=0)
@@ -16,6 +18,8 @@ class TumblerSpec(BaseModel):
 
 
 class BindingSpec(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     initial_position: int = Field(ge=0)
     initial_upper: bool
     target_position: int = Field(ge=0)
@@ -24,6 +28,8 @@ class BindingSpec(BaseModel):
 
 
 class LevelSpec(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     number_of_picks: int = Field(ge=1)
     max_height: int = Field(ge=1)
     tumblers: List[TumblerSpec]

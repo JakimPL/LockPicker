@@ -11,7 +11,7 @@ from lockpicker.tumbler.tumbler import Tumbler
 
 
 class BaseGame:
-    def __init__(self, screen: pygame.surface.Surface, lock: Lock):
+    def __init__(self, screen: pygame.surface.Surface, lock: Lock) -> None:
         self.screen = screen
         self.running = False
 

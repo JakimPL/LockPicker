@@ -7,7 +7,7 @@ from lockpicker.tumbler.location import Location
 
 
 class Layout:
-    def __init__(self, max_height: int):
+    def __init__(self, max_height: int) -> None:
         self.max_height = max_height
         self.scale = (settings.screen.height - settings.layout.bar_y_offset) / max_height
 

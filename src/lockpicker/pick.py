@@ -6,7 +6,7 @@ from lockpicker.tumbler.location import Location
 
 
 class PickSet:
-    def __init__(self, number_of_picks: int):
+    def __init__(self, number_of_picks: int) -> None:
         self._number_of_picks = number_of_picks
         self._picks: Dict[int, Optional[Location]] = {pick: None for pick in range(number_of_picks)}
         self._current = 0

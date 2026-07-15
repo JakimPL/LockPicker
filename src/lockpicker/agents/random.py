@@ -7,7 +7,7 @@ from lockpicker.lock import Lock
 
 
 class RandomAgent:
-    def __init__(self, lock: Lock):
+    def __init__(self, lock: Lock) -> None:
         self._lock = lock
 
     def play_move(self) -> None:
@@ -21,6 +21,7 @@ class RandomAgent:
 
 def play_random_games(
     lock: Lock,
+    *,
     games: int = settings.simulation.games,
     max_moves: int = settings.simulation.max_moves,
 ) -> bool:

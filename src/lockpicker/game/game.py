@@ -18,7 +18,7 @@ class Game(BaseGame):
         lock: Lock,
         *,
         random_moves: bool = False,
-    ):
+    ) -> None:
         super().__init__(screen, lock)
         self.random_moves = random_moves
         self.random_agent = RandomAgent(lock)

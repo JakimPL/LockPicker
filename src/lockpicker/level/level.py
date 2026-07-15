@@ -57,12 +57,16 @@ class Level:
         self.tumblers[tumbler.location] = tumbler
 
     def remove_bindings(self, location: Location) -> None:
-        bindings = {}
-        for loc, binding in self.bindings.items():
-            if loc == location:
+        bindings: Dict[Location, Dict[Location, int]] = {}
+        for source_location, binding in self.bindings.items():
+            if source_location == location:
                 continue
 
-            bindings[loc] = {l: d for l, d in binding.items() if l != location}
+            bindings[source_location] = {
+                target_location: difference
+                for target_location, difference in binding.items()
+                if target_location != location
+            }
 
         self.bindings = bindings
 
@@ -132,8 +136,6 @@ class Level:
     def save(self, filepath: Union[str, os.PathLike[str]]) -> None:
         with gzip.open(filepath, "wb") as file:
             file.write(self.serialize())
-
-        print(f"Level saved to {filepath}.")
 
     @staticmethod
     def load(filepath: Union[str, os.PathLike[str]]) -> Level:

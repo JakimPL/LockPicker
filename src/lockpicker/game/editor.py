@@ -28,7 +28,7 @@ class Editor(BaseGame):
         lock: Lock,
         path: Union[str, os.PathLike[str]],
         run_game_callback: Callable[[], None],
-    ):
+    ) -> None:
         super().__init__(screen, lock)
         self.path = Path(path)
 
@@ -303,14 +303,19 @@ class Editor(BaseGame):
         self.screen.blit(surface, rect.topleft)
 
     def get_post_release_rect(self, tumbler: Tumbler) -> pygame.Rect:
-        p = tumbler.post_release_height * self.layout.scale
-        x = self.layout.bar_x(tumbler.position)
-        h = self.get_current_height(tumbler) * self.layout.scale
-        y = h if tumbler.upper else settings.screen.height - h - p
-        if p > 0:
-            return pygame.Rect(x, y, settings.layout.bar_width, p)
+        post_release_pixels = tumbler.post_release_height * self.layout.scale
+        left = self.layout.bar_x(tumbler.position)
+        height_pixels = self.get_current_height(tumbler) * self.layout.scale
+        top = height_pixels if tumbler.upper else settings.screen.height - height_pixels - post_release_pixels
+        if post_release_pixels > 0:
+            return pygame.Rect(left, top, settings.layout.bar_width, post_release_pixels)
 
-        return pygame.Rect(x, y + p, settings.layout.bar_width, -p)
+        return pygame.Rect(
+            left,
+            top + post_release_pixels,
+            settings.layout.bar_width,
+            -post_release_pixels,
+        )
 
     def draw_bindings(self) -> None:
         for start_location, targets in self.lock.level.bindings.items():
