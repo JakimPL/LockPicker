@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Dict, List
 
+import msgpack
 import pytest
 from pydantic import ValidationError
 
@@ -82,3 +83,19 @@ def test_level_validate_raises_on_out_of_range_height() -> None:
     level = make_level([TumblerDefinition(Location(0, False), 0, 99, 0, True)], max_height=10)
     with pytest.raises(ValidationError):
         level.validate()
+
+
+def test_non_positive_number_of_picks_raises() -> None:
+    with pytest.raises(ValidationError):
+        LevelSpec(number_of_picks=0, max_height=10, tumblers=[])
+
+
+def test_non_positive_max_height_raises() -> None:
+    with pytest.raises(ValidationError):
+        LevelSpec(number_of_picks=1, max_height=0, tumblers=[])
+
+
+def test_deserialize_rejects_non_positive_number_of_picks() -> None:
+    data = msgpack.packb({"number_of_picks": 0, "max_height": 10, "tumblers": [], "bindings": []})
+    with pytest.raises(ValidationError):
+        Level.deserialize(data)

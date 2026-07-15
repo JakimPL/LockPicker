@@ -163,5 +163,5 @@ class Tumbler:
         return self._state
 
     def load_state(self, state: TumblerState) -> None:
-        self._state = state
+        self._state = state.copy()
         self._recalculate_current_height()

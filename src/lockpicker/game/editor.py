@@ -254,16 +254,15 @@ class Editor(BaseGame):
     def draw_tumblers(self) -> None:
         self.highlighted = None
         for location, tumbler in self.lock.get_tumblers_by_location().items():
-            if tumbler is not None:
-                bounds = self.get_tumbler_bounds(tumbler)
-                highlighted = self.is_mouse_hovering_tumbler(tumbler, bounds) and self.dragging_tumbler is None
-                highlighted |= self.dragging_tumbler == location
-                if highlighted:
-                    self.highlighted = location
+            bounds = self.get_tumbler_bounds(tumbler)
+            highlighted = self.is_mouse_hovering_tumbler(tumbler, bounds) and self.dragging_tumbler is None
+            highlighted |= self.dragging_tumbler == location
+            if highlighted:
+                self.highlighted = location
 
-                highlighted |= self.binding_initial == location
-                highlighted |= self.binding_target == location
-                self.draw_tumbler(tumbler, bounds, highlighted=highlighted)
+            highlighted |= self.binding_initial == location
+            highlighted |= self.binding_target == location
+            self.draw_tumbler(tumbler, bounds, highlighted=highlighted)
 
     def draw_transparent_tumbler(self) -> None:
         position = self.layout.position_from_x(self.mouse_pos[0])

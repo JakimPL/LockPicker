@@ -20,8 +20,6 @@ class Game(BaseGame):
         random_moves: bool = False,
     ):
         super().__init__(screen, lock)
-        self.win = False
-        self.loss = False
         self.random_moves = random_moves
         self.random_agent = RandomAgent(lock)
 
@@ -84,7 +82,6 @@ class Game(BaseGame):
 
     def check_win(self) -> bool:
         if self.lock.check_win():
-            self.win = True
             self.running = False
             return True
 

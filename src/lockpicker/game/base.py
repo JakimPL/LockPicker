@@ -66,12 +66,11 @@ class BaseGame:
     def draw_tumblers(self) -> None:
         self.highlighted = None
         for location, tumbler in self.lock.get_tumblers_by_location().items():
-            if tumbler is not None:
-                bounds = self.get_tumbler_bounds(tumbler)
-                highlighted = self.is_mouse_hovering_tumbler(tumbler, bounds)
-                self.draw_tumbler(tumbler, bounds, highlighted=highlighted)
-                if highlighted:
-                    self.highlighted = location
+            bounds = self.get_tumbler_bounds(tumbler)
+            highlighted = self.is_mouse_hovering_tumbler(tumbler, bounds)
+            self.draw_tumbler(tumbler, bounds, highlighted=highlighted)
+            if highlighted:
+                self.highlighted = location
 
     def get_tumbler_bounds(self, tumbler: Tumbler) -> Tuple[int, int, int, int]:
         height = self.get_current_height(tumbler)

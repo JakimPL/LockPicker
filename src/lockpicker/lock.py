@@ -40,7 +40,7 @@ class Lock:
 
     def check_win(self) -> bool:
         for tumbler in self._level.tumblers.values():
-            if tumbler is not None and not tumbler.free:
+            if not tumbler.free:
                 return False
 
         return True
@@ -123,8 +123,7 @@ class Lock:
     def _get_state(self) -> Dict[Location, int]:
         state: Dict[Location, int] = {}
         for location, tumbler in self._level.tumblers.items():
-            if tumbler is not None:
-                state[location] = tumbler.height
+            state[location] = tumbler.height
 
         return state
 
