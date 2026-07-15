@@ -36,42 +36,42 @@ def make_level(definitions: List[TumblerDefinition], max_height: int = 10) -> Le
 
 
 def test_valid_level_spec_passes() -> None:
-    LevelSpec(max_height=10, tumblers=[spec(position=0), spec(position=1, master=False)])
+    LevelSpec(number_of_picks=1, max_height=10, tumblers=[spec(position=0), spec(position=1, master=False)])
 
 
 def test_negative_position_raises() -> None:
     with pytest.raises(ValidationError):
-        LevelSpec(max_height=10, tumblers=[spec(position=-1)])
+        LevelSpec(number_of_picks=1, max_height=10, tumblers=[spec(position=-1)])
 
 
 def test_zero_height_raises() -> None:
     with pytest.raises(ValidationError):
-        LevelSpec(max_height=10, tumblers=[spec(height=0)])
+        LevelSpec(number_of_picks=1, max_height=10, tumblers=[spec(height=0)])
 
 
 def test_height_above_max_raises() -> None:
     with pytest.raises(ValidationError):
-        LevelSpec(max_height=10, tumblers=[spec(height=11)])
+        LevelSpec(number_of_picks=1, max_height=10, tumblers=[spec(height=11)])
 
 
 def test_negative_group_raises() -> None:
     with pytest.raises(ValidationError):
-        LevelSpec(max_height=10, tumblers=[spec(group=-1)])
+        LevelSpec(number_of_picks=1, max_height=10, tumblers=[spec(group=-1)])
 
 
 def test_duplicate_group_location_raises() -> None:
     with pytest.raises(ValidationError):
-        LevelSpec(max_height=10, tumblers=[spec(position=0), spec(position=0)])
+        LevelSpec(number_of_picks=1, max_height=10, tumblers=[spec(position=0), spec(position=0)])
 
 
 def test_group_without_master_warns() -> None:
     with pytest.warns(UserWarning):
-        LevelSpec(max_height=10, tumblers=[spec(master=False)])
+        LevelSpec(number_of_picks=1, max_height=10, tumblers=[spec(master=False)])
 
 
 def test_group_with_multiple_masters_warns() -> None:
     with pytest.warns(UserWarning):
-        LevelSpec(max_height=10, tumblers=[spec(position=0), spec(position=1)])
+        LevelSpec(number_of_picks=1, max_height=10, tumblers=[spec(position=0), spec(position=1)])
 
 
 def test_level_validate_wires_the_spec() -> None:

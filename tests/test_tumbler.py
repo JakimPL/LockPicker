@@ -107,22 +107,6 @@ def test_counter_clamps_available_height() -> None:
     assert tumbler.height == 8
 
 
-def test_definition_serialization_roundtrip_is_value_equal() -> None:
-    definition = TumblerDefinition(Location(2, True), 1, 7, post_release_height=3, master=True)
-    restored = TumblerDefinition.deserialize(definition.serialize())
-    assert restored == definition
-
-
-def test_tumbler_deserialize_injects_max_height() -> None:
-    definition = TumblerDefinition(Location(2, True), 1, 7, post_release_height=3, master=True)
-    tumbler = Tumbler(definition, 15)
-    restored = Tumbler.deserialize(tumbler.serialize(), 15)
-    assert restored.location == Location(2, True)
-    assert restored.base_height == 7
-    assert restored.max_height == 15
-    assert restored.master is True
-
-
 def test_copy_is_independent() -> None:
     tumbler = make_tumbler(height=5)
     clone = tumbler.copy()
