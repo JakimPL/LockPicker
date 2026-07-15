@@ -186,7 +186,7 @@ class Lock:
 
     def _apply_master_tumbler(self, tumbler: Tumbler):
         if tumbler.master and tumbler.pushed:
-            for location in self._level.groups[tumbler.group]:
+            for location in self._level.get_group(tumbler.group):
                 tumb = self.get_tumbler(location)
                 tumb.jam()
                 tumb.set_difference(0)

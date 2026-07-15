@@ -134,13 +134,7 @@ class Editor(BaseGame):
 
     def set_master_tumbler(self):
         if self.highlighted is not None:
-            tumbler = self.lock.get_tumbler(self.highlighted)
-            group_tumblers = self.lock.get_tumblers_by_group()[tumbler.group]
-            for location in group_tumblers:
-                tumb = self.lock.get_tumbler(location)
-                tumb.set_master(False)
-
-            tumbler.set_master(True)
+            self.lock.level.set_master(self.highlighted)
             self.save_state()
 
     def change_group(self, group: int):

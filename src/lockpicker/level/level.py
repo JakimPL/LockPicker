@@ -6,7 +6,7 @@ import struct
 import warnings
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import DefaultDict, Dict, List, Optional, Union
+from typing import DefaultDict, Dict, List, Union
 
 from lockpicker.level.data import LevelData
 from lockpicker.tumbler import STRUCT_FORMAT
@@ -20,11 +20,9 @@ class Level:
     max_height: int
     tumblers: Dict[Location, Tumbler]
     bindings: Dict[Location, Dict[Location, int]]
-    groups: Optional[DefaultDict[int, List[Location]]] = None
 
     def __post_init__(self) -> None:
         self._assign_counters()
-        self.groups = self._create_groups()
 
     def validate(self) -> None:
         assert all(tumbler.position >= 0 for tumbler in self.tumblers)
@@ -32,8 +30,6 @@ class Level:
 
         tumblers = {(tumbler.group, tumbler.location) for tumbler in self.tumblers.values()}
         assert len(tumblers) == len(self.tumblers)
-
-        assert self._create_groups() == self.groups
 
         master_groups: Dict[int, List[bool]] = defaultdict(list)
         for tumbler in self.tumblers.values():
@@ -66,7 +62,6 @@ class Level:
 
     def add_tumbler(self, tumbler: Tumbler):
         self.tumblers[tumbler.location] = tumbler
-        self.groups[tumbler.group].append(tumbler.location)
 
     def remove_bindings(self, location: Location):
         bindings = {}
@@ -82,8 +77,6 @@ class Level:
         location = tumbler.location
         self.remove_bindings(location)
         self.tumblers.pop(location)
-        self.groups[tumbler.group].remove(location)
-        del tumbler
 
     def serialize_tumblers(self) -> bytes:
         tumblers_count = struct.pack("I", len(self.tumblers))
@@ -179,9 +172,20 @@ class Level:
         for location, tumbler in self.tumblers.items():
             tumbler.set_counter(self.tumblers.get(location.counter))
 
-    def _create_groups(self) -> DefaultDict[int, List[Location]]:
-        groups = defaultdict(list)
+    @property
+    def groups(self) -> DefaultDict[int, List[Location]]:
+        groups: DefaultDict[int, List[Location]] = defaultdict(list)
         for location, tumbler in self.tumblers.items():
             groups[tumbler.group].append(location)
 
         return groups
+
+    def get_group(self, group: int) -> List[Location]:
+        return self.groups[group]
+
+    def set_master(self, location: Location) -> None:
+        tumbler = self.tumblers[location]
+        for other in self.get_group(tumbler.group):
+            self.tumblers[other].set_master(False)
+
+        tumbler.set_master(True)
