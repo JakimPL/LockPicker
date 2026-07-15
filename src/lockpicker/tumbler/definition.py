@@ -8,11 +8,10 @@ from lockpicker.tumbler.location import Location
 
 
 @dataclass(frozen=True)
-class BaseTumbler:
+class TumblerDefinition:
     location: Location
     group: int
     height: int
-    max_height: int
     post_release_height: int = 0
     master: bool = False
 
@@ -28,13 +27,12 @@ class BaseTumbler:
         )
 
     @classmethod
-    def deserialize(cls, data: bytes, max_height: int) -> BaseTumbler:
+    def deserialize(cls, data: bytes) -> TumblerDefinition:
         position, upper, group, height, post_release_height, master = struct.unpack(STRUCT_FORMAT, data)
-        return BaseTumbler(
+        return TumblerDefinition(
             Location(position, upper),
             group,
             height,
-            max_height,
             post_release_height,
             master,
         )

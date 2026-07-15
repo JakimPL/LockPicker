@@ -177,7 +177,7 @@ class Level:
 
     def _assign_counters(self) -> None:
         for location, tumbler in self.tumblers.items():
-            tumbler.counter = self.tumblers.get(location.counter)
+            tumbler.set_counter(self.tumblers.get(location.counter))
 
     def _create_groups(self) -> DefaultDict[int, List[Location]]:
         groups = defaultdict(list)

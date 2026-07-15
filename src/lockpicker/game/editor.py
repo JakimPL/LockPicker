@@ -9,7 +9,7 @@ from lockpicker.constants.config import settings
 from lockpicker.game.base import BaseGame
 from lockpicker.level.data import LevelData
 from lockpicker.lock import Lock
-from lockpicker.tumbler.base import BaseTumbler
+from lockpicker.tumbler.definition import TumblerDefinition
 from lockpicker.tumbler.location import Location
 from lockpicker.tumbler.tumbler import Tumbler
 
@@ -122,8 +122,8 @@ class Editor(BaseGame):
             self.save_state()
 
     def get_temp_tumbler(self, location: Location, height: int) -> Tumbler:
-        base = BaseTumbler(location, self.current_group, height, self.lock.level.max_height)
-        return Tumbler(base)
+        definition = TumblerDefinition(location, self.current_group, height)
+        return Tumbler(definition, self.lock.level.max_height)
 
     def delete_highlighted_tumbler(self):
         if self.highlighted is not None:
@@ -138,15 +138,15 @@ class Editor(BaseGame):
             group_tumblers = self.lock.get_tumblers_by_group()[tumbler.group]
             for location in group_tumblers:
                 tumb = self.lock.get_tumbler(location)
-                tumb.master = False
+                tumb.set_master(False)
 
-            tumbler.master = True
+            tumbler.set_master(True)
             self.save_state()
 
     def change_group(self, group: int):
         self.current_group = group
         if self.highlighted is not None:
-            self.lock.get_tumbler(self.highlighted).group = group
+            self.lock.get_tumbler(self.highlighted).set_group(group)
 
     def handle_binding_key(self):
         if self.binding_initial is None:
@@ -186,7 +186,7 @@ class Editor(BaseGame):
             if self.dragging_tumbler is not None:
                 tumbler = self.lock.get_tumbler(self.dragging_tumbler)
                 new_height = self.calculate_new_height(self.dragging_tumbler)
-                tumbler.height = new_height
+                tumbler.set_height(new_height)
         elif self.mouse_pressed[2]:
             if self.dragging_tumbler is None and self.highlighted is not None:
                 self.dragging_tumbler = self.highlighted
@@ -195,7 +195,7 @@ class Editor(BaseGame):
             if self.dragging_tumbler is not None:
                 tumbler = self.lock.get_tumbler(self.dragging_tumbler)
                 new_height = self.calculate_new_height(self.dragging_tumbler, limit=False)
-                tumbler.post_release_height = new_height - self.initial_height
+                tumbler.set_post_release_height(new_height - self.initial_height)
         else:
             if self.dragging_tumbler is not None:
                 self.save_state()

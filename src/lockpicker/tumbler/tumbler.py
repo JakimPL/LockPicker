@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import Optional
 
-from lockpicker.tumbler.base import BaseTumbler
+from lockpicker.tumbler.definition import TumblerDefinition
 from lockpicker.tumbler.location import Location
 from lockpicker.tumbler.state import TumblerState
 
@@ -11,12 +11,14 @@ from lockpicker.tumbler.state import TumblerState
 class Tumbler:
     def __init__(
         self,
-        base: BaseTumbler,
+        definition: TumblerDefinition,
+        max_height: int,
         state: Optional[TumblerState] = None,
-        counter: Optional["Tumbler"] = None,
+        counter: Optional[Tumbler] = None,
     ):
-        self._base = base
-        self._state = TumblerState(base.height) if state is None else state
+        self._definition = definition
+        self._max_height = max_height
+        self._state = TumblerState(definition.height) if state is None else state
         self._counter = counter
 
     def __repr__(self) -> str:
@@ -29,9 +31,10 @@ class Tumbler:
 
     def copy(self) -> Tumbler:
         return Tumbler(
-            self.base,
-            self.state.copy(),
-            self.counter,
+            self._definition,
+            self._max_height,
+            self._state.copy(),
+            self._counter,
         )
 
     def jam(self) -> None:
@@ -77,97 +80,73 @@ class Tumbler:
             if self.release:
                 height += self.post_release_height
 
-        self._state.counter_height = self._counter.height if self._counter is not None else 0
-        self._state.current_height = max(1, min(height, self.max_height - self._state.counter_height))
+        counter_height = self._counter.height if self._counter is not None else 0
+        self._state.current_height = max(1, min(height, self._max_height - counter_height))
 
     @property
     def base_height(self) -> int:
-        return self._base.height
+        return self._definition.height
 
-    @height.setter
-    def height(self, height: int):
-        if not isinstance(height, int):
-            raise TypeError(f"Height must be an integer, got {type(height)}")
+    def set_height(self, height: int) -> None:
         if height < 1:
             raise ValueError(f"Height must be at least 1, got {height}")
-        if height > self.max_height:
-            raise ValueError(f"Height must be at most {self.max_height}, got {height}")
 
-        self._base = replace(self._base, height=height)
+        if height > self._max_height:
+            raise ValueError(f"Height must be at most {self._max_height}, got {height}")
+
+        self._definition = replace(self._definition, height=height)
         self._recalculate_current_height()
 
     @property
     def location(self) -> Location:
-        return self._base.location
+        return self._definition.location
 
     @property
     def position(self) -> int:
-        return self._base.location.position
+        return self._definition.location.position
 
     @property
     def upper(self) -> bool:
-        return self._base.location.upper
+        return self._definition.location.upper
 
     @property
     def group(self) -> int:
-        return self._base.group
+        return self._definition.group
 
-    @group.setter
-    def group(self, group: int) -> None:
-        if not isinstance(group, int):
-            raise TypeError(f"Group must be an integer, got {type(group)}")
+    def set_group(self, group: int) -> None:
         if group < 0:
             raise ValueError(f"Group must be non-negative, got {group}")
 
-        self._base = replace(self._base, group=group)
+        self._definition = replace(self._definition, group=group)
 
     @property
     def master(self) -> bool:
-        return self._base.master
+        return self._definition.master
 
-    @master.setter
-    def master(self, master: bool) -> None:
-        if not isinstance(master, bool):
-            raise TypeError(f"Master must be a boolean, got {type(master)}")
-
-        self._base = replace(self._base, master=master)
+    def set_master(self, master: bool) -> None:
+        self._definition = replace(self._definition, master=master)
 
     @property
     def post_release_height(self) -> int:
-        return self._base.post_release_height
+        return self._definition.post_release_height
 
-    @post_release_height.setter
-    def post_release_height(self, height: int) -> None:
-        if not isinstance(height, int):
-            raise TypeError(f"Post-release height must be an integer, got {type(height)}")
-
-        self._base = replace(self._base, post_release_height=height)
+    def set_post_release_height(self, height: int) -> None:
+        self._definition = replace(self._definition, post_release_height=height)
 
     @property
     def difference(self) -> int:
         return self._state.difference
 
     def set_difference(self, difference: int, *, recalculate: bool = True) -> None:
-        if not isinstance(difference, int):
-            raise TypeError(f"Difference must be an integer, got {type(difference)}")
-
         self._state.difference = difference
         if recalculate:
             self._recalculate_current_height()
 
     @property
     def max_height(self) -> int:
-        return self._base.max_height
+        return self._max_height
 
-    @property
-    def counter(self) -> Optional["Tumbler"]:
-        return self._counter
-
-    @counter.setter
-    def counter(self, counter: Optional[Tumbler]) -> None:
-        if not isinstance(counter, Tumbler) and counter is not None:
-            raise ValueError(f"Counter must be a Tumbler instance, got {type(counter)}")
-
+    def set_counter(self, counter: Optional[Tumbler]) -> None:
         self._counter = counter
         self._recalculate_current_height()
 
@@ -176,20 +155,16 @@ class Tumbler:
         return self.height <= 1
 
     @property
-    def base(self) -> BaseTumbler:
-        return self._base
-
-    @property
     def state(self) -> TumblerState:
         return self._state
 
     def serialize(self) -> bytes:
-        return self._base.serialize()
+        return self._definition.serialize()
 
     @classmethod
     def deserialize(cls, data: bytes, max_height: int) -> Tumbler:
-        base = BaseTumbler.deserialize(data, max_height)
-        return Tumbler(base)
+        definition = TumblerDefinition.deserialize(data)
+        return Tumbler(definition, max_height)
 
     def load_state(self, state: TumblerState) -> None:
         self._state = state
