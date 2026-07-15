@@ -3,12 +3,12 @@ from __future__ import annotations
 import gzip
 import os
 import struct
-import warnings
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import DefaultDict, Dict, List, Union
 
 from lockpicker.level.data import LevelData
+from lockpicker.level.validation import LevelSpec, TumblerSpec
 from lockpicker.tumbler import STRUCT_FORMAT
 from lockpicker.tumbler.location import Location
 from lockpicker.tumbler.tumbler import Tumbler
@@ -25,19 +25,20 @@ class Level:
         self._assign_counters()
 
     def validate(self) -> None:
-        assert all(tumbler.position >= 0 for tumbler in self.tumblers)
-        assert all(0 < tumbler.base_height <= self.max_height for tumbler in self.tumblers.values())
-
-        tumblers = {(tumbler.group, tumbler.location) for tumbler in self.tumblers.values()}
-        assert len(tumblers) == len(self.tumblers)
-
-        master_groups: Dict[int, List[bool]] = defaultdict(list)
-        for tumbler in self.tumblers.values():
-            master_groups[tumbler.group].append(tumbler.master)
-
-        for group, tumblers in master_groups.items():
-            if sum(tumblers) != 1:
-                warnings.warn(f"Group {group} doesn't have a master tumbler")
+        LevelSpec(
+            max_height=self.max_height,
+            tumblers=[
+                TumblerSpec(
+                    position=tumbler.position,
+                    upper=tumbler.upper,
+                    group=tumbler.group,
+                    height=tumbler.base_height,
+                    post_release_height=tumbler.post_release_height,
+                    master=tumbler.master,
+                )
+                for tumbler in self.tumblers.values()
+            ],
+        )
 
     @staticmethod
     def create(number_of_picks: int, max_height: int) -> Level:
@@ -140,6 +141,7 @@ class Level:
                 p, u, d = struct.unpack("I?i", data[offset : offset + 12])
                 offset += 12
                 binding[Location(p, u)] = d
+
             bindings[Location(*location)] = binding
 
         return bindings
