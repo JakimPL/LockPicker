@@ -174,7 +174,7 @@ class Lock:
                 jammed = True
 
             if not jammed:
-                tumb.set_difference(difference if tumbler.pushed else 0, not tumbler.jammed)
+                tumb.set_difference(difference if tumbler.pushed else 0, recalculate=not tumbler.jammed)
                 if pushed and not tumbler.jammed:
                     tumb.release()
 

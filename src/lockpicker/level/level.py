@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import gzip
 import os
 import struct
@@ -43,10 +45,13 @@ class Level:
                 warnings.warn(f"Group {group} doesn't have a master tumbler")
 
     @staticmethod
-    def create(number_of_picks: int = NUMBER_OF_PICKS, max_height: int = MAX_HEIGHT) -> "Level":
+    def create(
+        number_of_picks: int = NUMBER_OF_PICKS,
+        max_height: int = MAX_HEIGHT,
+    ) -> Level:
         return Level(number_of_picks, max_height, {}, {})
 
-    def copy(self) -> "Level":
+    def copy(self) -> Level:
         tumblers = {location: tumbler.copy() for location, tumbler in self.tumblers.items()}
         bindings = {location: bindings.copy() for location, bindings in self.bindings.items()}
         return Level(
@@ -110,7 +115,7 @@ class Level:
         with gzip.open(filepath, "wb") as file:
             number_of_picks, max_height, serialized_tumblers, serialized_bindings = self.serialize()
             tumblers_block_size = struct.pack("I", len(serialized_tumblers))
-            bindings_block_size = struct.pack("I", len(serialized_tumblers))
+            bindings_block_size = struct.pack("I", len(serialized_bindings))
             file.write(number_of_picks)
             file.write(max_height)
             file.write(tumblers_block_size)
@@ -150,16 +155,16 @@ class Level:
 
         return bindings
 
-    def deserialize(self, data: LevelData) -> "Level":
+    def deserialize(self, data: LevelData) -> Level:
         number_of_picks_data, max_height_data, tumblers_data, bindings_data = data
         number_of_picks = struct.unpack("I", number_of_picks_data)[0]
         max_height = struct.unpack("I", max_height_data)[0]
-        tumblers = Level.deserialize_tumblers(tumblers_data, self.max_height)
+        tumblers = Level.deserialize_tumblers(tumblers_data, max_height)
         bindings = Level.deserialize_bindings(bindings_data)
         return Level(number_of_picks, max_height, tumblers, bindings)
 
     @staticmethod
-    def load(filepath: Union[str, os.PathLike]) -> "Level":
+    def load(filepath: Union[str, os.PathLike]) -> Level:
         with gzip.open(filepath, "rb") as file:
             number_of_picks_data = file.read(4)
             max_height_data = file.read(4)
@@ -174,7 +179,7 @@ class Level:
             bindings = Level.deserialize_bindings(bindings_data)
             return Level(number_of_picks, max_height, tumblers, bindings)
 
-    def _assign_counters(self):
+    def _assign_counters(self) -> None:
         for location, tumbler in self.tumblers.items():
             tumbler.counter = self.tumblers.get(location.counter)
 

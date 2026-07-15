@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import NamedTuple
 
 
@@ -6,5 +8,5 @@ class Location(NamedTuple):
     upper: bool
 
     @property
-    def counter(self) -> "Location":
+    def counter(self) -> Location:
         return Location(self.position, not self.upper)

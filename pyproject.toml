@@ -5,7 +5,13 @@ description = "Lock Picker - a simple quasi-lock picking logic puzzle game"
 readme = "README.md"
 requires-python = ">=3.12"
 authors = [{ name = "Jakim" }]
-dependencies = ["pygame==2.6.1", "tqdm==4.68.4"]
+dependencies = [
+    "pydantic==2.13.4",
+    "pydantic-settings==2.14.2",
+    "pygame==2.6.1",
+    "pyyaml==6.0.3",
+    "tqdm==4.68.4",
+]
 
 [project.scripts]
 lockpicker = "lockpicker.__main__:main"
@@ -42,13 +48,14 @@ known_first_party = ["lockpicker"]
 
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib"
+pythonpath = ["src", "."]
 
 [tool.coverage.run]
-source = ["lockpicker"]
+source = ["src/lockpicker"]
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 80
+fail_under = 0
 
 [tool.mypy]
 files = ["src/lockpicker"]

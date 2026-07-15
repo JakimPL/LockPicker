@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import replace
 from typing import Optional
 
@@ -25,28 +27,28 @@ class Tumbler:
             f"jammed={self._state.jammed}, release={self._state.release}, difference={self._state.difference})"
         )
 
-    def copy(self) -> "Tumbler":
+    def copy(self) -> Tumbler:
         return Tumbler(
             self.base,
             self.state.copy(),
             self.counter,
         )
 
-    def jam(self):
+    def jam(self) -> None:
         self._state.release = False
         self._state.jammed = True
         self._state.pushed = True
 
-    def push(self):
+    def push(self) -> None:
         self._state.release = False
         self._state.pushed = True
         self._recalculate_current_height()
 
-    def unjam(self):
+    def unjam(self) -> None:
         self._state.release = False
         self._state.jammed = False
 
-    def release(self, direct: bool = False):
+    def release(self, direct: bool = False) -> None:
         self._state.jammed = False
         self._state.pushed = False
         self._state.release = direct
@@ -67,7 +69,7 @@ class Tumbler:
     def height(self) -> int:
         return self._state.current_height
 
-    def _recalculate_current_height(self):
+    def _recalculate_current_height(self) -> None:
         if self.pushed:
             height = 1
         else:
@@ -111,7 +113,7 @@ class Tumbler:
         return self._base.group
 
     @group.setter
-    def group(self, group: int):
+    def group(self, group: int) -> None:
         if not isinstance(group, int):
             raise TypeError(f"Group must be an integer, got {type(group)}")
         if group < 0:
@@ -124,7 +126,7 @@ class Tumbler:
         return self._base.master
 
     @master.setter
-    def master(self, master: bool):
+    def master(self, master: bool) -> None:
         if not isinstance(master, bool):
             raise TypeError(f"Master must be a boolean, got {type(master)}")
 
@@ -135,7 +137,7 @@ class Tumbler:
         return self._base.post_release_height
 
     @post_release_height.setter
-    def post_release_height(self, height: int):
+    def post_release_height(self, height: int) -> None:
         if not isinstance(height, int):
             raise TypeError(f"Post-release height must be an integer, got {type(height)}")
 
@@ -145,7 +147,7 @@ class Tumbler:
     def difference(self) -> int:
         return self._state.difference
 
-    def set_difference(self, difference: int, recalculate: bool = True):
+    def set_difference(self, difference: int, *, recalculate: bool = True) -> None:
         if not isinstance(difference, int):
             raise TypeError(f"Difference must be an integer, got {type(difference)}")
 
@@ -162,7 +164,7 @@ class Tumbler:
         return self._counter
 
     @counter.setter
-    def counter(self, counter: Optional["Tumbler"]):
+    def counter(self, counter: Optional[Tumbler]) -> None:
         if not isinstance(counter, Tumbler) and counter is not None:
             raise ValueError(f"Counter must be a Tumbler instance, got {type(counter)}")
 
@@ -185,10 +187,10 @@ class Tumbler:
         return self._base.serialize()
 
     @classmethod
-    def deserialize(cls, data: bytes, max_height: int) -> "Tumbler":
+    def deserialize(cls, data: bytes, max_height: int) -> Tumbler:
         base = BaseTumbler.deserialize(data, max_height)
         return Tumbler(base)
 
-    def load_state(self, state: TumblerState):
+    def load_state(self, state: TumblerState) -> None:
         self._state = state
         self._recalculate_current_height()

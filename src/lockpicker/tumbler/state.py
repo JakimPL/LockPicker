@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, replace
 
 
@@ -9,5 +11,5 @@ class TumblerState:
     release: bool = False
     difference: int = 0
 
-    def copy(self):
+    def copy(self) -> TumblerState:
         return replace(self)
