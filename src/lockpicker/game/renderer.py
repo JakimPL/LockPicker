@@ -1,76 +1,35 @@
-from typing import List, Optional, Tuple
+from __future__ import annotations
+
+from typing import Optional, Tuple
 
 import pygame
 
 from lockpicker.constants.config import PickShape, settings
 from lockpicker.engine.lock import Lock
-from lockpicker.game.animation import AnimationStep
+from lockpicker.game.animation import Animation
 from lockpicker.game.layout import Layout
 from lockpicker.tumbler.location import Location
 from lockpicker.tumbler.tumbler import Tumbler
 
 
-class BaseGame:
-    def __init__(self, screen: pygame.surface.Surface, lock: Lock) -> None:
+class Renderer:
+    def __init__(
+        self,
+        screen: pygame.surface.Surface,
+        lock: Lock,
+        layout: Layout,
+        animation: Animation,
+    ) -> None:
         self.screen = screen
-        self.running = False
-
         self.lock = lock
-
-        self.mouse_pos: Tuple[int, int] = (0, 0)
-        self.mouse_pressed: Tuple[bool, ...] = (False, False, False)
-        self.mouse_was_pressed: Tuple[bool, ...] = (False, False, False)
-
-        self.highlighted: Optional[Location] = None
-
-        self.animation = 0.0
-        self.animation_items: List[AnimationStep] = []
-        self.current_animation_item: AnimationStep = {}
-
-        self.layout = Layout(self.lock.level.max_height)
-
-    def run(self) -> None:
-        self.running = True
-        while self.running:
-            self.frame()
-
-    def frame(self) -> None:
-        raise NotImplementedError("frame method must be implemented in child class")
-
-    def gather_events(self) -> None:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.terminate()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    self.terminate()
-                if pygame.key.get_mods() & pygame.KMOD_CTRL:
-                    match event.key:
-                        case pygame.K_z:
-                            self.undo()
-                        case pygame.K_y:
-                            self.redo()
-                        case pygame.K_r:
-                            self.restart()
-
-    def get_mouse_state(self) -> None:
-        self.mouse_pos = pygame.mouse.get_pos()
-        self.mouse_pressed = pygame.mouse.get_pressed()
-
-    def set_mouse_state(self) -> None:
-        self.mouse_was_pressed = self.mouse_pressed
+        self.layout = layout
+        self.animation = animation
 
     def draw_background(self) -> None:
         self.screen.fill(settings.color.background)
 
-    def draw_tumblers(self) -> None:
-        self.highlighted = None
-        for location, tumbler in self.lock.get_tumblers_by_location().items():
-            bounds = self.get_tumbler_bounds(tumbler)
-            highlighted = self.is_mouse_hovering_tumbler(tumbler, bounds)
-            self.draw_tumbler(tumbler, bounds, highlighted=highlighted)
-            if highlighted:
-                self.highlighted = location
+    def get_current_height(self, tumbler: Tumbler) -> float:
+        return self.animation.height(tumbler)
 
     def get_tumbler_bounds(self, tumbler: Tumbler) -> Tuple[int, int, int, int]:
         height = self.get_current_height(tumbler)
@@ -79,10 +38,11 @@ class BaseGame:
     def is_mouse_hovering_tumbler(
         self,
         tumbler: Tumbler,
+        mouse_position: Tuple[int, int],
         bounds: Optional[Tuple[int, int, int, int]] = None,
     ) -> bool:
         rect = pygame.Rect(*self.get_tumbler_bounds(tumbler) if bounds is None else bounds)
-        return bool(rect.collidepoint(self.mouse_pos))
+        return bool(rect.collidepoint(mouse_position))
 
     def draw_tumbler(
         self,
@@ -155,33 +115,3 @@ class BaseGame:
 
     def get_tumbler_y(self, location: Location, height: float) -> int:
         return self.layout.tip_y(location, height)
-
-    def get_current_height(self, tumbler: Tumbler) -> float:
-        if tumbler.location in self.current_animation_item:
-            start, end = self.current_animation_item[tumbler.location]
-            if end > start:
-                height = start + min(self.animation, end - start)
-            else:
-                height = start + max(-self.animation, end - start)
-        else:
-            height = tumbler.height
-
-        return height
-
-    def restart(self) -> None:
-        self.lock.reset()
-        self.reset_animation()
-
-    def reset_animation(self) -> None:
-        self.animation = 0.0
-        self.animation_items = []
-        self.current_animation_item = {}
-
-    def terminate(self) -> None:
-        self.running = False
-
-    def undo(self) -> None:
-        raise NotImplementedError("undo method must be implemented in child class")
-
-    def redo(self) -> None:
-        raise NotImplementedError("redo method must be implemented in child class")

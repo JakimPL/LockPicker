@@ -1,17 +1,20 @@
 from collections import deque
-from typing import Deque
+from typing import Deque, Optional
 
 import pygame
 
 from lockpicker.agents.random import RandomAgent
-from lockpicker.constants.config import settings
 from lockpicker.engine.lock import Lock
-from lockpicker.game.animation import compute_animation_steps
-from lockpicker.game.base import BaseGame
+from lockpicker.game.animation import Animation, compute_animation_steps
+from lockpicker.game.input import Key, MouseState
+from lockpicker.game.layout import Layout
+from lockpicker.game.loop import run_loop
+from lockpicker.game.renderer import Renderer
 from lockpicker.state.state import State
+from lockpicker.tumbler.location import Location
 
 
-class Game(BaseGame):
+class Game:
     def __init__(
         self,
         screen: pygame.surface.Surface,
@@ -19,56 +22,80 @@ class Game(BaseGame):
         *,
         random_moves: bool = False,
     ) -> None:
-        super().__init__(screen, lock)
+        self.screen = screen
+        self.lock = lock
+        self.running = False
         self.random_moves = random_moves
         self.random_agent = RandomAgent(lock)
+
+        self.mouse = MouseState()
+        self.animation = Animation()
+        self.layout = Layout(lock.level.max_height)
+        self.renderer = Renderer(screen, lock, self.layout, self.animation)
+        self.highlighted: Optional[Location] = None
 
         self.undo_history: Deque[State] = deque()
         self.redo_history: Deque[State] = deque()
         self.save_state()
 
+    def run(self) -> None:
+        run_loop(self)
+
     def frame(self) -> None:
         self.gather_events()
-        self.get_mouse_state()
+        self.mouse.update()
         self.draw()
         self.action()
-        self.set_mouse_state()
+        self.mouse.commit()
         self.check_win()
 
+    def gather_events(self) -> None:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            elif event.type == pygame.KEYDOWN:
+                self.handle_key(event.key)
+
+    def handle_key(self, key: int) -> None:
+        if key == Key.ESCAPE:
+            self.running = False
+            return
+
+        if pygame.key.get_mods() & pygame.KMOD_CTRL:
+            match key:
+                case Key.UNDO:
+                    self.undo()
+                case Key.REDO:
+                    self.redo()
+                case Key.RESTART:
+                    self.restart()
+
     def draw(self) -> None:
-        self.draw_background()
+        self.renderer.draw_background()
         self.draw_tumblers()
-        self.draw_picks()
+        self.renderer.draw_picks()
         pygame.display.flip()
+
+    def draw_tumblers(self) -> None:
+        self.highlighted = None
+        for location, tumbler in self.lock.get_tumblers_by_location().items():
+            bounds = self.renderer.get_tumbler_bounds(tumbler)
+            highlighted = self.renderer.is_mouse_hovering_tumbler(tumbler, self.mouse.position, bounds)
+            self.renderer.draw_tumbler(tumbler, bounds, highlighted=highlighted)
+            if highlighted:
+                self.highlighted = location
 
     def action(self) -> None:
         self.toggle_current_pick()
-        if not self.animation_frame():
+        if not self.animation.advance():
             self.handle_selected_tumbler()
             if self.random_moves:
                 self.random_agent.play_move()
 
-            self.animation_items = compute_animation_steps(self.lock.drain_snapshots())
-
-    def animation_frame(self) -> bool:
-        if self.animation_items or self.current_animation_item:
-            self.animation += settings.animation.speed
-            if self.current_animation_item and self.animation >= self.get_max_animation_value():
-                self.current_animation_item = {}
-
-            if self.animation_items and not self.current_animation_item:
-                self.current_animation_item = self.animation_items.pop()
-                self.animation = 0.0
-
-            return True
-
-        return False
-
-    def get_max_animation_value(self) -> int:
-        return max(abs(end - start) for start, end in self.current_animation_item.values())
+            self.animation.load(compute_animation_steps(self.lock.drain_snapshots()))
 
     def handle_selected_tumbler(self) -> None:
-        if self.mouse_pressed[0] and not self.mouse_was_pressed[0]:
+        if self.mouse.left_clicked:
             if self.highlighted is not None:
                 self.lock.push(self.highlighted)
             else:
@@ -77,7 +104,7 @@ class Game(BaseGame):
             self.save_state()
 
     def toggle_current_pick(self) -> None:
-        if self.mouse_pressed[2] and not self.mouse_was_pressed[2]:
+        if self.mouse.right_clicked:
             self.lock.change_current_pick()
 
     def check_win(self) -> bool:
@@ -86,6 +113,10 @@ class Game(BaseGame):
             return True
 
         return False
+
+    def restart(self) -> None:
+        self.lock.reset()
+        self.animation.reset()
 
     def save_state(self) -> None:
         last_state = self.undo_history[-1] if self.undo_history else None
@@ -96,14 +127,14 @@ class Game(BaseGame):
 
     def undo(self) -> None:
         if self.undo_history:
-            self.reset_animation()
+            self.animation.reset()
             self.redo_history.append(self.lock.get_state())
             state = self.undo_history.pop()
             self.lock.load_state(state)
 
     def redo(self) -> None:
         if self.redo_history:
-            self.reset_animation()
+            self.animation.reset()
             self.undo_history.append(self.lock.get_state())
             state = self.redo_history.pop()
             self.lock.load_state(state)

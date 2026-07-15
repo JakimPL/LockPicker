@@ -8,7 +8,7 @@ import pygame
 from lockpicker.agents.random import play_random_games
 from lockpicker.constants.config import settings
 from lockpicker.engine.lock import Lock
-from lockpicker.game.editor import Editor
+from lockpicker.game.editor.editor import Editor
 from lockpicker.game.game import Game
 from lockpicker.level.level import Level
 
