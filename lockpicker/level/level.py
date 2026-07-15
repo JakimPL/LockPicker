@@ -21,20 +21,20 @@ class Level:
     bindings: Dict[Location, Dict[Location, int]]
     groups: Optional[DefaultDict[int, List[Location]]] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self._assign_counters()
         self.groups = self._create_groups()
 
-    def validate(self):
+    def validate(self) -> None:
         assert all(tumbler.position >= 0 for tumbler in self.tumblers)
-        assert all(0 < tumbler.base_height < self.max_height for tumbler in self.tumblers.values())
+        assert all(0 < tumbler.base_height <= self.max_height for tumbler in self.tumblers.values())
 
         tumblers = {(tumbler.group, tumbler.location) for tumbler in self.tumblers.values()}
         assert len(tumblers) == len(self.tumblers)
 
         assert self._create_groups() == self.groups
 
-        master_groups = defaultdict(list)
+        master_groups: Dict[int, List[bool]] = defaultdict(list)
         for tumbler in self.tumblers.values():
             master_groups[tumbler.group].append(tumbler.master)
 

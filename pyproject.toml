@@ -1,0 +1,59 @@
+[project]
+name = "lockpicker"
+version = "0.1.0"
+description = "Lock Picker - a simple quasi-lock picking logic puzzle game"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{ name = "Jakim" }]
+dependencies = ["pygame==2.6.1", "tqdm==4.68.4"]
+
+[project.scripts]
+lockpicker = "lockpicker.__main__:main"
+
+[dependency-groups]
+dev = [
+    "black==26.5.1",
+    "isort==8.0.1",
+    "mypy==2.1.0",
+    "pre-commit==4.6.0",
+    "pylint==4.0.6",
+    "pylint-pydantic==0.4.1",
+    "pytest==9.1.1",
+    "pytest-cov==7.1.0",
+    "pytest-xdist==3.8.0",
+    "types-PyYAML==6.0.12.20260518",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lockpicker"]
+
+[tool.black]
+line-length = 120
+target-version = ["py312"]
+
+[tool.isort]
+profile = "black"
+line_length = 120
+known_first_party = ["lockpicker"]
+
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib"
+
+[tool.coverage.run]
+source = ["lockpicker"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 80
+
+[tool.mypy]
+files = ["src/lockpicker"]
+exclude = ["tests"]
+disallow_subclassing_any = true
+ignore_missing_imports = true
+strict = true
+python_version = "3.12"

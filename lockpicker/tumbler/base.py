@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import struct
 from dataclasses import dataclass
 
@@ -26,6 +28,13 @@ class BaseTumbler:
         )
 
     @classmethod
-    def deserialize(cls, data: bytes, max_height: int) -> "BaseTumbler":
+    def deserialize(cls, data: bytes, max_height: int) -> BaseTumbler:
         position, upper, group, height, post_release_height, master = struct.unpack(STRUCT_FORMAT, data)
-        return BaseTumbler(Location(position, upper), group, height, max_height, post_release_height, master)
+        return BaseTumbler(
+            Location(position, upper),
+            group,
+            height,
+            max_height,
+            post_release_height,
+            master,
+        )
