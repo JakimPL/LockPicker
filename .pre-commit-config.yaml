@@ -39,7 +39,7 @@ repos:
     hooks:
       - id: pytest
         name: pytest
-        entry: make test
+        entry: uv run pytest .
         language: system
         types:
           - python
