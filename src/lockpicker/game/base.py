@@ -4,6 +4,7 @@ import pygame
 
 from lockpicker.constants.config import PickShape, settings
 from lockpicker.game.animation import AnimationStep
+from lockpicker.game.layout import Layout
 from lockpicker.lock import Lock
 from lockpicker.tumbler.location import Location
 from lockpicker.tumbler.tumbler import Tumbler
@@ -16,9 +17,9 @@ class BaseGame:
 
         self.lock = lock
 
-        self.mouse_pos = None
-        self.mouse_pressed = (False, False, False)
-        self.mouse_was_pressed = (False, False, False)
+        self.mouse_pos: Tuple[int, int] = (0, 0)
+        self.mouse_pressed: Tuple[bool, ...] = (False, False, False)
+        self.mouse_was_pressed: Tuple[bool, ...] = (False, False, False)
 
         self.highlighted: Optional[Location] = None
 
@@ -26,7 +27,7 @@ class BaseGame:
         self.animation_items: List[AnimationStep] = []
         self.current_animation_item: AnimationStep = {}
 
-        self.scale = (settings.screen.height - settings.layout.bar_y_offset) / self.lock.level.max_height
+        self.layout = Layout(self.lock.level.max_height)
 
     def run(self) -> None:
         self.running = True
@@ -35,12 +36,6 @@ class BaseGame:
 
     def frame(self) -> None:
         raise NotImplementedError("frame method must be implemented in child class")
-
-    @staticmethod
-    def init_pygame() -> None:
-        pygame.init()
-        pygame.display.set_caption("LockPicker")
-        return pygame.display.set_mode((settings.screen.width, settings.screen.height))
 
     def gather_events(self) -> None:
         for event in pygame.event.get():
@@ -74,20 +69,13 @@ class BaseGame:
             if tumbler is not None:
                 bounds = self.get_tumbler_bounds(tumbler)
                 highlighted = self.is_mouse_hovering_tumbler(tumbler, bounds)
-                self.draw_tumbler(tumbler, bounds, highlighted)
+                self.draw_tumbler(tumbler, bounds, highlighted=highlighted)
                 if highlighted:
                     self.highlighted = location
 
     def get_tumbler_bounds(self, tumbler: Tumbler) -> Tuple[int, int, int, int]:
         height = self.get_current_height(tumbler)
-        x = tumbler.position * (settings.layout.bar_width + settings.layout.bar_offset) + settings.layout.x_offset
-        h = int(height * self.scale)
-        if tumbler.upper:
-            y = 0
-        else:
-            y = settings.screen.height - h
-
-        return x, y, settings.layout.bar_width, h
+        return self.layout.bar_bounds(tumbler.location, height)
 
     def is_mouse_hovering_tumbler(
         self,
@@ -95,12 +83,13 @@ class BaseGame:
         bounds: Optional[Tuple[int, int, int, int]] = None,
     ) -> bool:
         rect = pygame.Rect(*self.get_tumbler_bounds(tumbler) if bounds is None else bounds)
-        return rect.collidepoint(self.mouse_pos)
+        return bool(rect.collidepoint(self.mouse_pos))
 
     def draw_tumbler(
         self,
         tumbler: Tumbler,
         bounds: Optional[Tuple[int, int, int, int]] = None,
+        *,
         highlighted: bool = False,
         alpha: Optional[int] = None,
     ) -> None:
@@ -121,23 +110,28 @@ class BaseGame:
     def draw_pick(self, pick: int) -> None:
         location = self.lock.get_pick(pick)
         alpha = settings.alpha.opaque if pick == self.lock.current_pick else settings.alpha.dimmed
+        x, y = self.get_pick_anchor(pick, location)
+        self.draw_pick_shape(pick, x, y, alpha)
+
+    def get_pick_anchor(self, pick: int, location: Optional[Location]) -> Tuple[int, float]:
         if location is None:
             x = settings.pick.idle_offset
-            y = settings.screen.height // 2 + settings.pick.discrepancy * (
+            y = settings.screen.height / 2 + settings.pick.discrepancy * (
                 pick - self.lock.level.number_of_picks / 2 + 0.5
             )
-        else:
-            position, upper = location
-            tumbler = self.lock.get_tumbler(location)
-            if tumbler is None:
-                raise ValueError(f"No tumbler found at location {location}")
+            return x, y
 
-            height = self.get_current_height(tumbler)
-            h = int(height * self.scale)
-            x = position * (settings.layout.bar_width + settings.layout.bar_offset) + settings.layout.x_offset
-            x += settings.layout.bar_width // 2
-            y = h + settings.pick.offset if upper else settings.screen.height - h - settings.pick.offset
+        tumbler = self.lock.get_tumbler(location)
+        if tumbler is None:
+            raise ValueError(f"No tumbler found at location {location}")
 
+        height = self.get_current_height(tumbler)
+        h = self.layout.height_to_pixels(height)
+        x = self.layout.center_x(location.position)
+        y = h + settings.pick.offset if location.upper else settings.screen.height - h - settings.pick.offset
+        return x, y
+
+    def draw_pick_shape(self, pick: int, x: int, y: float, alpha: int) -> None:
         color = (*settings.color.picks[pick], alpha)
         shape_surface = pygame.Surface((settings.screen.width, settings.screen.height), pygame.SRCALPHA)
 
@@ -157,19 +151,13 @@ class BaseGame:
         pygame.draw.rect(shape_surface, color, rect)
         self.screen.blit(shape_surface, (0, 0))
 
-    @staticmethod
-    def get_tumbler_x(location: Location) -> int:
-        offset = location.position * (settings.layout.bar_width + settings.layout.bar_offset)
-        return offset + settings.layout.x_offset + settings.layout.bar_width // 2
+    def get_tumbler_x(self, location: Location) -> int:
+        return self.layout.center_x(location.position)
 
-    def get_tumbler_y(self, location: Location, height: int) -> int:
-        h = int(height * self.scale)
-        if location.upper:
-            return h
-        else:
-            return settings.screen.height - h
+    def get_tumbler_y(self, location: Location, height: float) -> int:
+        return self.layout.tip_y(location, height)
 
-    def get_current_height(self, tumbler: Tumbler) -> int:
+    def get_current_height(self, tumbler: Tumbler) -> float:
         if tumbler.location in self.current_animation_item:
             start, end = self.current_animation_item[tumbler.location]
             if end > start:

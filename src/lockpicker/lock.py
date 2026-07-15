@@ -1,5 +1,5 @@
 from dataclasses import replace
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 from lockpicker.level.level import Level
 from lockpicker.pick import PickSet
@@ -17,13 +17,13 @@ class Lock:
         self._picks = PickSet(self.level.number_of_picks)
         self._states = [self._get_state()]
 
-    def push(self, location: Location):
+    def push(self, location: Location) -> None:
         tumbler = self.get_tumbler(location)
         self.release_current_pick()
-        if self._can_push_tumbler(tumbler):
+        if tumbler is not None and self._check_previous_tumblers(tumbler):
             self._push_tumbler(tumbler)
 
-    def release_current_pick(self):
+    def release_current_pick(self) -> None:
         location = self._picks.current_location()
         if location is not None:
             self._picks.clear()
@@ -35,7 +35,7 @@ class Lock:
         self._states = [self._states[-1]]
         return snapshots
 
-    def reset(self):
+    def reset(self) -> None:
         self.level = self._level_copy
 
     def check_win(self) -> bool:
@@ -45,9 +45,9 @@ class Lock:
 
         return True
 
-    def get_possible_moves(self) -> List[Tuple[int, bool]]:
+    def get_possible_moves(self) -> List[Location]:
         # TODO: consider state change after each move
-        moves = []
+        moves: List[Location] = []
         max_position = max([position for position, upper in self._level.tumblers])
         for upper in [True, False]:
             for position in reversed(range(max_position + 1)):
@@ -61,26 +61,30 @@ class Lock:
     def get_pick(self, pick: int) -> Optional[Location]:
         return self._picks.get(pick)
 
-    def change_current_pick(self):
+    def change_current_pick(self) -> None:
         self._picks.change_current()
 
-    def select_pick(self, pick: int):
+    def select_pick(self, pick: int) -> None:
         self._picks.select(pick)
 
     def get_tumbler(self, location: Location) -> Optional[Tumbler]:
         return self._level.tumblers.get(location)
 
-    def get_tumblers_by_location(self) -> Dict[Location, Optional[Tumbler]]:
+    def get_tumblers_by_location(self) -> Dict[Location, Tumbler]:
         return self._level.tumblers
 
-    def _initialize_state(self):
+    def _require_tumbler(self, location: Location) -> Tumbler:
+        tumbler = self.get_tumbler(location)
+        if tumbler is None:
+            raise KeyError(f"No tumbler at {location}")
+
+        return tumbler
+
+    def _initialize_state(self) -> None:
         self._picks = PickSet(self.level.number_of_picks)
         self._states = [self._get_state()]
 
-    def _can_push_tumbler(self, tumbler: Optional[Tumbler]) -> bool:
-        return tumbler is not None and self._check_previous_tumblers(tumbler)
-
-    def _push_tumbler(self, tumbler: Tumbler):
+    def _push_tumbler(self, tumbler: Tumbler) -> None:
         location = tumbler.location
         self._picks.set_current(location)
         if tumbler.jammed:
@@ -94,8 +98,8 @@ class Lock:
         self._add_current_state()
         self._apply_master_tumbler(tumbler)
 
-    def _release_tumbler(self, location: Location):
-        tumbler = self.get_tumbler(location)
+    def _release_tumbler(self, location: Location) -> None:
+        tumbler = self._require_tumbler(location)
         if not tumbler.jammed and not self._picks.other_picks(location):
             tumbler.release(direct=True)
 
@@ -124,15 +128,15 @@ class Lock:
 
         return state
 
-    def _add_current_state(self):
+    def _add_current_state(self) -> None:
         self._states.append(self._get_state())
 
-    def _apply_bindings(self, location: Location, pushed: bool):
-        tumbler = self.get_tumbler(location)
+    def _apply_bindings(self, location: Location, pushed: bool) -> None:
+        tumbler = self._require_tumbler(location)
         binding = self.level.bindings.get(location, {})
         for loc, difference in binding.items():
             picks = self._picks.other_picks(loc)
-            tumb = self.get_tumbler(loc)
+            tumb = self._require_tumbler(loc)
 
             jammed = False
             if picks and pushed:
@@ -144,16 +148,16 @@ class Lock:
                 if pushed and not tumbler.jammed:
                     tumb.release()
 
-    def _apply_bindings_iteratively(self, location: Location, pushed: bool):
+    def _apply_bindings_iteratively(self, location: Location, pushed: bool) -> None:
         self._apply_bindings(location, pushed)
         if not self._revise_picks():
             self._add_current_state()
             self._apply_bindings(location, pushed)
 
-    def _apply_master_tumbler(self, tumbler: Tumbler):
+    def _apply_master_tumbler(self, tumbler: Tumbler) -> None:
         if tumbler.master and tumbler.pushed:
             for location in self._level.get_group(tumbler.group):
-                tumb = self.get_tumbler(location)
+                tumb = self._require_tumbler(location)
                 tumb.jam()
                 tumb.set_difference(0)
 
@@ -178,7 +182,7 @@ class Lock:
             all_picks_valid = True
             number_of_revisions += 1
             for pick, location in self._picks.items():
-                if not self._check_if_pick_is_valid(pick):
+                if not self._check_if_pick_is_valid(pick) and location is not None:
                     all_picks_valid = False
                     self._apply_bindings(location, False)
                     self._picks.clear(pick)
@@ -187,7 +191,7 @@ class Lock:
 
         return number_of_revisions == 1
 
-    def _validate_level(self):
+    def _validate_level(self) -> None:
         self.level.validate()
 
     @property
@@ -201,21 +205,21 @@ class Lock:
         picks = tuple(PickState(pick, location) for pick, location in self._picks.items())
         return State(self.current_pick, tumblers, picks)
 
-    def load_state(self, state: State):
+    def load_state(self, state: State) -> None:
         self._picks.select(state.current_pick)
         for location, tumbler_state in state.tumblers:
-            tumbler = self.get_tumbler(location)
+            tumbler = self._require_tumbler(location)
             tumbler.load_state(tumbler_state)
 
-        for pick, location in state.picks:
-            self._picks.set(pick, location)
+        for pick, pick_location in state.picks:
+            self._picks.set(pick, pick_location)
 
     @property
     def level(self) -> Level:
         return self._level
 
     @level.setter
-    def level(self, level: Level):
+    def level(self, level: Level) -> None:
         self._level = level
         self._level_copy = level.copy()
         self._level.validate()

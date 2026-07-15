@@ -54,17 +54,22 @@ class Level:
             bindings,
         )
 
-    def add_binding(self, initial_location: Location, target_location: Location, difference: int):
+    def add_binding(
+        self,
+        initial_location: Location,
+        target_location: Location,
+        difference: int,
+    ) -> None:
         if difference != 0:
             if initial_location not in self.bindings:
                 self.bindings[initial_location] = {target_location: difference}
             else:
                 self.bindings[initial_location][target_location] = difference
 
-    def add_tumbler(self, tumbler: Tumbler):
+    def add_tumbler(self, tumbler: Tumbler) -> None:
         self.tumblers[tumbler.location] = tumbler
 
-    def remove_bindings(self, location: Location):
+    def remove_bindings(self, location: Location) -> None:
         bindings = {}
         for loc, binding in self.bindings.items():
             if loc == location:
@@ -74,7 +79,7 @@ class Level:
 
         self.bindings = bindings
 
-    def remove_tumbler(self, tumbler: Tumbler):
+    def remove_tumbler(self, tumbler: Tumbler) -> None:
         location = tumbler.location
         self.remove_bindings(location)
         self.tumblers.pop(location)
@@ -101,7 +106,7 @@ class Level:
         serialized_bindings = self.serialize_bindings()
         return LevelData(number_of_picks, max_height, serialized_tumblers, serialized_bindings)
 
-    def save(self, filepath: Union[str, os.PathLike]):
+    def save(self, filepath: Union[str, os.PathLike[str]]) -> None:
         with gzip.open(filepath, "wb") as file:
             number_of_picks, max_height, serialized_tumblers, serialized_bindings = self.serialize()
             tumblers_block_size = struct.pack("I", len(serialized_tumblers))
@@ -155,7 +160,7 @@ class Level:
         return Level(number_of_picks, max_height, tumblers, bindings)
 
     @staticmethod
-    def load(filepath: Union[str, os.PathLike]) -> Level:
+    def load(filepath: Union[str, os.PathLike[str]]) -> Level:
         with gzip.open(filepath, "rb") as file:
             number_of_picks_data = file.read(4)
             max_height_data = file.read(4)

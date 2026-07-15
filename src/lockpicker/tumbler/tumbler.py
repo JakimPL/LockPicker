@@ -77,7 +77,7 @@ class Tumbler:
             height = 1
         else:
             height = self.base_height + self.difference
-            if self.release:
+            if self._state.release:
                 height += self.post_release_height
 
         counter_height = self._counter.height if self._counter is not None else 0
@@ -96,6 +96,10 @@ class Tumbler:
 
         self._definition = replace(self._definition, height=height)
         self._recalculate_current_height()
+
+    @property
+    def definition(self) -> TumblerDefinition:
+        return self._definition
 
     @property
     def location(self) -> Location:
