@@ -162,14 +162,6 @@ class Tumbler:
     def state(self) -> TumblerState:
         return self._state
 
-    def serialize(self) -> bytes:
-        return self._definition.serialize()
-
-    @classmethod
-    def deserialize(cls, data: bytes, max_height: int) -> Tumbler:
-        definition = TumblerDefinition.deserialize(data)
-        return Tumbler(definition, max_height)
-
     def load_state(self, state: TumblerState) -> None:
         self._state = state
         self._recalculate_current_height()

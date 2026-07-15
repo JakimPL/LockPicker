@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import struct
 from dataclasses import dataclass
 
-from lockpicker.tumbler import STRUCT_FORMAT
 from lockpicker.tumbler.location import Location
 
 
@@ -14,25 +12,3 @@ class TumblerDefinition:
     height: int
     post_release_height: int = 0
     master: bool = False
-
-    def serialize(self) -> bytes:
-        return struct.pack(
-            STRUCT_FORMAT,
-            self.location.position,
-            self.location.upper,
-            self.group,
-            self.height,
-            self.post_release_height,
-            self.master,
-        )
-
-    @classmethod
-    def deserialize(cls, data: bytes) -> TumblerDefinition:
-        position, upper, group, height, post_release_height, master = struct.unpack(STRUCT_FORMAT, data)
-        return TumblerDefinition(
-            Location(position, upper),
-            group,
-            height,
-            post_release_height,
-            master,
-        )

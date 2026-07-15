@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import gzip
 import os
-import struct
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import DefaultDict, Dict, List, Union
+from typing import DefaultDict, Dict, List, Union, cast
 
-from lockpicker.level.data import LevelData
-from lockpicker.level.validation import LevelSpec, TumblerSpec
-from lockpicker.tumbler import STRUCT_FORMAT
+import msgpack
+
+from lockpicker.level.validation import BindingSpec, LevelSpec, TumblerSpec
+from lockpicker.tumbler.definition import TumblerDefinition
 from lockpicker.tumbler.location import Location
 from lockpicker.tumbler.tumbler import Tumbler
 
@@ -25,20 +25,7 @@ class Level:
         self._assign_counters()
 
     def validate(self) -> None:
-        LevelSpec(
-            max_height=self.max_height,
-            tumblers=[
-                TumblerSpec(
-                    position=tumbler.position,
-                    upper=tumbler.upper,
-                    group=tumbler.group,
-                    height=tumbler.base_height,
-                    post_release_height=tumbler.post_release_height,
-                    master=tumbler.master,
-                )
-                for tumbler in self.tumblers.values()
-            ],
-        )
+        self.to_spec()
 
     @staticmethod
     def create(number_of_picks: int, max_height: int) -> Level:
@@ -84,96 +71,74 @@ class Level:
         self.remove_bindings(location)
         self.tumblers.pop(location)
 
-    def serialize_tumblers(self) -> bytes:
-        tumblers_count = struct.pack("I", len(self.tumblers))
-        tumblers_data = b"".join(tumbler.serialize() for tumbler in self.tumblers.values())
-        return tumblers_count + tumblers_data
+    def to_spec(self) -> LevelSpec:
+        return LevelSpec(
+            number_of_picks=self.number_of_picks,
+            max_height=self.max_height,
+            tumblers=[
+                TumblerSpec(
+                    position=tumbler.position,
+                    upper=tumbler.upper,
+                    group=tumbler.group,
+                    height=tumbler.base_height,
+                    post_release_height=tumbler.post_release_height,
+                    master=tumbler.master,
+                )
+                for tumbler in self.tumblers.values()
+            ],
+            bindings=[
+                BindingSpec(
+                    initial_position=initial.position,
+                    initial_upper=initial.upper,
+                    target_position=target.position,
+                    target_upper=target.upper,
+                    difference=difference,
+                )
+                for initial, targets in self.bindings.items()
+                for target, difference in targets.items()
+            ],
+        )
 
-    def serialize_bindings(self) -> bytes:
-        bindings_data = struct.pack("I", len(self.bindings))
-        for position, bindings in self.bindings.items():
-            bindings_data += struct.pack("I?", *position)
-            bindings_data += struct.pack("I", len(bindings))
-            for (p, u), d in bindings.items():
-                bindings_data += struct.pack("I?i", p, u, d)
+    @classmethod
+    def from_spec(cls, spec: LevelSpec) -> Level:
+        tumblers: Dict[Location, Tumbler] = {}
+        for tumbler_spec in spec.tumblers:
+            location = Location(tumbler_spec.position, tumbler_spec.upper)
+            definition = TumblerDefinition(
+                location,
+                tumbler_spec.group,
+                tumbler_spec.height,
+                tumbler_spec.post_release_height,
+                tumbler_spec.master,
+            )
+            tumblers[location] = Tumbler(definition, spec.max_height)
 
-        return bindings_data
+        bindings: Dict[Location, Dict[Location, int]] = {}
+        for binding in spec.bindings:
+            initial = Location(binding.initial_position, binding.initial_upper)
+            target = Location(binding.target_position, binding.target_upper)
+            bindings.setdefault(initial, {})[target] = binding.difference
 
-    def serialize(self) -> LevelData:
-        number_of_picks = struct.pack("I", self.number_of_picks)
-        max_height = struct.pack("I", self.max_height)
-        serialized_tumblers = self.serialize_tumblers()
-        serialized_bindings = self.serialize_bindings()
-        return LevelData(number_of_picks, max_height, serialized_tumblers, serialized_bindings)
+        return cls(spec.number_of_picks, spec.max_height, tumblers, bindings)
+
+    def serialize(self) -> bytes:
+        return cast(bytes, msgpack.packb(self.to_spec().model_dump()))
+
+    @classmethod
+    def deserialize(cls, data: bytes) -> Level:
+        spec = LevelSpec.model_validate(msgpack.unpackb(data, raw=False))
+        return cls.from_spec(spec)
 
     def save(self, filepath: Union[str, os.PathLike[str]]) -> None:
         with gzip.open(filepath, "wb") as file:
-            number_of_picks, max_height, serialized_tumblers, serialized_bindings = self.serialize()
-            tumblers_block_size = struct.pack("I", len(serialized_tumblers))
-            bindings_block_size = struct.pack("I", len(serialized_bindings))
-            file.write(number_of_picks)
-            file.write(max_height)
-            file.write(tumblers_block_size)
-            file.write(serialized_tumblers)
-            file.write(bindings_block_size)
-            file.write(serialized_bindings)
-            print(f"Level saved to {filepath}.")
+            file.write(self.serialize())
 
-    @staticmethod
-    def deserialize_tumblers(data: bytes, max_height: int) -> Dict[Location, Tumbler]:
-        tumblers_count = struct.unpack("I", data[:4])[0]
-        tumblers = {}
-        size = struct.calcsize(STRUCT_FORMAT)
-        for i in range(tumblers_count):
-            tumbler_data = data[4 + i * size : 4 + (i + 1) * size]
-            tumbler = Tumbler.deserialize(tumbler_data, max_height)
-            tumblers[tumbler.location] = tumbler
-
-        return tumblers
-
-    @staticmethod
-    def deserialize_bindings(data: bytes) -> Dict[Location, Dict[Location, int]]:
-        bindings_count = struct.unpack("I", data[:4])[0]
-        bindings = {}
-        offset = 4
-        for i in range(bindings_count):
-            location = struct.unpack("I?", data[offset : offset + 5])
-            offset += 5
-            binding_count = struct.unpack("I", data[offset : offset + 4])[0]
-            offset += 4
-            binding = {}
-            for _ in range(binding_count):
-                p, u, d = struct.unpack("I?i", data[offset : offset + 12])
-                offset += 12
-                binding[Location(p, u)] = d
-
-            bindings[Location(*location)] = binding
-
-        return bindings
-
-    def deserialize(self, data: LevelData) -> Level:
-        number_of_picks_data, max_height_data, tumblers_data, bindings_data = data
-        number_of_picks = struct.unpack("I", number_of_picks_data)[0]
-        max_height = struct.unpack("I", max_height_data)[0]
-        tumblers = Level.deserialize_tumblers(tumblers_data, max_height)
-        bindings = Level.deserialize_bindings(bindings_data)
-        return Level(number_of_picks, max_height, tumblers, bindings)
+        print(f"Level saved to {filepath}.")
 
     @staticmethod
     def load(filepath: Union[str, os.PathLike[str]]) -> Level:
         with gzip.open(filepath, "rb") as file:
-            number_of_picks_data = file.read(4)
-            max_height_data = file.read(4)
-            tumblers_block_size = struct.unpack("I", file.read(4))[0]
-            tumblers_data = file.read(tumblers_block_size)
-            bindings_block_size = struct.unpack("I", file.read(4))[0]
-            bindings_data = file.read(bindings_block_size)
-
-            number_of_picks = struct.unpack("I", number_of_picks_data)[0]
-            max_height = struct.unpack("I", max_height_data)[0]
-            tumblers = Level.deserialize_tumblers(tumblers_data, max_height)
-            bindings = Level.deserialize_bindings(bindings_data)
-            return Level(number_of_picks, max_height, tumblers, bindings)
+            return Level.deserialize(file.read())
 
     def _assign_counters(self) -> None:
         for location, tumbler in self.tumblers.items():

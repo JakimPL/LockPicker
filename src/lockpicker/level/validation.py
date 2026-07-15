@@ -11,13 +11,23 @@ class TumblerSpec(BaseModel):
     upper: bool
     group: int
     height: int
-    post_release_height: int
-    master: bool
+    post_release_height: int = 0
+    master: bool = False
+
+
+class BindingSpec(BaseModel):
+    initial_position: int
+    initial_upper: bool
+    target_position: int
+    target_upper: bool
+    difference: int
 
 
 class LevelSpec(BaseModel):
+    number_of_picks: int
     max_height: int
     tumblers: List[TumblerSpec]
+    bindings: List[BindingSpec] = []
 
     @model_validator(mode="after")
     def _validate_tumblers(self) -> LevelSpec:
