@@ -48,7 +48,7 @@ line_length = 120
 known_first_party = ["lockpicker"]
 
 [tool.pytest.ini_options]
-addopts = "--import-mode=importlib"
+addopts = "--import-mode=importlib --cov"
 pythonpath = ["src", "."]
 
 [tool.coverage.run]
@@ -56,7 +56,7 @@ source = ["src/lockpicker"]
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 0
+fail_under = 80
 
 [tool.mypy]
 files = ["src/lockpicker"]

@@ -34,3 +34,15 @@ repos:
           - pydantic==2.13.4
           - pydantic-settings==2.14.2
           - types-PyYAML==6.0.12.20260518
+
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest
+        entry: make test
+        language: system
+        types:
+          - python
+        stages:
+          - pre-push
+        pass_filenames: false
