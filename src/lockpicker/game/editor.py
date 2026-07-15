@@ -5,16 +5,7 @@ from typing import Callable, Deque, Optional, Tuple, Union
 
 import pygame
 
-from lockpicker.constants.gui import (
-    ARROW_COLOR,
-    ARROW_SIZE,
-    ARROW_WIDTH,
-    BAR_OFFSET,
-    BAR_WIDTH,
-    HEIGHT,
-    POST_RELEASE_COLOR,
-    X_OFFSET,
-)
+from lockpicker.constants.config import settings
 from lockpicker.game.base import BaseGame
 from lockpicker.level.data import LevelData
 from lockpicker.lock import Lock
@@ -115,11 +106,13 @@ class Editor(BaseGame):
 
     def add_new_tumbler(self):
         if self.highlighted is None:
-            position = (self.mouse_pos[0] - X_OFFSET) // (BAR_WIDTH + BAR_OFFSET)
+            position = (self.mouse_pos[0] - settings.layout.x_offset) // (
+                settings.layout.bar_width + settings.layout.bar_offset
+            )
             if position < 0:
                 return
 
-            upper = self.mouse_pos[1] < HEIGHT // 2
+            upper = self.mouse_pos[1] < settings.screen.height // 2
             location = Location(position, upper)
             if self.lock.get_tumbler(location) is None:
                 height = self.calculate_new_height(location)
@@ -225,17 +218,24 @@ class Editor(BaseGame):
                 self.draw_tumbler(tumbler, bounds, highlighted)
 
     def draw_transparent_tumbler(self):
-        position = (self.mouse_pos[0] - X_OFFSET) // (BAR_WIDTH + BAR_OFFSET)
+        position = (self.mouse_pos[0] - settings.layout.x_offset) // (
+            settings.layout.bar_width + settings.layout.bar_offset
+        )
         if position < 0 or self.binding_initial is not None or self.dragging_tumbler is not None:
             return
 
-        upper = self.mouse_pos[1] < HEIGHT // 2
+        upper = self.mouse_pos[1] < settings.screen.height // 2
         location = Location(position, upper)
         if self.lock.get_tumbler(location) is None:
             height = self.calculate_new_height(location)
             tumbler = self.get_temp_tumbler(location, height)
             bounds = self.get_tumbler_bounds(tumbler)
-            self.draw_tumbler(tumbler, bounds, highlighted=False, alpha=64)
+            self.draw_tumbler(
+                tumbler,
+                bounds,
+                highlighted=False,
+                alpha=settings.alpha.faint,
+            )
 
     def draw_tumbler(
         self,
@@ -248,25 +248,25 @@ class Editor(BaseGame):
         self.draw_post_release_height(tumbler, alpha)
 
     def draw_post_release_height(self, tumbler: Tumbler, alpha: Optional[int] = None):
-        alpha = 160 if alpha is None else alpha
+        alpha = settings.alpha.dimmed if alpha is None else alpha
         if tumbler.post_release_height != 0:
             p = tumbler.post_release_height * self.scale
-            x = tumbler.position * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET
+            x = tumbler.position * (settings.layout.bar_width + settings.layout.bar_offset) + settings.layout.x_offset
             height = self.get_current_height(tumbler)
             if tumbler.upper:
                 h = height * self.scale
                 y = h
             else:
                 h = height * self.scale
-                y = HEIGHT - h - p
+                y = settings.screen.height - h - p
 
             if p > 0:
-                post_release_rect = pygame.Rect(x, y, BAR_WIDTH, p)
+                post_release_rect = pygame.Rect(x, y, settings.layout.bar_width, p)
             else:
-                post_release_rect = pygame.Rect(x, y + p, BAR_WIDTH, -p)
+                post_release_rect = pygame.Rect(x, y + p, settings.layout.bar_width, -p)
 
             post_release_surface = pygame.Surface((post_release_rect.width, post_release_rect.height), pygame.SRCALPHA)
-            post_release_surface.fill((*POST_RELEASE_COLOR, alpha))
+            post_release_surface.fill((*settings.color.post_release, alpha))
             self.screen.blit(post_release_surface, post_release_rect.topleft)
 
     def draw_bindings(self):
@@ -280,7 +280,7 @@ class Editor(BaseGame):
                 intermediate_y = self.get_tumbler_y(end_location, end_tumbler.height)
                 end_x = self.get_tumbler_x(end_location)
                 end_y = intermediate_y + self.scale * (difference if end_location.upper else -difference)
-                alpha = 255 if self.is_tumbler_bound(start_location, end_location) else None
+                alpha = settings.alpha.opaque if self.is_tumbler_bound(start_location, end_location) else None
                 self.draw_arrow(start_x, start_y, intermediate_y, end_x, end_y, alpha=alpha)
 
     def draw_binding_arrow(self):
@@ -294,27 +294,52 @@ class Editor(BaseGame):
 
             end_x = self.get_tumbler_x(end_location)
             end_y = self.get_tumbler_y(end_location, end_tumbler.height)
-            alpha = 255 if self.is_tumbler_bound(self.binding_initial, end_location) else None
+            alpha = settings.alpha.opaque if self.is_tumbler_bound(self.binding_initial, end_location) else None
             if self.binding_target is None:
                 self.draw_arrow(start_x, start_y, end_y, end_x, end_y, alpha=alpha)
             else:
                 intermediate_y = end_y
                 difference = self.calculate_difference(end_location)
                 end_y += difference * self.scale if end_location.upper else -difference * self.scale
-                self.draw_arrow(start_x, start_y, intermediate_y, end_x, end_y, alpha=255)
+                self.draw_arrow(
+                    start_x,
+                    start_y,
+                    intermediate_y,
+                    end_x,
+                    end_y,
+                    alpha=settings.alpha.opaque,
+                )
 
     def draw_arrow(
         self, start_x: int, start_y: int, intermediate_y: int, end_x: int, end_y: int, alpha: Optional[int] = None
     ):
-        alpha = 64 if alpha is None else alpha
+        alpha = settings.alpha.faint if alpha is None else alpha
         if start_x == end_x and start_y == intermediate_y:
             return
 
-        color = (*ARROW_COLOR, alpha)
+        color = (*settings.color.arrow, alpha)
         surface = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
-        pygame.draw.line(surface, color, (start_x, start_y), (end_x, intermediate_y), ARROW_WIDTH)
-        pygame.draw.line(surface, color, (end_x, intermediate_y), (end_x, end_y), ARROW_WIDTH)
-        pygame.draw.line(surface, color, (end_x - ARROW_SIZE, end_y), (end_x + ARROW_SIZE, end_y), ARROW_WIDTH)
+        pygame.draw.line(
+            surface,
+            color,
+            (start_x, start_y),
+            (end_x, intermediate_y),
+            settings.arrow.width,
+        )
+        pygame.draw.line(
+            surface,
+            color,
+            (end_x, intermediate_y),
+            (end_x, end_y),
+            settings.arrow.width,
+        )
+        pygame.draw.line(
+            surface,
+            color,
+            (end_x - settings.arrow.size, end_y),
+            (end_x + settings.arrow.size, end_y),
+            settings.arrow.width,
+        )
         self.screen.blit(surface, (0, 0))
 
     def calculate_difference(self, location: Location) -> int:
@@ -325,7 +350,7 @@ class Editor(BaseGame):
         if location.upper:
             height = round(self.mouse_pos[1] / self.scale)
         else:
-            height = round((HEIGHT - self.mouse_pos[1]) / self.scale)
+            height = round((settings.screen.height - self.mouse_pos[1]) / self.scale)
 
         max_height = self.lock.level.max_height
         counter = self.lock.get_tumbler(location.counter)

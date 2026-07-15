@@ -1,17 +1,13 @@
-from typing import Final
-
 from tqdm import tqdm
 
+from lockpicker.constants.config import settings
 from lockpicker.lock import Lock
-
-GAMES: Final[int] = 1000
-MAX_MOVES: Final[int] = 100
 
 
 def play_random_games(
     lock: Lock,
-    games: int = GAMES,
-    max_moves: int = MAX_MOVES,
+    games: int = settings.simulation.games,
+    max_moves: int = settings.simulation.max_moves,
 ) -> bool:
     for _ in tqdm(range(games)):
         lock.reset()

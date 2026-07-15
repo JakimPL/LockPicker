@@ -3,7 +3,7 @@ from typing import Deque
 
 import pygame
 
-from lockpicker.constants.gui import ANIMATION_SPEED
+from lockpicker.constants.config import settings
 from lockpicker.game.base import BaseGame
 from lockpicker.lock import Lock
 from lockpicker.state.state import State
@@ -44,7 +44,7 @@ class Game(BaseGame):
 
     def animation_frame(self) -> bool:
         if self.animation_items or self.current_animation_item:
-            self.animation += ANIMATION_SPEED
+            self.animation += settings.animation.speed
             if self.current_animation_item and self.animation >= self.get_max_animation_value():
                 self.current_animation_item = {}
 

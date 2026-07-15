@@ -1,24 +1,8 @@
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import pygame
 
-from lockpicker.constants.gui import (
-    BACKGROUND_COLOR,
-    BAR_OFFSET,
-    BAR_WIDTH,
-    BAR_Y_OFFSET,
-    HEIGHT,
-    HIGHLIGHT_COLOR,
-    PICK_COLORS,
-    PICK_DISCREPANCY,
-    PICK_IDLE_OFFSET,
-    PICK_OFFSET,
-    PICK_SIZE,
-    PICK_WIDTH,
-    TUMBLERS_COLORS,
-    WIDTH,
-    X_OFFSET,
-)
+from lockpicker.constants.config import PickShape, settings
 from lockpicker.lock import Lock
 from lockpicker.tumbler.location import Location
 from lockpicker.tumbler.tumbler import Tumbler
@@ -41,7 +25,7 @@ class BaseGame:
         self.animation_items: List[pygame.Surface] = []
         self.current_animation_item: Dict[Location, pygame.Surface] = {}
 
-        self.scale = (HEIGHT - BAR_Y_OFFSET) / self.lock.level.max_height
+        self.scale = (settings.screen.height - settings.layout.bar_y_offset) / self.lock.level.max_height
 
     def run(self) -> None:
         self.running = True
@@ -55,7 +39,7 @@ class BaseGame:
     def init_pygame() -> None:
         pygame.init()
         pygame.display.set_caption("LockPicker")
-        return pygame.display.set_mode((WIDTH, HEIGHT))
+        return pygame.display.set_mode((settings.screen.width, settings.screen.height))
 
     def gather_events(self) -> None:
         for event in pygame.event.get():
@@ -81,7 +65,7 @@ class BaseGame:
         self.mouse_was_pressed = self.mouse_pressed
 
     def draw_background(self) -> None:
-        self.screen.fill(BACKGROUND_COLOR)
+        self.screen.fill(settings.color.background)
 
     def draw_tumblers(self) -> None:
         self.highlighted = None
@@ -95,14 +79,14 @@ class BaseGame:
 
     def get_tumbler_bounds(self, tumbler: Tumbler) -> Tuple[int, int, int, int]:
         height = self.get_current_height(tumbler)
-        x = tumbler.position * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET
+        x = tumbler.position * (settings.layout.bar_width + settings.layout.bar_offset) + settings.layout.x_offset
         h = int(height * self.scale)
         if tumbler.upper:
             y = 0
         else:
-            y = HEIGHT - h
+            y = settings.screen.height - h
 
-        return x, y, BAR_WIDTH, h
+        return x, y, settings.layout.bar_width, h
 
     def is_mouse_hovering_tumbler(
         self,
@@ -120,10 +104,10 @@ class BaseGame:
         alpha: Optional[int] = None,
     ) -> None:
         if alpha is None:
-            alpha = 255 if tumbler.master else 160
-            alpha //= 3 if tumbler.jammed else 1
+            alpha = settings.alpha.opaque if tumbler.master else settings.alpha.dimmed
+            alpha //= settings.alpha.jam_divisor if tumbler.jammed else 1
 
-        color = HIGHLIGHT_COLOR if highlighted else TUMBLERS_COLORS[tumbler.group]
+        color = settings.color.highlight if highlighted else settings.color.tumblers[tumbler.group]
         rect = pygame.Rect(*self.get_tumbler_bounds(tumbler) if bounds is None else bounds)
         surface = pygame.Surface((rect.width, rect.height), pygame.SRCALPHA)
         surface.fill((*color, alpha))
@@ -135,10 +119,12 @@ class BaseGame:
 
     def draw_pick(self, pick: int) -> None:
         location = self.lock.get_pick(pick)
-        alpha = 255 if pick == self.lock.current_pick else 160
+        alpha = settings.alpha.opaque if pick == self.lock.current_pick else settings.alpha.dimmed
         if location is None:
-            x = PICK_IDLE_OFFSET
-            y = HEIGHT // 2 + PICK_DISCREPANCY * (pick - self.lock.level.number_of_picks / 2 + 0.5)
+            x = settings.pick.idle_offset
+            y = settings.screen.height // 2 + settings.pick.discrepancy * (
+                pick - self.lock.level.number_of_picks / 2 + 0.5
+            )
         else:
             position, upper = location
             tumbler = self.lock.get_tumbler(location)
@@ -147,37 +133,40 @@ class BaseGame:
 
             height = self.get_current_height(tumbler)
             h = int(height * self.scale)
-            x = position * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET + BAR_WIDTH // 2
-            y = h + PICK_OFFSET if upper else HEIGHT - h - PICK_OFFSET
+            x = position * (settings.layout.bar_width + settings.layout.bar_offset) + settings.layout.x_offset
+            x += settings.layout.bar_width // 2
+            y = h + settings.pick.offset if upper else settings.screen.height - h - settings.pick.offset
 
-        color = (*PICK_COLORS[pick], alpha)
-        shape_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        color = (*settings.color.picks[pick], alpha)
+        shape_surface = pygame.Surface((settings.screen.width, settings.screen.height), pygame.SRCALPHA)
 
-        if pick == 0:
-            points = [
-                (x, y - PICK_SIZE),
-                (x - PICK_SIZE, y),
-                (x, y + PICK_SIZE),
-                (x + PICK_SIZE, y),
-            ]
-            pygame.draw.polygon(shape_surface, color, points)
-        else:
-            pygame.draw.circle(shape_surface, color, (x, y), PICK_SIZE)
+        match settings.pick.shapes[pick]:
+            case PickShape.DIAMOND:
+                points = [
+                    (x, y - settings.pick.size),
+                    (x - settings.pick.size, y),
+                    (x, y + settings.pick.size),
+                    (x + settings.pick.size, y),
+                ]
+                pygame.draw.polygon(shape_surface, color, points)
+            case PickShape.CIRCLE:
+                pygame.draw.circle(shape_surface, color, (x, y), settings.pick.size)
 
-        rect = pygame.Rect(0, y - PICK_WIDTH // 2, x, PICK_WIDTH)
+        rect = pygame.Rect(0, y - settings.pick.width // 2, x, settings.pick.width)
         pygame.draw.rect(shape_surface, color, rect)
         self.screen.blit(shape_surface, (0, 0))
 
     @staticmethod
     def get_tumbler_x(location: Location) -> int:
-        return location.position * (BAR_WIDTH + BAR_OFFSET) + X_OFFSET + BAR_WIDTH // 2
+        offset = location.position * (settings.layout.bar_width + settings.layout.bar_offset)
+        return offset + settings.layout.x_offset + settings.layout.bar_width // 2
 
     def get_tumbler_y(self, location: Location, height: int) -> int:
         h = int(height * self.scale)
         if location.upper:
             return h
         else:
-            return HEIGHT - h
+            return settings.screen.height - h
 
     def get_current_height(self, tumbler: Tumbler) -> int:
         if tumbler.location in self.current_animation_item:

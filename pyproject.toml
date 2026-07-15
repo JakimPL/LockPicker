@@ -60,6 +60,7 @@ fail_under = 0
 [tool.mypy]
 files = ["src/lockpicker"]
 exclude = ["tests"]
+plugins = ["pydantic.mypy"]
 disallow_subclassing_any = true
 ignore_missing_imports = true
 strict = true

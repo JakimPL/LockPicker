@@ -8,7 +8,6 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import DefaultDict, Dict, List, Optional, Union
 
-from lockpicker.level import MAX_HEIGHT, NUMBER_OF_PICKS
 from lockpicker.level.data import LevelData
 from lockpicker.tumbler import STRUCT_FORMAT
 from lockpicker.tumbler.location import Location
@@ -45,10 +44,7 @@ class Level:
                 warnings.warn(f"Group {group} doesn't have a master tumbler")
 
     @staticmethod
-    def create(
-        number_of_picks: int = NUMBER_OF_PICKS,
-        max_height: int = MAX_HEIGHT,
-    ) -> Level:
+    def create(number_of_picks: int, max_height: int) -> Level:
         return Level(number_of_picks, max_height, {}, {})
 
     def copy(self) -> Level:
