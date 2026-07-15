@@ -1,8 +1,9 @@
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 import pygame
 
 from lockpicker.constants.config import PickShape, settings
+from lockpicker.game.animation import AnimationStep
 from lockpicker.lock import Lock
 from lockpicker.tumbler.location import Location
 from lockpicker.tumbler.tumbler import Tumbler
@@ -22,8 +23,8 @@ class BaseGame:
         self.highlighted: Optional[Location] = None
 
         self.animation = 0.0
-        self.animation_items: List[pygame.Surface] = []
-        self.current_animation_item: Dict[Location, pygame.Surface] = {}
+        self.animation_items: List[AnimationStep] = []
+        self.current_animation_item: AnimationStep = {}
 
         self.scale = (settings.screen.height - settings.layout.bar_y_offset) / self.lock.level.max_height
 

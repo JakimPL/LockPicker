@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from typing import Dict, List
 
+from lockpicker.game.animation import compute_animation_steps
 from lockpicker.level.level import Level
 from lockpicker.lock import Lock
 from lockpicker.paths import LEVELS_DIR
@@ -57,8 +58,8 @@ def replay_recent_changes(path: Path) -> List[Dict[str, List[int]]]:
     lock = Lock(level)
     lock.select_pick(0)
     lock.push(_probe_location(level))
-    changes = lock.get_recent_changes()
-    return [{_key(loc): list(pair) for loc, pair in step.items()} for step in changes]
+    steps = compute_animation_steps(lock.drain_snapshots())
+    return [{_key(loc): list(pair) for loc, pair in step.items()} for step in steps]
 
 
 def _generate() -> None:

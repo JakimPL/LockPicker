@@ -117,7 +117,7 @@ class Editor(BaseGame):
             if self.lock.get_tumbler(location) is None:
                 height = self.calculate_new_height(location)
                 tumbler = self.get_temp_tumbler(location, height)
-                self.lock.add_tumbler(tumbler)
+                self.lock.level.add_tumbler(tumbler)
 
             self.save_state()
 
@@ -128,7 +128,7 @@ class Editor(BaseGame):
     def delete_highlighted_tumbler(self):
         if self.highlighted is not None:
             tumbler = self.lock.get_tumbler(self.highlighted)
-            self.lock.remove_tumbler(tumbler)
+            self.lock.level.remove_tumbler(tumbler)
             self.highlighted = None
             self.save_state()
 
@@ -161,7 +161,7 @@ class Editor(BaseGame):
     def complete_binding(self):
         if self.binding_initial is not None and self.binding_target is not None:
             difference = self.calculate_difference(self.binding_target)
-            self.lock.add_binding(self.binding_initial, self.binding_target, difference)
+            self.lock.level.add_binding(self.binding_initial, self.binding_target, difference)
             self.cancel_binding()
             self.save_state()
 
