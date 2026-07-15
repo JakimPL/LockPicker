@@ -5,9 +5,9 @@ import pygame
 
 from lockpicker.agents.random import RandomAgent
 from lockpicker.constants.config import settings
+from lockpicker.engine.lock import Lock
 from lockpicker.game.animation import compute_animation_steps
 from lockpicker.game.base import BaseGame
-from lockpicker.lock import Lock
 from lockpicker.state.state import State
 
 

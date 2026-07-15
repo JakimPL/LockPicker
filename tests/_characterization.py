@@ -4,9 +4,9 @@ import json
 from pathlib import Path
 from typing import Dict, List, Tuple, Union
 
+from lockpicker.engine.lock import Lock
 from lockpicker.game.animation import compute_animation_steps
 from lockpicker.level.level import Level
-from lockpicker.lock import Lock
 from lockpicker.paths import LEVELS_DIR
 from lockpicker.tumbler.location import Location
 

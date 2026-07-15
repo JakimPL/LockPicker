@@ -3,9 +3,9 @@ from typing import List, Optional, Tuple
 import pygame
 
 from lockpicker.constants.config import PickShape, settings
+from lockpicker.engine.lock import Lock
 from lockpicker.game.animation import AnimationStep
 from lockpicker.game.layout import Layout
-from lockpicker.lock import Lock
 from lockpicker.tumbler.location import Location
 from lockpicker.tumbler.tumbler import Tumbler
 

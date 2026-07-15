@@ -1,8 +1,8 @@
 from dataclasses import replace
 from typing import Dict, List, Optional
 
+from lockpicker.engine.pick import PickSet
 from lockpicker.level.level import Level
-from lockpicker.pick import PickSet
 from lockpicker.state.state import LocatedTumblerState, PickState, State
 from lockpicker.tumbler.location import Location
 from lockpicker.tumbler.tumbler import Tumbler
@@ -106,15 +106,22 @@ class Lock:
         self._apply_bindings_iteratively(location, pushed=False)
         self._add_current_state()
 
+    def _lower_tumblers_free(self, location: Location) -> bool:
+        for lower_position in range(location.position):
+            lower_location = Location(lower_position, location.upper)
+            tumbler = self.get_tumbler(lower_location)
+            if tumbler is not None and not tumbler.free:
+                return False
+
+        return True
+
     def _check_previous_tumblers(self, tumbler: Tumbler) -> bool:
         location = tumbler.location
-        position = tumbler.position
-        for index in range(position + 1):
-            previous_location = Location(index, location.upper)
-            previous_tumbler = self.get_tumbler(previous_location)
-            counter = self.get_tumbler(previous_location.counter)
-            if previous_tumbler is not None and index < position and not previous_tumbler.free:
-                return False
+        if not self._lower_tumblers_free(location):
+            return False
+
+        for index in range(location.position + 1):
+            counter = self.get_tumbler(Location(index, location.upper).counter)
             if counter is not None and tumbler.height + counter.height >= self.level.max_height:
                 return False
 
@@ -164,15 +171,10 @@ class Lock:
 
     def _check_if_pick_is_valid(self, pick: int) -> bool:
         location = self._picks.get(pick)
-        if location is not None:
-            position, upper = location
-            for lower_position in range(position):
-                lower_location = Location(lower_position, upper)
-                tumbler = self.get_tumbler(lower_location)
-                if tumbler is not None and not tumbler.free:
-                    return False
+        if location is None:
+            return True
 
-        return True
+        return self._lower_tumblers_free(location)
 
     def _revise_picks(self) -> bool:
         all_picks_valid = False

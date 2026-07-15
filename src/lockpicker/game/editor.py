@@ -6,9 +6,9 @@ from typing import Callable, Deque, Dict, NamedTuple, Optional, Tuple, Union
 import pygame
 
 from lockpicker.constants.config import settings
+from lockpicker.engine.lock import Lock
 from lockpicker.game.base import BaseGame
 from lockpicker.level.level import Level
-from lockpicker.lock import Lock
 from lockpicker.tumbler.definition import TumblerDefinition
 from lockpicker.tumbler.location import Location
 from lockpicker.tumbler.tumbler import Tumbler
