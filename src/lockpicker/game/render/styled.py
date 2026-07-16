@@ -58,8 +58,11 @@ class StyledRenderer(RendererBase):
         height = self.get_current_height(tumbler)
         return self.layout.center_x(tumbler.position), self.layout.tip_y(tumbler.location, height)
 
-    def draw_picks(self) -> None:
+    def draw_frame(self) -> None:
         self.screen.blit(self.sprites.frame, (0, 0))
+
+    def draw_picks(self) -> None:
+        self.draw_frame()
         for pick in range(self.lock.level.number_of_picks):
             self.draw_pick(pick)
 

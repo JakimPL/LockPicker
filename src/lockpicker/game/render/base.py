@@ -25,6 +25,9 @@ class RendererBase:
         self.layout = layout
         self.animation = animation
 
+    def draw_frame(self) -> None:
+        pass
+
     def get_current_height(self, tumbler: Tumbler) -> float:
         return self.animation.height(tumbler)
 

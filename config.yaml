@@ -25,7 +25,7 @@ arrow:
 color:
   highlight: [255, 255, 255]
   background: [32, 32, 32]
-  post_release: [64, 64, 64]
+  post_release: [104, 92, 72]
   arrow: [192, 128, 128]
   tumblers:
     - [128, 128, 128]
@@ -38,7 +38,7 @@ color:
 alpha:
   opaque: 255
   dimmed: 160
-  faint: 64
+  faint: 112
   jam_divisor: 3
 
 animation:
@@ -55,7 +55,7 @@ simulation:
   max_moves: 100
 
 theme:
-  mode: flat
+  mode: styled
   name: workshop
   directory: assets/themes
   highlight_tint: [72, 48, 24]
