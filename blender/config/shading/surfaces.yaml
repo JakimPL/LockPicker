@@ -1,0 +1,14 @@
+bore:
+  specular: 0.05
+  roughness: 0.85
+  breakup:
+    noise_scale: 14.0
+    noise_detail: 6.0
+    spread: 0.08
+    minimum: 0.03
+    streak_mapping_scale: [25.0, 25.0, 1.2]
+    streak_scale: 1.0
+    streak_detail: 4.0
+    strength: 0.2
+enamel: {roughness: 0.12, coat_weight: 1.0, coat_roughness: 0.08}
+grip: {roughness: 0.65, wave_scale: 25.0, bump_strength: 0.35, dim_factor: 0.75}

@@ -1,0 +1,9 @@
+render:
+  samples: 512
+  seed: 0
+  use_denoising: true
+  resolution: [2000, 1600]
+  film_transparent: false
+  view_transform: AgX
+  look_candidates: ["AgX - Base Contrast", "Base Contrast", "None"]
+  exposure: 0.3

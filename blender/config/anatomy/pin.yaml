@@ -1,0 +1,12 @@
+pin:
+  width_margin: 0.07
+  depth: 0.5
+  shoulder_bevel: {offset: 0.24, segments: 5, profile: 0.5}
+  back_bevel: {offset: 0.06, segments: 2, profile: 0.7}
+  tip_bevel: {offset: 0.12, segments: 3, profile: 0.7}
+  collar:
+    width_margin: 0.06
+    depth_margin: 0.04
+    height: 0.22
+    tip_distance: 0.82
+    bevel: {offset: 0.03, segments: 2, profile: 0.7}
