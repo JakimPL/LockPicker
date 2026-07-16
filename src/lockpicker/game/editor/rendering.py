@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Optional, Tuple
 
 import pygame
-
 from lockpicker.constants.config import settings
 from lockpicker.engine.lock import Lock
 from lockpicker.game.editor.geometry import EditorGeometry
@@ -78,14 +77,14 @@ class EditorRenderer:
         post_release_pixels = tumbler.post_release_height * layout.scale
         left = layout.bar_x(tumbler.position)
         height_pixels = self.renderer.get_current_height(tumbler) * layout.scale
-        top = height_pixels if tumbler.upper else settings.screen.height - height_pixels - post_release_pixels
+        top = height_pixels if tumbler.upper else layout.screen_height - height_pixels - post_release_pixels
         if post_release_pixels > 0:
-            return pygame.Rect(left, top, settings.layout.bar_width, post_release_pixels)
+            return pygame.Rect(left, top, layout.bar_width, post_release_pixels)
 
         return pygame.Rect(
             left,
             top + post_release_pixels,
-            settings.layout.bar_width,
+            layout.bar_width,
             -post_release_pixels,
         )
 
@@ -187,6 +186,9 @@ class EditorRenderer:
         if start_x == end_x and start_y == intermediate_y:
             return
 
+        layout = self.renderer.layout
+        size = layout.px(settings.arrow.size)
+        width = max(1, layout.px(settings.arrow.width))
         color = (*settings.color.arrow, alpha)
         surface = pygame.Surface(self.renderer.screen.get_size(), pygame.SRCALPHA)
         pygame.draw.line(
@@ -194,21 +196,21 @@ class EditorRenderer:
             color,
             (start_x, start_y),
             (end_x, intermediate_y),
-            settings.arrow.width,
+            width,
         )
         pygame.draw.line(
             surface,
             color,
             (end_x, intermediate_y),
             (end_x, end_y),
-            settings.arrow.width,
+            width,
         )
         pygame.draw.line(
             surface,
             color,
-            (end_x - settings.arrow.size, end_y),
-            (end_x + settings.arrow.size, end_y),
-            settings.arrow.width,
+            (end_x - size, end_y),
+            (end_x + size, end_y),
+            width,
         )
         self.renderer.screen.blit(surface, (0, 0))
 

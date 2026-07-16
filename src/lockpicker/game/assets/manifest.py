@@ -4,9 +4,8 @@ import json
 from pathlib import Path
 from typing import Dict, Final, Tuple
 
-from pydantic import BaseModel, ConfigDict
-
 from lockpicker.constants.config import PickShape
+from pydantic import BaseModel, ConfigDict
 
 MANIFEST_FILENAME: Final[str] = "manifest.json"
 

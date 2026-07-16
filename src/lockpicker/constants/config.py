@@ -1,6 +1,7 @@
 from enum import StrEnum
 from typing import List, NamedTuple, Tuple, Type
 
+from lockpicker.paths import CONFIG_FILE
 from pydantic import BaseModel, ConfigDict
 from pydantic_settings import (
     BaseSettings,
@@ -8,8 +9,6 @@ from pydantic_settings import (
     SettingsConfigDict,
     YamlConfigSettingsSource,
 )
-
-from lockpicker.paths import CONFIG_FILE
 
 
 class Color(NamedTuple):
@@ -37,6 +36,12 @@ class ScreenConfig(Section):
     height: int
 
 
+class DisplayConfig(Section):
+    width: int
+    height: int
+    fullscreen: bool
+
+
 class LayoutConfig(Section):
     x_offset: int
     bar_width: int
@@ -61,6 +66,7 @@ class ArrowConfig(Section):
 class ColorConfig(Section):
     highlight: Color
     background: Color
+    border: Color
     post_release: Color
     arrow: Color
     tumblers: List[Color]
@@ -105,6 +111,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(yaml_file=CONFIG_FILE, frozen=True)
 
     screen: ScreenConfig
+    display: DisplayConfig
     layout: LayoutConfig
     pick: PickConfig
     arrow: ArrowConfig

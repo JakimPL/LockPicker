@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from typing import DefaultDict, Dict, List, Union, cast
 
 import msgpack
-
 from lockpicker.level.validation import BindingSpec, LevelSpec, TumblerSpec
 from lockpicker.tumbler.definition import TumblerDefinition
 from lockpicker.tumbler.location import Location

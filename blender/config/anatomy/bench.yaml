@@ -1,0 +1,9 @@
+bench:
+  face_y: -0.05
+  depth: 0.5
+  margin: 12.0
+  overshoot: 1.5
+  overlap: 0.3
+  plank_width: 1.35
+  gap: 0.035
+  depth_jitter: [0.0, -0.014, 0.008, -0.006, 0.016, -0.01]

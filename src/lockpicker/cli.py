@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+from typing import Optional, Tuple
 
 import pygame
-
 from lockpicker.agents.random import play_random_games
 from lockpicker.constants.config import RendererMode, settings
 from lockpicker.engine.lock import Lock
@@ -24,6 +24,22 @@ def load_level(path: Path, number_of_picks: int, max_height: int) -> Level:
         raise ValueError(f"max_height must be at least {settings.rules.min_max_height}")
 
     return Level.create(number_of_picks, max_height)
+
+
+def parse_resolution(value: str) -> Tuple[int, int]:
+    try:
+        width_text, height_text = value.lower().split("x")
+        return int(width_text), int(height_text)
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(f"invalid resolution {value!r}, expected WIDTHxHEIGHT") from error
+
+
+def create_window(resolution: Optional[Tuple[int, int]], fullscreen: bool) -> pygame.surface.Surface:
+    if fullscreen or (settings.display.fullscreen and resolution is None):
+        return pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+
+    width, height = resolution if resolution is not None else (settings.display.width, settings.display.height)
+    return pygame.display.set_mode((width, height), pygame.RESIZABLE)
 
 
 def main() -> None:
@@ -48,6 +64,13 @@ def main() -> None:
         default=None,
         help="Renderer mode (defaults to theme.mode from config)",
     )
+    parser.add_argument(
+        "--resolution",
+        type=parse_resolution,
+        default=None,
+        help="Window size as WIDTHxHEIGHT (defaults to display config)",
+    )
+    parser.add_argument("--fullscreen", action="store_true", help="Fullscreen at desktop resolution")
     args = parser.parse_args()
 
     path = Path(args.level_file)
@@ -59,12 +82,13 @@ def main() -> None:
 
     def run_game() -> None:
         lock_copy = Lock(lock.level.copy())
-        game = Game(screen, lock_copy, random_moves=args.random_moves, renderer_mode=args.renderer)
+        window = pygame.display.get_surface() or screen
+        game = Game(window, lock_copy, random_moves=args.random_moves, renderer_mode=args.renderer)
         game.run()
 
     pygame.init()
     pygame.display.set_caption("LockPicker")
-    screen = pygame.display.set_mode((settings.screen.width, settings.screen.height))
+    screen = create_window(args.resolution, args.fullscreen)
 
     if args.edit:
         editor = Editor(screen, lock, path, run_game, renderer_mode=args.renderer)

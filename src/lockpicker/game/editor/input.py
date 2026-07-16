@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Callable
 
 import pygame
-
 from lockpicker.engine.lock import Lock
 from lockpicker.game.editor.geometry import EditorGeometry
 from lockpicker.game.editor.snapshot import EditorSnapshots

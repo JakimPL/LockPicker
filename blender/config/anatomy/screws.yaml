@@ -1,6 +1,6 @@
 screws:
-  head: {segments: 24, base_radius: 0.13, face_radius: 0.115, depth: 0.07, y: -0.165}
-  slot: {length: 0.22, depth: 0.05, height: 0.045, y: -0.2}
+  head: {segments: 24, base_radius: 0.13, face_radius: 0.115, depth: 0.07, y: -0.065}
+  slot: {length: 0.22, depth: 0.05, height: 0.045, y: -0.1}
   placements:
     - {x: -5.9, z: 4.6, slot_angle: 0.3}
     - {x: -5.9, z: 0.0, slot_angle: 1.2}

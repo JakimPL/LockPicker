@@ -2,7 +2,6 @@ from collections import deque
 from typing import Deque, Optional
 
 import pygame
-
 from lockpicker.agents.random import RandomAgent
 from lockpicker.constants.config import RendererMode
 from lockpicker.engine.lock import Lock
@@ -12,6 +11,7 @@ from lockpicker.game.layout import Layout
 from lockpicker.game.loop import run_loop
 from lockpicker.game.render.factory import create_renderer
 from lockpicker.game.render.protocol import BoardRenderer
+from lockpicker.game.viewport import Viewport
 from lockpicker.state.state import State
 from lockpicker.tumbler.location import Location
 
@@ -30,11 +30,16 @@ class Game:
         self.running = False
         self.random_moves = random_moves
         self.random_agent = RandomAgent(lock)
+        self.renderer_mode = renderer_mode
 
+        self.viewport = Viewport(screen)
         self.mouse = MouseState()
+        self.mouse.offset = self.viewport.offset
         self.animation = Animation()
-        self.layout = Layout(lock.level.max_height)
-        self.renderer: BoardRenderer = create_renderer(screen, lock, self.layout, self.animation, mode=renderer_mode)
+        self.layout = Layout(lock.level.max_height, self.viewport.ui_scale)
+        self.renderer: BoardRenderer = create_renderer(
+            self.viewport.board, lock, self.layout, self.animation, mode=renderer_mode
+        )
         self.highlighted: Optional[Location] = None
 
         self.undo_history: Deque[State] = deque()
@@ -56,8 +61,23 @@ class Game:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+            elif event.type == pygame.WINDOWRESIZED:
+                self.rebuild_viewport()
             elif event.type == pygame.KEYDOWN:
                 self.handle_key(event.key)
+
+    def rebuild_viewport(self) -> None:
+        window = pygame.display.get_surface()
+        if window is None:
+            return
+
+        self.screen = window
+        self.viewport = Viewport(window)
+        self.layout.rescale(self.viewport.ui_scale)
+        self.mouse.offset = self.viewport.offset
+        self.renderer = create_renderer(
+            self.viewport.board, self.lock, self.layout, self.animation, mode=self.renderer_mode
+        )
 
     def handle_key(self, key: int) -> None:
         if key == Key.ESCAPE:

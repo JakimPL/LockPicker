@@ -97,10 +97,12 @@ def _render_board(workshop: WorkshopScene, *, config: SceneConfig, directory: Pa
     set_camera_ray_visibility(workshop.background_wall, visible=False)
 
     set_camera_ray_visibility(workshop.frame_plate, visible=True)
+    set_camera_ray_visibility(workshop.bench, visible=True)
     set_camera_ray_visibility(workshop.screws, visible=True)
     scene.render.film_transparent = True
     _render_file(scene, directory / _FRAME_FILENAME, expected=_scaled(logical, scale))
     set_camera_ray_visibility(workshop.frame_plate, visible=False)
+    set_camera_ray_visibility(workshop.bench, visible=False)
     set_camera_ray_visibility(workshop.screws, visible=False)
 
     return BoardAssets(logical_size=logical, background=_BACKGROUND_FILENAME, frame=_FRAME_FILENAME)
@@ -270,7 +272,7 @@ def _expose_board_to_secondary_rays(workshop: WorkshopScene) -> None:
     """
     workshop.collections.background.hide_render = False
     workshop.collections.frame.hide_render = False
-    for static in (workshop.background_wall, workshop.frame_plate, workshop.screws):
+    for static in (workshop.background_wall, workshop.frame_plate, workshop.bench, workshop.screws):
         set_camera_ray_visibility(static, visible=False)
 
 

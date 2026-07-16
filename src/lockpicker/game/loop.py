@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Protocol
 
 import pygame
-
 from lockpicker.constants.config import settings
 
 

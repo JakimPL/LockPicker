@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Optional
 
-from lockpicker.constants.config import settings
 from lockpicker.engine.lock import Lock
 from lockpicker.game.input import MouseState
 from lockpicker.game.layout import Layout
@@ -27,7 +26,7 @@ class EditorGeometry:
         if position < 0:
             return None
 
-        upper = self.mouse.position[1] < settings.screen.height // 2
+        upper = self.mouse.position[1] < self.layout.screen_height // 2
         return Location(position, upper)
 
     def calculate_new_height(

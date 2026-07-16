@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Dict
 
 import pygame
-
 from lockpicker.constants.config import settings
 from lockpicker.game.assets.manifest import ThemeManifest, load_manifest
 from lockpicker.paths import PROJECT_ROOT

@@ -10,6 +10,7 @@ from locksmith.colors import linear_rgb
 from locksmith.config.models.scene import SceneConfig
 from locksmith.lookdev import build_lookdev
 from locksmith.parts.background import build_background
+from locksmith.parts.bench import build_bench
 from locksmith.parts.frame import build_frame
 from locksmith.parts.screws import build_screws
 from locksmith.parts.shadow_catcher import build_shadow_catcher
@@ -40,6 +41,7 @@ class WorkshopScene:
     library: MaterialLibrary
     background_wall: Object
     frame_plate: Object
+    bench: Object
     screws: Object
     shadow_catcher: Object
     key_sun: Object
@@ -65,6 +67,13 @@ def build_scene(config: SceneConfig) -> WorkshopScene:
     )
     frame_plate = build_frame(
         board=board, anatomy=config.anatomy.plate, material=library.plate, collection=collections.frame
+    )
+    bench = build_bench(
+        board=board,
+        anatomy=config.anatomy.bench,
+        plate=config.anatomy.plate,
+        material=library.wood,
+        collection=collections.frame,
     )
     screws = build_screws(
         anatomy=config.anatomy.screws,
@@ -121,6 +130,7 @@ def build_scene(config: SceneConfig) -> WorkshopScene:
         library=library,
         background_wall=background_wall,
         frame_plate=frame_plate,
+        bench=bench,
         screws=screws,
         shadow_catcher=shadow_catcher,
         key_sun=key_sun,

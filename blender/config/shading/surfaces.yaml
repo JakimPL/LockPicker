@@ -1,6 +1,7 @@
 bore:
   specular: 0.05
   roughness: 0.85
+  glow: 0.5
   breakup:
     noise_scale: 14.0
     noise_detail: 6.0
@@ -12,3 +13,14 @@ bore:
     strength: 0.2
 enamel: {roughness: 0.12, coat_weight: 1.0, coat_roughness: 0.08}
 grip: {roughness: 0.65, wave_scale: 25.0, bump_strength: 0.35, dim_factor: 0.75}
+wood:
+  specular: 0.2
+  roughness: 0.62
+  ring_scale: 3.0
+  ring_detail: 2.0
+  distortion: 4.0
+  stretch: 0.08
+  tone_scale: 0.5
+  tone_detail: 2.0
+  tone_strength: 0.35
+  bump_strength: 0.15

@@ -13,5 +13,7 @@ def make_bore_material(name: str, *, color: HexColor, config: BoreConfig) -> Mat
     material, node_tree, principled = new_principled_material(name)
     set_float_input(principled, "Specular IOR Level", config.specular)
     set_color_input(principled, "Base Color", linear_rgba(color))
+    set_color_input(principled, "Emission Color", linear_rgba(color))
+    set_float_input(principled, "Emission Strength", config.glow)
     apply_roughness_breakup(node_tree, principled, roughness=config.roughness, config=config.breakup)
     return material

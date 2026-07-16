@@ -3,7 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-
 from lockpicker.level.level import Level
 from tests._characterization import level_paths
 

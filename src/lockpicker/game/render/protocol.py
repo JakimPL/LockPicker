@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Optional, Protocol, Tuple
 
 import pygame
-
 from lockpicker.game.layout import Layout
 from lockpicker.tumbler.location import Location
 from lockpicker.tumbler.tumbler import Tumbler

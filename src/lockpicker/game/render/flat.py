@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Optional, Tuple
 
 import pygame
-
 from lockpicker.constants.config import PickShape, settings
 from lockpicker.game.render.base import RendererBase
 from lockpicker.tumbler.tumbler import Tumbler
@@ -43,20 +42,22 @@ class FlatRenderer(RendererBase):
 
     def draw_pick_shape(self, pick: int, x: int, y: float, alpha: int) -> None:
         color = (*settings.color.picks[pick], alpha)
-        shape_surface = pygame.Surface((settings.screen.width, settings.screen.height), pygame.SRCALPHA)
+        shape_surface = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
+        size = self.layout.px(settings.pick.size)
+        width = max(1, self.layout.px(settings.pick.width))
 
         match settings.pick.shapes[pick]:
             case PickShape.DIAMOND:
                 points = [
-                    (x, y - settings.pick.size),
-                    (x - settings.pick.size, y),
-                    (x, y + settings.pick.size),
-                    (x + settings.pick.size, y),
+                    (x, y - size),
+                    (x - size, y),
+                    (x, y + size),
+                    (x + size, y),
                 ]
                 pygame.draw.polygon(shape_surface, color, points)
             case PickShape.CIRCLE:
-                pygame.draw.circle(shape_surface, color, (x, y), settings.pick.size)
+                pygame.draw.circle(shape_surface, color, (x, y), size)
 
-        rect = pygame.Rect(0, y - settings.pick.width // 2, x, settings.pick.width)
+        rect = pygame.Rect(0, y - width // 2, x, width)
         pygame.draw.rect(shape_surface, color, rect)
         self.screen.blit(shape_surface, (0, 0))

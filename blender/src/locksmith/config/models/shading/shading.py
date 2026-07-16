@@ -4,6 +4,7 @@ from locksmith.config.models.shading.enamel import EnamelConfig
 from locksmith.config.models.shading.grip import GripConfig
 from locksmith.config.models.shading.metals import MetalsConfig
 from locksmith.config.models.shading.plate.plate import PlateShading
+from locksmith.config.models.shading.wood import WoodConfig
 
 
 class ShadingConfig(SceneModel):
@@ -12,3 +13,4 @@ class ShadingConfig(SceneModel):
     bore: BoreConfig
     enamel: EnamelConfig
     grip: GripConfig
+    wood: WoodConfig

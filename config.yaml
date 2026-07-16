@@ -2,6 +2,11 @@ screen:
   width: 1000
   height: 800
 
+display:
+  width: 1000
+  height: 800
+  fullscreen: false
+
 layout:
   x_offset: 150
   bar_width: 80
@@ -25,6 +30,7 @@ arrow:
 color:
   highlight: [255, 255, 255]
   background: [32, 32, 32]
+  border: [13, 12, 11]
   post_release: [104, 92, 72]
   arrow: [192, 128, 128]
   tumblers:

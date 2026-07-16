@@ -1,5 +1,6 @@
 from locksmith.config.models.anatomy.background import BackgroundAnatomy
 from locksmith.config.models.anatomy.badge.badge import BadgeAnatomy
+from locksmith.config.models.anatomy.bench import BenchAnatomy
 from locksmith.config.models.anatomy.pick.pick import PickAnatomy
 from locksmith.config.models.anatomy.pin.pin import PinAnatomy
 from locksmith.config.models.anatomy.plate import PlateAnatomy
@@ -11,6 +12,7 @@ from locksmith.config.models.base import SceneModel
 class AnatomyConfig(SceneModel):
     pin: PinAnatomy
     plate: PlateAnatomy
+    bench: BenchAnatomy
     screws: ScrewsAnatomy
     background: BackgroundAnatomy
     pick: PickAnatomy

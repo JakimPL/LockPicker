@@ -15,6 +15,8 @@ class PaletteConfig(SceneModel):
     plate: HexColor
     plate_dark: HexColor
     plate_deep: HexColor
+    wood: HexColor
+    wood_dark: HexColor
     bore: HexColor
     world_floor: HexColor
     world_mid: HexColor

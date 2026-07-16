@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pytest
-
 from lockpicker.game.assets.library import theme_directory, validate_manifest
 from lockpicker.game.assets.manifest import ThemeManifest, load_manifest
 from lockpicker.game.assets.sprites import scaled_pair

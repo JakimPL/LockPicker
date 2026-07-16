@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from typing import Dict, Optional, Tuple
 
 import pygame
-
 from lockpicker.constants.config import PickShape, settings
 from lockpicker.game.assets.library import AssetLibrary
 from lockpicker.game.assets.manifest import PixelPair
@@ -27,10 +26,10 @@ TumblerKey = Tuple[int, bool, bool, bool]
 class ThemeSprites:
     def __init__(self, library: AssetLibrary, layout: Layout) -> None:
         manifest = library.manifest
-        self.scale_x = settings.layout.bar_width / manifest.tumblers.column_width_pixels
+        self.scale_x = layout.bar_width / manifest.tumblers.column_width_pixels
         self.scale_y = layout.scale / manifest.tumblers.pixels_per_height_unit
 
-        screen_size = (settings.screen.width, settings.screen.height)
+        screen_size = (layout.screen_width, layout.screen_height)
         self.background = pygame.transform.smoothscale(library.surface(manifest.board.background), screen_size)
         self.frame = pygame.transform.smoothscale(library.surface(manifest.board.frame), screen_size)
 

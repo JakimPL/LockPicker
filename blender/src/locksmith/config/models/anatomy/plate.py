@@ -8,9 +8,15 @@ class PlateAnatomy(SceneModel):
     pointiness-driven shading stays local to the slot rims; on a plate whose
     only vertices sit on those rims, pointiness interpolates across the whole
     face and the entire plate reads as a worn edge.
+
+    The plate spans the slot columns plus `bezel` on each side; the wooden
+    bench panels fill the rest of the board. `margin` still stretches it
+    vertically past the visible board so full-travel pins bake inside its
+    emission field.
     """
 
     margin: float
+    bezel: float
     face_y: float
     back_y: float
     subdivision_cuts: int

@@ -4,7 +4,6 @@ import os
 from typing import Callable, Dict, Iterable, Optional
 
 import pytest
-
 from lockpicker.engine.lock import Lock
 from lockpicker.level.level import Level
 from lockpicker.tumbler.definition import TumblerDefinition

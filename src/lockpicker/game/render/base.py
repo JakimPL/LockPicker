@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Optional, Tuple
 
 import pygame
-
 from lockpicker.constants.config import settings
 from lockpicker.engine.lock import Lock
 from lockpicker.game.animation import Animation
@@ -46,8 +45,8 @@ class RendererBase:
 
     def get_pick_anchor(self, pick: int, location: Optional[Location]) -> Tuple[int, float]:
         if location is None:
-            x = settings.pick.idle_offset
-            y = settings.screen.height / 2 + settings.pick.discrepancy * (
+            x = self.layout.px(settings.pick.idle_offset)
+            y = self.layout.screen_height / 2 + self.layout.px(settings.pick.discrepancy) * (
                 pick - self.lock.level.number_of_picks / 2 + 0.5
             )
             return x, y
@@ -59,7 +58,8 @@ class RendererBase:
         height = self.get_current_height(tumbler)
         h = self.layout.height_to_pixels(height)
         x = self.layout.center_x(location.position)
-        y = h + settings.pick.offset if location.upper else settings.screen.height - h - settings.pick.offset
+        offset = self.layout.px(settings.pick.offset)
+        y = h + offset if location.upper else self.layout.screen_height - h - offset
         return x, y
 
     def get_tumbler_x(self, location: Location) -> int:

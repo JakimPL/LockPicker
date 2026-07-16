@@ -77,7 +77,7 @@ good-names = ["x", "y", "z"]
 max-args = 8
 max-positional-arguments = 4
 max-locals = 25
-max-attributes = 13
+max-attributes = 14
 
 [tool.pylint.similarities]
 min-similarity-lines = 10

@@ -5,7 +5,6 @@ from typing import Tuple
 
 import pygame
 import pytest
-
 from lockpicker.constants.config import RendererMode, settings
 from lockpicker.engine.lock import Lock
 from lockpicker.game.editor.editor import Editor
