@@ -59,3 +59,6 @@ theme:
   name: workshop
   directory: assets/themes
   highlight_tint: [72, 48, 24]
+  jam_tint: [128, 122, 134]
+  shadow_alpha: 160
+  badge_alpha: 255

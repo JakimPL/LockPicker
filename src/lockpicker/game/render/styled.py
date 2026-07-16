@@ -27,6 +27,8 @@ class StyledRenderer(RendererBase):
 
     def draw_background(self) -> None:
         self.screen.blit(self.sprites.background, (0, 0))
+        for tumbler in self.lock.get_tumblers_by_location().values():
+            self.blit_anchored(self.sprites.shadow(upper=tumbler.upper), self.get_tip_target(tumbler))
 
     def draw_tumbler(
         self,
@@ -36,10 +38,25 @@ class StyledRenderer(RendererBase):
         highlighted: bool = False,
         alpha: Optional[int] = None,
     ) -> None:
-        sprite = self.sprites.tumbler(tumbler.group, upper=tumbler.upper, highlighted=highlighted)
-        height = self.get_current_height(tumbler)
-        target = (self.layout.center_x(tumbler.position), self.layout.tip_y(tumbler.location, height))
+        sprite = self.sprites.tumbler(
+            tumbler.group,
+            upper=tumbler.upper,
+            highlighted=highlighted,
+            jammed=tumbler.jammed,
+            alpha=alpha,
+        )
+        target = self.get_tip_target(tumbler)
         self.blit_anchored(sprite, target)
+        if tumbler.master:
+            self.draw_badge(tumbler, target)
+
+    def draw_badge(self, tumbler: Tumbler, tip: Tuple[int, int]) -> None:
+        offset = -self.sprites.badge_offset if tumbler.upper else self.sprites.badge_offset
+        self.blit_anchored(self.sprites.badge, (tip[0], tip[1] + offset))
+
+    def get_tip_target(self, tumbler: Tumbler) -> Tuple[int, int]:
+        height = self.get_current_height(tumbler)
+        return self.layout.center_x(tumbler.position), self.layout.tip_y(tumbler.location, height)
 
     def draw_picks(self) -> None:
         self.screen.blit(self.sprites.frame, (0, 0))
@@ -48,7 +65,7 @@ class StyledRenderer(RendererBase):
 
     def draw_pick(self, pick: int) -> None:
         location = self.lock.get_pick(pick)
-        sprite = self.sprites.pick(settings.pick.shapes[pick])
+        sprite = self.sprites.pick(settings.pick.shapes[pick], active=pick == self.lock.current_pick)
         self.blit_anchored(sprite, self.get_pick_anchor(pick, location))
 
     def blit_anchored(self, sprite: ScaledSprite, target: Tuple[float, float]) -> None:

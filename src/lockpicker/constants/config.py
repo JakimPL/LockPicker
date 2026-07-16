@@ -95,6 +95,9 @@ class ThemeConfig(Section):
     name: str
     directory: str
     highlight_tint: Color
+    jam_tint: Color
+    shadow_alpha: int
+    badge_alpha: int
 
 
 class Settings(BaseSettings):
