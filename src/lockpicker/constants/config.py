@@ -76,6 +76,7 @@ class AlphaConfig(Section):
 
 class AnimationConfig(Section):
     speed: float
+    fps: int
 
 
 class RulesConfig(Section):

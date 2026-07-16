@@ -1,8 +1,8 @@
 plate:
-  margin: 4.0
+  margin: 12.0
   face_y: -0.15
   back_y: 0.55
-  subdivision_cuts: 48
+  subdivision_cuts: 72
   slot_clearance: 0.04
   cutter_depth_margin: 0.4
   cutter_height_margin: 0.2

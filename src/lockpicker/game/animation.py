@@ -64,12 +64,21 @@ class Animation:
     def _max_value(self) -> int:
         return max(abs(change.end - change.start) for change in self.current_item.values())
 
+    def _eased_value(self) -> float:
+        span = self._max_value()
+        if span == 0:
+            return self.value
+
+        progress = min(self.value / span, 1.0)
+        return span * progress * progress * (3.0 - 2.0 * progress)
+
     def height(self, tumbler: Tumbler) -> float:
         change = self.current_item.get(tumbler.location)
         if change is None:
             return tumbler.height
 
+        value = self._eased_value()
         if change.end > change.start:
-            return change.start + min(self.value, change.end - change.start)
+            return change.start + min(value, change.end - change.start)
 
-        return change.start + max(-self.value, change.end - change.start)
+        return change.start + max(-value, change.end - change.start)
