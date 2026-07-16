@@ -5,44 +5,13 @@ from typing import Optional, Tuple
 import pygame
 
 from lockpicker.constants.config import PickShape, settings
-from lockpicker.engine.lock import Lock
-from lockpicker.game.animation import Animation
-from lockpicker.game.layout import Layout
-from lockpicker.tumbler.location import Location
+from lockpicker.game.render.base import RendererBase
 from lockpicker.tumbler.tumbler import Tumbler
 
 
-class Renderer:
-    def __init__(
-        self,
-        screen: pygame.surface.Surface,
-        lock: Lock,
-        layout: Layout,
-        animation: Animation,
-    ) -> None:
-        self.screen = screen
-        self.lock = lock
-        self.layout = layout
-        self.animation = animation
-
+class FlatRenderer(RendererBase):
     def draw_background(self) -> None:
         self.screen.fill(settings.color.background)
-
-    def get_current_height(self, tumbler: Tumbler) -> float:
-        return self.animation.height(tumbler)
-
-    def get_tumbler_bounds(self, tumbler: Tumbler) -> Tuple[int, int, int, int]:
-        height = self.get_current_height(tumbler)
-        return self.layout.bar_bounds(tumbler.location, height)
-
-    def is_mouse_hovering_tumbler(
-        self,
-        tumbler: Tumbler,
-        mouse_position: Tuple[int, int],
-        bounds: Optional[Tuple[int, int, int, int]] = None,
-    ) -> bool:
-        rect = pygame.Rect(*self.get_tumbler_bounds(tumbler) if bounds is None else bounds)
-        return bool(rect.collidepoint(mouse_position))
 
     def draw_tumbler(
         self,
@@ -72,24 +41,6 @@ class Renderer:
         x, y = self.get_pick_anchor(pick, location)
         self.draw_pick_shape(pick, x, y, alpha)
 
-    def get_pick_anchor(self, pick: int, location: Optional[Location]) -> Tuple[int, float]:
-        if location is None:
-            x = settings.pick.idle_offset
-            y = settings.screen.height / 2 + settings.pick.discrepancy * (
-                pick - self.lock.level.number_of_picks / 2 + 0.5
-            )
-            return x, y
-
-        tumbler = self.lock.get_tumbler(location)
-        if tumbler is None:
-            raise ValueError(f"No tumbler found at location {location}")
-
-        height = self.get_current_height(tumbler)
-        h = self.layout.height_to_pixels(height)
-        x = self.layout.center_x(location.position)
-        y = h + settings.pick.offset if location.upper else settings.screen.height - h - settings.pick.offset
-        return x, y
-
     def draw_pick_shape(self, pick: int, x: int, y: float, alpha: int) -> None:
         color = (*settings.color.picks[pick], alpha)
         shape_surface = pygame.Surface((settings.screen.width, settings.screen.height), pygame.SRCALPHA)
@@ -109,9 +60,3 @@ class Renderer:
         rect = pygame.Rect(0, y - settings.pick.width // 2, x, settings.pick.width)
         pygame.draw.rect(shape_surface, color, rect)
         self.screen.blit(shape_surface, (0, 0))
-
-    def get_tumbler_x(self, location: Location) -> int:
-        return self.layout.center_x(location.position)
-
-    def get_tumbler_y(self, location: Location, height: float) -> int:
-        return self.layout.tip_y(location, height)

@@ -1,9 +1,10 @@
 import os
 from pathlib import Path
-from typing import Callable, Union
+from typing import Callable, Optional, Union
 
 import pygame
 
+from lockpicker.constants.config import RendererMode
 from lockpicker.engine.lock import Lock
 from lockpicker.game.animation import Animation
 from lockpicker.game.editor.geometry import EditorGeometry
@@ -14,7 +15,8 @@ from lockpicker.game.editor.state import EditorState
 from lockpicker.game.input import Key, MouseState
 from lockpicker.game.layout import Layout
 from lockpicker.game.loop import run_loop
-from lockpicker.game.renderer import Renderer
+from lockpicker.game.render.factory import create_renderer
+from lockpicker.game.render.protocol import BoardRenderer
 
 
 class Editor:
@@ -24,6 +26,8 @@ class Editor:
         lock: Lock,
         path: Union[str, os.PathLike[str]],
         run_game_callback: Callable[[], None],
+        *,
+        renderer_mode: Optional[RendererMode] = None,
     ) -> None:
         self.screen = screen
         self.lock = lock
@@ -32,7 +36,7 @@ class Editor:
         self.mouse = MouseState()
         self.animation = Animation()
         self.layout = Layout(lock.level.max_height)
-        self.renderer = Renderer(screen, lock, self.layout, self.animation)
+        self.renderer: BoardRenderer = create_renderer(screen, lock, self.layout, self.animation, mode=renderer_mode)
 
         self.state = EditorState()
         self.geometry = EditorGeometry(lock, self.layout, self.mouse)

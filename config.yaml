@@ -53,3 +53,9 @@ rules:
 simulation:
   games: 1000
   max_moves: 100
+
+theme:
+  mode: flat
+  name: workshop
+  directory: assets/themes
+  highlight_tint: [72, 48, 24]

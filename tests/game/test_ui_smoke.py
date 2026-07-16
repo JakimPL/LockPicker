@@ -6,7 +6,7 @@ from typing import Tuple
 import pygame
 import pytest
 
-from lockpicker.constants.config import settings
+from lockpicker.constants.config import RendererMode, settings
 from lockpicker.engine.lock import Lock
 from lockpicker.game.editor.editor import Editor
 from lockpicker.game.game import Game
@@ -30,8 +30,12 @@ def assert_level_within_bounds(lock: Lock) -> None:
         assert 1 <= tumbler.height <= lock.level.max_height
 
 
-def test_game_frame_renders_and_quit_stops(screen: pygame.surface.Surface, sample_lock: Lock) -> None:
-    game = Game(screen, sample_lock, random_moves=False)
+def test_game_frame_renders_and_quit_stops(
+    screen: pygame.surface.Surface,
+    sample_lock: Lock,
+    renderer_mode: RendererMode,
+) -> None:
+    game = Game(screen, sample_lock, random_moves=False, renderer_mode=renderer_mode)
     pump(game)
     pygame.event.post(pygame.event.Event(pygame.QUIT))
     game.frame()
@@ -42,8 +46,9 @@ def test_game_handles_click_and_undo(
     screen: pygame.surface.Surface,
     sample_lock: Lock,
     monkeypatch: pytest.MonkeyPatch,
+    renderer_mode: RendererMode,
 ) -> None:
-    game = Game(screen, sample_lock, random_moves=False)
+    game = Game(screen, sample_lock, random_moves=False, renderer_mode=renderer_mode)
     monkeypatch.setattr(pygame.mouse, "get_pos", lambda: grid_point(0, upper=False))
     presses = iter([(True, False, False), (False, False, False), (False, False, True)])
     monkeypatch.setattr(pygame.mouse, "get_pressed", lambda *args, **kwargs: next(presses, (False, False, False)))
@@ -60,8 +65,9 @@ def test_editor_frame_renders_and_quit_stops(
     screen: pygame.surface.Surface,
     sample_lock: Lock,
     tmp_path: Path,
+    renderer_mode: RendererMode,
 ) -> None:
-    editor = Editor(screen, sample_lock, tmp_path / "out.lvl", lambda: None)
+    editor = Editor(screen, sample_lock, tmp_path / "out.lvl", lambda: None, renderer_mode=renderer_mode)
     pump(editor)
     pygame.event.post(pygame.event.Event(pygame.QUIT))
     editor.frame()
@@ -73,8 +79,9 @@ def test_editor_event_dispatch(
     sample_lock: Lock,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    renderer_mode: RendererMode,
 ) -> None:
-    editor = Editor(screen, sample_lock, tmp_path / "out.lvl", lambda: None)
+    editor = Editor(screen, sample_lock, tmp_path / "out.lvl", lambda: None, renderer_mode=renderer_mode)
     monkeypatch.setattr(pygame.mouse, "get_pos", lambda: grid_point(3, upper=True))
     monkeypatch.setattr(pygame.mouse, "get_pressed", lambda *args, **kwargs: (False, False, False))
     editor.running = True

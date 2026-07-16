@@ -4,12 +4,14 @@ from typing import Deque, Optional
 import pygame
 
 from lockpicker.agents.random import RandomAgent
+from lockpicker.constants.config import RendererMode
 from lockpicker.engine.lock import Lock
 from lockpicker.game.animation import Animation, compute_animation_steps
 from lockpicker.game.input import Key, MouseState
 from lockpicker.game.layout import Layout
 from lockpicker.game.loop import run_loop
-from lockpicker.game.renderer import Renderer
+from lockpicker.game.render.factory import create_renderer
+from lockpicker.game.render.protocol import BoardRenderer
 from lockpicker.state.state import State
 from lockpicker.tumbler.location import Location
 
@@ -21,6 +23,7 @@ class Game:
         lock: Lock,
         *,
         random_moves: bool = False,
+        renderer_mode: Optional[RendererMode] = None,
     ) -> None:
         self.screen = screen
         self.lock = lock
@@ -31,7 +34,7 @@ class Game:
         self.mouse = MouseState()
         self.animation = Animation()
         self.layout = Layout(lock.level.max_height)
-        self.renderer = Renderer(screen, lock, self.layout, self.animation)
+        self.renderer: BoardRenderer = create_renderer(screen, lock, self.layout, self.animation, mode=renderer_mode)
         self.highlighted: Optional[Location] = None
 
         self.undo_history: Deque[State] = deque()

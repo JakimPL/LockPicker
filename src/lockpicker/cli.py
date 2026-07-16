@@ -6,7 +6,7 @@ from pathlib import Path
 import pygame
 
 from lockpicker.agents.random import play_random_games
-from lockpicker.constants.config import settings
+from lockpicker.constants.config import RendererMode, settings
 from lockpicker.engine.lock import Lock
 from lockpicker.game.editor.editor import Editor
 from lockpicker.game.game import Game
@@ -41,6 +41,13 @@ def main() -> None:
         "--max_height", type=int, default=settings.rules.default_max_height, help="Maximum height (at least 2)"
     )
     parser.add_argument("--random_agent", action="store_true", help="Random simulation agent")
+    parser.add_argument(
+        "--renderer",
+        type=RendererMode,
+        choices=list(RendererMode),
+        default=None,
+        help="Renderer mode (defaults to theme.mode from config)",
+    )
     args = parser.parse_args()
 
     path = Path(args.level_file)
@@ -52,7 +59,7 @@ def main() -> None:
 
     def run_game() -> None:
         lock_copy = Lock(lock.level.copy())
-        game = Game(screen, lock_copy, random_moves=args.random_moves)
+        game = Game(screen, lock_copy, random_moves=args.random_moves, renderer_mode=args.renderer)
         game.run()
 
     pygame.init()
@@ -60,7 +67,7 @@ def main() -> None:
     screen = pygame.display.set_mode((settings.screen.width, settings.screen.height))
 
     if args.edit:
-        editor = Editor(screen, lock, path, run_game)
+        editor = Editor(screen, lock, path, run_game, renderer_mode=args.renderer)
         editor.run()
     else:
         run_game()

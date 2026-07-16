@@ -5,7 +5,7 @@ from typing import Iterator
 import pygame
 import pytest
 
-from lockpicker.constants.config import settings
+from lockpicker.constants.config import RendererMode, settings
 from lockpicker.engine.lock import Lock
 from lockpicker.level.level import Level
 from lockpicker.paths import LEVELS_DIR
@@ -19,6 +19,12 @@ def screen() -> Iterator[pygame.surface.Surface]:
     surface = pygame.display.set_mode((settings.screen.width, settings.screen.height))
     yield surface
     pygame.display.quit()
+
+
+@pytest.fixture(params=list(RendererMode), ids=[mode.value for mode in RendererMode])
+def renderer_mode(request: pytest.FixtureRequest) -> RendererMode:
+    mode: RendererMode = request.param
+    return mode
 
 
 @pytest.fixture

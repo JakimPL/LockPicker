@@ -23,6 +23,11 @@ class PickShape(StrEnum):
     CIRCLE = "circle"
 
 
+class RendererMode(StrEnum):
+    FLAT = "flat"
+    STYLED = "styled"
+
+
 class Section(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -85,6 +90,13 @@ class SimulationConfig(Section):
     max_moves: int
 
 
+class ThemeConfig(Section):
+    mode: RendererMode
+    name: str
+    directory: str
+    highlight_tint: Color
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(yaml_file=CONFIG_FILE, frozen=True)
 
@@ -97,6 +109,7 @@ class Settings(BaseSettings):
     animation: AnimationConfig
     rules: RulesConfig
     simulation: SimulationConfig
+    theme: ThemeConfig
 
     @classmethod
     def settings_customise_sources(

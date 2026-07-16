@@ -9,7 +9,7 @@ from lockpicker.engine.lock import Lock
 from lockpicker.game.editor.geometry import EditorGeometry
 from lockpicker.game.editor.state import EditorState
 from lockpicker.game.input import MouseState
-from lockpicker.game.renderer import Renderer
+from lockpicker.game.render.protocol import BoardRenderer
 from lockpicker.tumbler.location import Location
 from lockpicker.tumbler.tumbler import Tumbler
 
@@ -17,7 +17,7 @@ from lockpicker.tumbler.tumbler import Tumbler
 class EditorRenderer:
     def __init__(
         self,
-        renderer: Renderer,
+        renderer: BoardRenderer,
         lock: Lock,
         state: EditorState,
         geometry: EditorGeometry,
