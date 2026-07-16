@@ -12,18 +12,28 @@ from locksmith.types import TumblerState
 def build_lookdev(
     *,
     config: LookdevConfig,
+    badge_tip_offset_pixels: float,
     prototypes: Prototypes,
     library: MaterialLibrary,
     board: BoardGeometry,
     collection: Collection,
 ) -> None:
-    """Arrange the mock level for review stills: pins, badges, and both picks."""
+    """Arrange the mock level for review stills: pins, badges, and both picks.
+
+    The badge offset comes from the assets config so the still previews the
+    exact placement rule the manifest publishes to the runtime.
+    """
     for placement in config.tumblers:
         _place_tumbler(
-            placement, config=config, prototypes=prototypes, library=library, board=board, collection=collection
+            placement,
+            badge_tip_offset_pixels=badge_tip_offset_pixels,
+            prototypes=prototypes,
+            library=library,
+            board=board,
+            collection=collection,
         )
 
-    hovered = _hovered_tumbler(config)
+    hovered = hovered_tumbler(config)
     engaged_x = board.column_center_x(hovered.position)
     tip = board.tip_z(upper=hovered.upper, height=hovered.height)
     bite = board.units(config.engaged_pick.bite_pixels)
@@ -45,7 +55,7 @@ def build_lookdev(
 def _place_tumbler(
     placement: TumblerPlacement,
     *,
-    config: LookdevConfig,
+    badge_tip_offset_pixels: float,
     prototypes: Prototypes,
     library: MaterialLibrary,
     board: BoardGeometry,
@@ -58,12 +68,12 @@ def _place_tumbler(
     pin = linked_copy(prototype, f"pin_{placement.position}_{suffix}", location=(x, 0.0, tip), collection=collection)
     override_slot_material(pin, slot=0, material=library.tumbler_material(metal=placement.metal, state=placement.state))
     if placement.state is TumblerState.MASTER:
-        offset = board.units(config.badge_tip_offset_pixels)
+        offset = board.units(badge_tip_offset_pixels)
         badge_z = tip + offset if placement.upper else tip - offset
         linked_copy(prototypes.badge, f"badge_{placement.position}", location=(x, 0.0, badge_z), collection=collection)
 
 
-def _hovered_tumbler(config: LookdevConfig) -> TumblerPlacement:
+def hovered_tumbler(config: LookdevConfig) -> TumblerPlacement:
     """The tumbler the engaged pick presses on.
 
     Raises:

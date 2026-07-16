@@ -2,11 +2,6 @@ views:
   camera_y: -15.0
   clip_start: 0.1
   clip_end: 100.0
-  sprites:
-    tumbler_upper: {x: -20.0, z: 0.0, ortho_scale: 1.6}
-    tumbler_lower: {x: -17.0, z: 0.0, ortho_scale: 1.6}
-    pick: {x: -22.0, z: 1.0, ortho_scale: 6.0}
-    badge: {x: -24.0, z: -2.0, ortho_scale: 0.6}
 staging:
   tumbler_upper_x: -20.0
   tumbler_lower_x: -17.0

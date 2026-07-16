@@ -13,6 +13,5 @@ lookdev:
     - {position: 5, upper: false, height: 7, metal: steel, state: plain}
     - {position: 6, upper: true, height: 8, metal: brass, state: plain}
     - {position: 6, upper: false, height: 1, metal: steel, state: plain}
-  badge_tip_offset_pixels: 30.0
   engaged_pick: {y: -0.24, bite_pixels: 20.0}
   idle_pick: {x_pixels: 80.0, y: -0.24, z_pixels: -40.0}

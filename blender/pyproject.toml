@@ -5,6 +5,7 @@ description = "Procedural Blender builder for the LockPicker workshop scene"
 requires-python = ">=3.13,<3.14"
 dependencies = [
     "bpy==5.2.0",
+    "numpy>=1.26,<3",
     "pydantic>=2.7,<3",
     "PyYAML>=6.0,<7",
 ]
@@ -18,6 +19,7 @@ typecheck = [
     "mypy>=2.1",
     "fake-bpy-module==20260501",
     "types-PyYAML>=6.0.12",
+    "numpy>=1.26,<3",
     "pydantic>=2.7,<3",
 ]
 

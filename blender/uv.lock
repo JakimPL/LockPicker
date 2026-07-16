@@ -211,6 +211,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "bpy" },
+    { name = "numpy" },
     { name = "pydantic" },
     { name = "pyyaml" },
 ]
@@ -222,6 +223,7 @@ dev = [
 typecheck = [
     { name = "fake-bpy-module" },
     { name = "mypy" },
+    { name = "numpy" },
     { name = "pydantic" },
     { name = "types-pyyaml" },
 ]
@@ -229,6 +231,7 @@ typecheck = [
 [package.metadata]
 requires-dist = [
     { name = "bpy", specifier = "==5.2.0" },
+    { name = "numpy", specifier = ">=1.26,<3" },
     { name = "pydantic", specifier = ">=2.7,<3" },
     { name = "pyyaml", specifier = ">=6.0,<7" },
 ]
@@ -238,6 +241,7 @@ dev = [{ name = "pylint", specifier = ">=4.0" }]
 typecheck = [
     { name = "fake-bpy-module", specifier = "==20260501" },
     { name = "mypy", specifier = ">=2.1" },
+    { name = "numpy", specifier = ">=1.26,<3" },
     { name = "pydantic", specifier = ">=2.7,<3" },
     { name = "types-pyyaml", specifier = ">=6.0.12" },
 ]

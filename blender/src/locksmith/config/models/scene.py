@@ -1,4 +1,5 @@
 from locksmith.config.models.anatomy.anatomy import AnatomyConfig
+from locksmith.config.models.assets import AssetsConfig
 from locksmith.config.models.base import SceneModel
 from locksmith.config.models.board import BoardConfig
 from locksmith.config.models.lighting.lighting import LightingConfig
@@ -22,3 +23,4 @@ class SceneConfig(SceneModel):
     staging: StagingConfig
     lookdev: LookdevConfig
     render: RenderConfig
+    assets: AssetsConfig

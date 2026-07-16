@@ -14,6 +14,5 @@ class LookdevConfig(SceneModel):
     """
 
     tumblers: Tuple[TumblerPlacement, ...]
-    badge_tip_offset_pixels: float
     engaged_pick: EngagedPickConfig
     idle_pick: IdlePickConfig

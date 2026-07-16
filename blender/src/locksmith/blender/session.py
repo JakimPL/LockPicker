@@ -4,6 +4,10 @@ import bpy
 from bpy.types import Scene
 
 
+def blender_version() -> str:
+    return bpy.app.version_string
+
+
 def active_scene() -> Scene:
     """Return the scene the current context operates on.
 
