@@ -25,7 +25,7 @@ from locksmith.types import RGBAColor, Vec3
 
 NodeT = TypeVar("NodeT", bound=Node)
 
-MathOperation = Literal["ADD", "SUBTRACT", "MULTIPLY", "POWER"]
+MathOperation = Literal["ABSOLUTE", "ADD", "SUBTRACT", "MULTIPLY", "POWER"]
 
 MIX_FACTOR: Final[str] = "Factor_Float"
 MIX_A: Final[str] = "A_Color"

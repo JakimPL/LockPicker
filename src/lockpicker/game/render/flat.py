@@ -30,6 +30,12 @@ class FlatRenderer(RendererBase):
         surface.fill((*color, alpha))
         self.screen.blit(surface, rect.topleft)
 
+    def draw_shear_lips(self) -> None:
+        width = max(1, self.layout.px(2))
+        for upper in (True, False):
+            y = self.layout.shear_line_y(upper=upper)
+            pygame.draw.line(self.screen, settings.color.lip, (0, y), (self.layout.screen_width, y), width)
+
     def draw_picks(self) -> None:
         for pick in range(self.lock.level.number_of_picks):
             self.draw_pick(pick)

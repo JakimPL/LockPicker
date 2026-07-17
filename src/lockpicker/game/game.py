@@ -96,6 +96,8 @@ class Game:
     def draw(self) -> None:
         self.renderer.draw_background()
         self.draw_tumblers()
+        self.renderer.draw_frame()
+        self.renderer.draw_shear_lips()
         self.renderer.draw_picks()
         pygame.display.flip()
 

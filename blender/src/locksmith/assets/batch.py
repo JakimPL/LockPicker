@@ -4,10 +4,11 @@ from typing import Dict, Final
 from bpy.types import Object, Scene
 from mathutils import Vector
 
-from locksmith.assets.framing import Bounds, SpriteFraming, shadow_framing, sprite_framing
+from locksmith.assets.framing import Bounds, SpriteFraming, shadow_framing, sprite_framing, strip_framing
 from locksmith.assets.manifest.badge import BadgeAsset
 from locksmith.assets.manifest.badges import BadgesAssets
 from locksmith.assets.manifest.board import BoardAssets
+from locksmith.assets.manifest.lips import LipAssets
 from locksmith.assets.manifest.provenance import RenderProvenance
 from locksmith.assets.manifest.sprite import SpriteAsset
 from locksmith.assets.manifest.theme import MANIFEST_FILENAME, ThemeManifest, write_manifest
@@ -19,10 +20,11 @@ from locksmith.blender.objects import local_bounds, override_slot_material, set_
 from locksmith.blender.session import blender_version, render_still
 from locksmith.builder import WorkshopScene
 from locksmith.config.models.scene import SceneConfig
+from locksmith.parts.background import trough_radius
 from locksmith.rendering.cameras import FACING_BOARD
 from locksmith.types import Metal, PickShape, PixelPair
 
-_SCHEMA_VERSION: Final[int] = 1
+_SCHEMA_VERSION: Final[int] = 2
 _ENGINE: Final[str] = "CYCLES"
 _BACKGROUND_FILENAME: Final[str] = "background.png"
 _FRAME_FILENAME: Final[str] = "frame.png"
@@ -41,6 +43,11 @@ def render_assets(workshop: WorkshopScene, *, config: SceneConfig, directory: Pa
     """
     directory.mkdir(parents=True, exist_ok=True)
     workshop.collections.lookdev.hide_render = True
+    # Lips stay out of every other pass: a lip shadow baked onto the plate or
+    # onto a translating pin sprite would sit at one fixed height while the
+    # runtime blits the lip independently.
+    workshop.lip_upper.hide_render = True
+    workshop.lip_lower.hide_render = True
     _expose_board_to_secondary_rays(workshop)
 
     board = _render_board(workshop, config=config, directory=directory)
@@ -54,6 +61,7 @@ def render_assets(workshop: WorkshopScene, *, config: SceneConfig, directory: Pa
     )
     picks = _render_picks(workshop, config=config, directory=directory)
     badges = _render_badges(workshop, config=config, directory=directory)
+    lips = _render_lips(workshop, config=config, directory=directory)
 
     manifest = ThemeManifest(
         schema_version=_SCHEMA_VERSION,
@@ -72,6 +80,7 @@ def render_assets(workshop: WorkshopScene, *, config: SceneConfig, directory: Pa
         tumblers=tumblers,
         picks=picks,
         badges=badges,
+        lips=lips,
     )
     write_manifest(manifest, directory / MANIFEST_FILENAME)
     return manifest
@@ -96,14 +105,12 @@ def _render_board(workshop: WorkshopScene, *, config: SceneConfig, directory: Pa
     _render_file(scene, directory / _BACKGROUND_FILENAME, expected=_scaled(logical, scale))
     set_camera_ray_visibility(workshop.background_wall, visible=False)
 
-    set_camera_ray_visibility(workshop.frame_plate, visible=True)
-    set_camera_ray_visibility(workshop.bench, visible=True)
-    set_camera_ray_visibility(workshop.screws, visible=True)
+    for static in (workshop.frame_plate, workshop.bench, workshop.keyway, workshop.flanges, workshop.screws):
+        set_camera_ray_visibility(static, visible=True)
     scene.render.film_transparent = True
     _render_file(scene, directory / _FRAME_FILENAME, expected=_scaled(logical, scale))
-    set_camera_ray_visibility(workshop.frame_plate, visible=False)
-    set_camera_ray_visibility(workshop.bench, visible=False)
-    set_camera_ray_visibility(workshop.screws, visible=False)
+    for static in (workshop.frame_plate, workshop.bench, workshop.keyway, workshop.flanges, workshop.screws):
+        set_camera_ray_visibility(static, visible=False)
 
     return BoardAssets(logical_size=logical, background=_BACKGROUND_FILENAME, frame=_FRAME_FILENAME)
 
@@ -118,10 +125,16 @@ def _render_tumbler_orientation(
     """Render every metal variant of one pin orientation plus its shadow.
 
     All variants share one mesh and therefore one framing; only the material
-    override changes between renders.
+    override changes between renders. The banded plate and the zoned trough
+    make way for their stage stand-ins so every point of the shaft bakes
+    inside the same chamber surroundings — a translating sprite must carry
+    no shading tied to one bake height.
     """
     prototype = workshop.prototypes.tumbler_upper if upper else workshop.prototypes.tumbler_lower
     prototype.location = Vector((_slot_x(workshop), 0.0, config.assets.pin_bake_tip_z))
+    workshop.frame_plate.hide_render = True
+    workshop.sprite_stage.hide_render = False
+    override_slot_material(workshop.background_wall, slot=1, material=workshop.library.pocket_stage)
     bounds = local_bounds(prototype)
     framing = sprite_framing(
         bounds,
@@ -137,6 +150,9 @@ def _render_tumbler_orientation(
         _render_sprite(workshop, prototype=prototype, framing=framing, config=config, path=directory / filename)
         images[metal] = filename
     prototype.hide_render = True
+    override_slot_material(workshop.background_wall, slot=1, material=workshop.library.pocket)
+    workshop.sprite_stage.hide_render = True
+    workshop.frame_plate.hide_render = False
     shadow = _render_shadow(
         workshop,
         prototype=prototype,
@@ -166,7 +182,7 @@ def _render_shadow(
         bounds,
         pixels_per_unit=workshop.board.config.pixels_per_unit,
         sun_direction=config.lighting.key.direction,
-        catcher_y=config.anatomy.shadow_catcher.y,
+        catcher_y=config.anatomy.background.pocket_y + trough_radius(board=workshop.board, plate=config.anatomy.plate),
         margin_pixels=config.assets.shadow_margin_pixels,
     )
     scene = workshop.scene
@@ -235,6 +251,31 @@ def _render_badges(workshop: WorkshopScene, *, config: SceneConfig, directory: P
     return BadgesAssets(master=master)
 
 
+def _render_lips(workshop: WorkshopScene, *, config: SceneConfig, directory: Path) -> LipAssets:
+    """Render both shear-lip strips on full-board-width canvases.
+
+    Each orientation bakes separately because the upper-left key sun lights
+    the two lips' bevels differently.
+    """
+    return LipAssets(
+        upper=_render_lip(workshop.lip_upper, workshop=workshop, config=config, path=directory / "lip_upper.png"),
+        lower=_render_lip(workshop.lip_lower, workshop=workshop, config=config, path=directory / "lip_lower.png"),
+    )
+
+
+def _render_lip(lip: Object, *, workshop: WorkshopScene, config: SceneConfig, path: Path) -> SpriteAsset:
+    framing = strip_framing(
+        local_bounds(lip),
+        pixels_per_unit=workshop.board.config.pixels_per_unit,
+        width_pixels=workshop.board.config.width_pixels,
+        padding_pixels=config.assets.padding_pixels,
+    )
+    lip.hide_render = False
+    _render_sprite(workshop, prototype=lip, framing=framing, config=config, path=path)
+    lip.hide_render = True
+    return SpriteAsset(image=path.name, size=framing.size, tip_anchor=framing.anchor)
+
+
 def _render_sprite(
     workshop: WorkshopScene,
     *,
@@ -272,7 +313,15 @@ def _expose_board_to_secondary_rays(workshop: WorkshopScene) -> None:
     """
     workshop.collections.background.hide_render = False
     workshop.collections.frame.hide_render = False
-    for static in (workshop.background_wall, workshop.frame_plate, workshop.bench, workshop.screws):
+    for static in (
+        workshop.background_wall,
+        workshop.frame_plate,
+        workshop.sprite_stage,
+        workshop.bench,
+        workshop.keyway,
+        workshop.flanges,
+        workshop.screws,
+    ):
         set_camera_ray_visibility(static, visible=False)
 
 

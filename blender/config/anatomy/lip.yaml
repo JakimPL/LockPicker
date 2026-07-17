@@ -1,0 +1,5 @@
+lip:
+  thickness_pixels: 6.0
+  face_y: -0.2
+  depth: 0.05
+  bevel: {offset: 0.012, segments: 2, profile: 0.7}

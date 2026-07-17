@@ -27,6 +27,9 @@ class RendererBase:
     def draw_frame(self) -> None:
         pass
 
+    def draw_shear_lips(self) -> None:
+        pass
+
     def get_current_height(self, tumbler: Tumbler) -> float:
         return self.animation.height(tumbler)
 

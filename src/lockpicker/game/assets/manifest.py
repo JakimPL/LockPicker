@@ -8,6 +8,7 @@ from lockpicker.constants.config import PickShape
 from pydantic import BaseModel, ConfigDict
 
 MANIFEST_FILENAME: Final[str] = "manifest.json"
+SUPPORTED_SCHEMA_VERSION: Final[int] = 2
 
 PixelPair = Tuple[int, int]
 
@@ -65,6 +66,11 @@ class BoardAssets(ManifestModel):
     frame: str
 
 
+class LipAssets(ManifestModel):
+    upper: SpriteAsset
+    lower: SpriteAsset
+
+
 class ThemeManifest(ManifestModel):
     schema_version: int
     theme: str
@@ -74,7 +80,15 @@ class ThemeManifest(ManifestModel):
     tumblers: TumblerAssets
     picks: Dict[PickShape, SpriteAsset]
     badges: BadgesAssets
+    lips: LipAssets
 
 
 def load_manifest(directory: Path) -> ThemeManifest:
-    return ThemeManifest.model_validate(json.loads((directory / MANIFEST_FILENAME).read_text()))
+    payload = json.loads((directory / MANIFEST_FILENAME).read_text())
+    version = payload.get("schema_version")
+    if version != SUPPORTED_SCHEMA_VERSION:
+        raise ValueError(
+            f"manifest schema_version {version} is unsupported (expected {SUPPORTED_SCHEMA_VERSION}); "
+            f"re-render the theme with `uv run locksmith assets`"
+        )
+    return ThemeManifest.model_validate(payload)

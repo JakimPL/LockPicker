@@ -3,6 +3,7 @@ from locksmith.config.models.shading.plate.depth_fade import DepthFadeConfig
 from locksmith.config.models.shading.plate.mottle import MottleConfig
 from locksmith.config.models.shading.plate.pool import PoolConfig
 from locksmith.config.models.shading.plate.rim import RimConfig
+from locksmith.config.models.shading.plate.shell import ShellBand
 
 
 class PlateShading(SceneModel):
@@ -18,4 +19,5 @@ class PlateShading(SceneModel):
     mottle: MottleConfig
     rim: RimConfig
     pool: PoolConfig
+    shell: ShellBand
     depth_fade: DepthFadeConfig

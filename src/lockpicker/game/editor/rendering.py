@@ -33,6 +33,7 @@ class EditorRenderer:
         self.draw_tumblers()
         self.draw_transparent_tumbler()
         self.renderer.draw_frame()
+        self.renderer.draw_shear_lips()
         self.draw_bindings()
         self.draw_binding_arrow()
         pygame.display.flip()

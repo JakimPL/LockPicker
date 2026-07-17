@@ -1,0 +1,7 @@
+keyway:
+  center_pixels: 80.0
+  width_pixels: 28.0
+  bed_face_y: 0.42
+  back_y: 0.55
+  overshoot: 0.15
+  bushing: {width_pixels: 6.0, face_y: 0.24, depth: 0.1, overshoot: 0.03}

@@ -70,6 +70,40 @@ def cone_vertices(
     return cast(List[BMVert], created["verts"])
 
 
+def half_pipe_vertices(
+    mesh_builder: BMesh,
+    *,
+    radius: float,
+    span: float,
+    segments: int,
+) -> List[BMVert]:
+    """Concave half-cylinder trough along z, centered on the origin, opening toward -y.
+
+    The kept surface runs from rim (x=-radius, y=0) through the deepest line
+    (x=0, y=radius) to the other rim, with normals facing the opening and
+    smooth shading across the arc — a bore seen in section, shaded by the
+    scene lights instead of painted. `segments` counts the full circle and
+    must be a multiple of four so no face straddles the rim plane.
+    """
+    created = bmesh.ops.create_cone(
+        mesh_builder,
+        cap_ends=False,
+        segments=segments,
+        radius1=radius,
+        radius2=radius,
+        depth=span,
+    )
+    vertices = cast(List[BMVert], created["verts"])
+    faces = {face for vertex in vertices for face in vertex.link_faces}
+    kept = [face for face in faces if face.calc_center_median().y > 0.0]
+    discarded = [face for face in faces if face.calc_center_median().y <= 0.0]
+    bmesh.ops.reverse_faces(mesh_builder, faces=kept)
+    for face in kept:
+        face.smooth = True
+    bmesh.ops.delete(mesh_builder, geom=discarded, context="FACES")
+    return list({vertex for face in kept for vertex in face.verts})
+
+
 def uv_sphere_vertices(
     mesh_builder: BMesh,
     *,
@@ -128,8 +162,12 @@ def bevel_edges(
     )
 
 
+def subdivide_edges(mesh_builder: BMesh, edges: Sequence[BMEdge], *, cuts: int) -> None:
+    bmesh.ops.subdivide_edges(mesh_builder, edges=list(edges), cuts=cuts, use_grid_fill=True)
+
+
 def subdivide_all_edges(mesh_builder: BMesh, *, cuts: int) -> None:
-    bmesh.ops.subdivide_edges(mesh_builder, edges=all_edges(mesh_builder), cuts=cuts, use_grid_fill=True)
+    subdivide_edges(mesh_builder, all_edges(mesh_builder), cuts=cuts)
 
 
 def assign_untagged_faces(mesh_builder: BMesh, *, material_index: int) -> None:

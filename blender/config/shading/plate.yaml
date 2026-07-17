@@ -3,4 +3,5 @@ plate:
   mottle: {scale: 4.5, detail: 8.0}
   rim: {start: 0.7, end: 0.82, strength: 0.22, key_mix: 0.25, gain: 1.15}
   pool: {location: [0.31, -0.06, -0.31], scale: 0.13, strength: 0.25, key_mix: 0.35, gain: 1.2}
+  shell: {offset_units: 1.0, feather: 0.08, strength: 0.35, key_mix: 0.2, gain: 1.3}
   depth_fade: {near_y: -0.1, far_y: 0.5}

@@ -74,10 +74,10 @@ disable = [
 good-names = ["x", "y", "z"]
 
 [tool.pylint.design]
-max-args = 8
+max-args = 9
 max-positional-arguments = 4
 max-locals = 25
-max-attributes = 14
+max-attributes = 19
 
 [tool.pylint.similarities]
 min-similarity-lines = 10

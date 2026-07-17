@@ -64,6 +64,27 @@ def sprite_framing(bounds: Bounds, *, pixels_per_unit: float, padding_pixels: in
     )
 
 
+def strip_framing(bounds: Bounds, *, pixels_per_unit: float, width_pixels: float, padding_pixels: int) -> SpriteFraming:
+    """Frame a full-board-width horizontal strip whose origin sits on the board's vertical center line.
+
+    The fixed width lets the runtime blit the strip at x = 0 and stretch it
+    to the screen width, so only the vertical extent comes from the mesh.
+
+    Raises:
+        ValueError: when the board width does not split into two whole pixel halves.
+    """
+    (_, _, min_z), (_, _, max_z) = bounds
+    half_width = width_pixels / 2
+    if not half_width.is_integer():
+        raise ValueError(f"board width {width_pixels} does not split into whole pixel halves")
+    return SpriteFraming(
+        left=-int(half_width),
+        right=int(half_width),
+        bottom=math.floor(min_z * pixels_per_unit) - padding_pixels,
+        top=math.ceil(max_z * pixels_per_unit) + padding_pixels,
+    )
+
+
 def shadow_framing(
     bounds: Bounds,
     *,

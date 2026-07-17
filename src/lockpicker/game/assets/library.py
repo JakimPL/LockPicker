@@ -28,6 +28,13 @@ def validate_manifest(manifest: ThemeManifest) -> None:
     if missing_shapes:
         raise ValueError(f"manifest is missing pick shapes: {sorted(shape.value for shape in missing_shapes)}")
 
+    for lip in (manifest.lips.upper, manifest.lips.lower):
+        if lip.size[0] != manifest.board.logical_size[0]:
+            raise ValueError(
+                f"lip strip {lip.image} width {lip.size[0]} does not span the board width "
+                f"{manifest.board.logical_size[0]}"
+            )
+
 
 class AssetLibrary:
     def __init__(self, manifest: ThemeManifest, directory: Path) -> None:

@@ -59,6 +59,16 @@ class ThemeSprites:
             shadow.set_alpha(settings.theme.shadow_alpha)
             self._shadows[upper] = ScaledSprite(shadow, self._scaled(orientation.shadow.tip_anchor))
 
+        self._lips: Dict[bool, ScaledSprite] = {}
+        for upper, lip_asset in ((True, manifest.lips.upper), (False, manifest.lips.lower)):
+            lip_size = (layout.screen_width, max(1, round(lip_asset.size[1] * self.scale_y)))
+            lip_surface = pygame.transform.smoothscale(library.surface(lip_asset.image), lip_size)
+            lip_anchor = (
+                round(lip_asset.tip_anchor[0] * layout.screen_width / lip_asset.size[0]),
+                round(lip_asset.tip_anchor[1] * self.scale_y),
+            )
+            self._lips[upper] = ScaledSprite(lip_surface, lip_anchor)
+
         badge = manifest.badges.master
         badge_surface = pygame.transform.smoothscale(library.surface(badge.image), self._scaled(badge.size))
         badge_surface.set_alpha(settings.theme.badge_alpha)
@@ -105,6 +115,9 @@ class ThemeSprites:
 
     def shadow(self, *, upper: bool) -> ScaledSprite:
         return self._shadows[upper]
+
+    def lip(self, *, upper: bool) -> ScaledSprite:
+        return self._lips[upper]
 
     def pick(self, shape: PickShape, *, active: bool) -> ScaledSprite:
         return self._picks[(shape, active)]

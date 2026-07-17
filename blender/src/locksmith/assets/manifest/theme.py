@@ -3,6 +3,7 @@ from typing import Dict, Final
 
 from locksmith.assets.manifest.badges import BadgesAssets
 from locksmith.assets.manifest.board import BoardAssets
+from locksmith.assets.manifest.lips import LipAssets
 from locksmith.assets.manifest.provenance import RenderProvenance
 from locksmith.assets.manifest.sprite import SpriteAsset
 from locksmith.assets.manifest.tumblers import TumblerAssets
@@ -28,6 +29,7 @@ class ThemeManifest(SceneModel):
     tumblers: TumblerAssets
     picks: Dict[PickShape, SpriteAsset]
     badges: BadgesAssets
+    lips: LipAssets
 
 
 def write_manifest(manifest: ThemeManifest, path: Path) -> None:

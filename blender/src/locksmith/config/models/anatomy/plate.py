@@ -9,21 +9,24 @@ class PlateAnatomy(SceneModel):
     only vertices sit on those rims, pointiness interpolates across the whole
     face and the entire plate reads as a worn edge.
 
-    The plate spans the slot columns plus `bezel` on each side; the wooden
-    bench panels fill the rest of the board. `margin` still stretches it
+    The plate spans the slot columns plus a bezel on each side; the wooden
+    bench panels fill the rest of the board. `bezel_left` stays slim so the
+    bench runs almost to the first column, `bezel_right` a little wider for
+    the fastened end of the case. `margin` still stretches the plate
     vertically past the visible board so full-travel pins bake inside its
     emission field.
 
-    `rebate_depth` sinks the whole slot bed behind the bezel so the thin
-    rails between columns fall into the material's depth fade — at full
-    plate emission a 5 px rail between two dark channels reads as a glowing
-    wire. `rebate_margin` opens the rebate slightly past the outer slots.
+    `chamber_depth` sinks everything between the shear lines into the depth
+    fade, leaving the shell face proud only on the first-height-unit bands,
+    so each column reads as a pocket in the shell and the middle reads as
+    the open raceway, cut through both bezels — the mechanism passes the
+    case on either side rather than dead-ending in it.
     """
 
     margin: float
-    bezel: float
-    rebate_depth: float
-    rebate_margin: float
+    bezel_left: float
+    bezel_right: float
+    chamber_depth: float
     face_y: float
     back_y: float
     subdivision_cuts: int

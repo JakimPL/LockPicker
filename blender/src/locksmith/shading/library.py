@@ -11,6 +11,7 @@ from locksmith.shading.enamel import make_enamel_material
 from locksmith.shading.grip import make_grip_material
 from locksmith.shading.metal import make_metal_material
 from locksmith.shading.plate import make_plate_material
+from locksmith.shading.recess import make_pocket_material, make_pocket_stage_material, make_raceway_material
 from locksmith.shading.wood import make_wood_material
 from locksmith.types import HexColor, Metal, PickShape, TumblerState
 
@@ -23,10 +24,16 @@ class MaterialLibrary:
     hovered: Dict[Metal, Material]
     jammed: Dict[Metal, Material]
     plate: Material
+    plate_stage: Material
     wood: Material
+    wood_carved: Material
     bore: Material
+    pocket: Material
+    pocket_stage: Material
+    raceway: Material
     enamel: Material
     rosette: Material
+    lip: Material
     pick: Material
     ferrule: Material
     grips: Dict[PickShape, Material]
@@ -41,7 +48,9 @@ class MaterialLibrary:
                 return self.tumblers[metal]
 
 
-def make_material_library(*, palette: PaletteConfig, shading: ShadingConfig) -> MaterialLibrary:
+def make_material_library(
+    *, palette: PaletteConfig, shading: ShadingConfig, plate_half_height: float
+) -> MaterialLibrary:
     metals = shading.metals
 
     def colors_of(metal: Metal) -> MetalColors:
@@ -108,15 +117,43 @@ def make_material_library(*, palette: PaletteConfig, shading: ShadingConfig) -> 
         tumblers=tumblers,
         hovered=hovered,
         jammed=jammed,
-        plate=make_plate_material("frame_plate", palette=palette, config=shading.plate),
+        plate=make_plate_material(
+            "frame_plate", palette=palette, config=shading.plate, half_height_units=plate_half_height
+        ),
+        plate_stage=make_plate_material(
+            "sprite_stage_plate",
+            palette=palette,
+            config=shading.plate.model_copy(update={"shell": shading.plate.shell.model_copy(update={"strength": 0.0})}),
+            half_height_units=plate_half_height,
+        ),
         wood=make_wood_material("bench_wood", palette=palette, config=shading.wood),
+        wood_carved=make_wood_material(
+            "bench_wood_carved",
+            palette=palette.model_copy(update={"wood": palette.wood_deep, "wood_dark": palette.wood_black}),
+            config=shading.wood,
+        ),
         bore=make_bore_material("bore_iron", color=palette.bore, config=shading.bore),
+        pocket=make_pocket_material(
+            "pocket_bore", palette=palette, config=shading.pocket, half_height_units=plate_half_height
+        ),
+        pocket_stage=make_pocket_stage_material("pocket_stage", palette=palette, config=shading.pocket),
+        raceway=make_raceway_material("raceway_floor", palette=palette, config=shading.raceway),
         enamel=make_enamel_material("badge_enamel", color=palette.enamel, config=shading.enamel),
         rosette=make_metal_material(
             "badge_rosette",
             base=palette.rosette,
             highlight=palette.steel.base,
             roughness=metals.roughness.rosette,
+            config=metals,
+            verdigris=None,
+            hover=None,
+            jam=None,
+        ),
+        lip=make_metal_material(
+            "lip_steel",
+            base=palette.lip.base,
+            highlight=palette.lip.highlight,
+            roughness=metals.roughness.lip,
             config=metals,
             verdigris=None,
             hover=None,

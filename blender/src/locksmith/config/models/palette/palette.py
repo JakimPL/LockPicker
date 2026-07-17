@@ -17,6 +17,8 @@ class PaletteConfig(SceneModel):
     plate_deep: HexColor
     wood: HexColor
     wood_dark: HexColor
+    wood_deep: HexColor
+    wood_black: HexColor
     bore: HexColor
     world_floor: HexColor
     world_mid: HexColor
@@ -24,6 +26,7 @@ class PaletteConfig(SceneModel):
     steel: MetalColors
     brass: MetalColors
     copper: MetalColors
+    lip: MetalColors
     pick: MetalColors
     grip_a: HexColor
     grip_b: HexColor

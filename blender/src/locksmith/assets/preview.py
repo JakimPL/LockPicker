@@ -112,8 +112,25 @@ def compose_board(
             image_scale=scale,
         )
     _blit_anchored(canvas, sprites[manifest.board.frame], anchor=(0, 0), target=(0.0, 0.0), image_scale=scale)
+    _blit_lips(canvas, manifest, config=config, sprites=sprites)
     _blit_picks(canvas, manifest, config=config, sprites=sprites)
     return canvas
+
+
+def _blit_lips(
+    canvas: RGBAImage,
+    manifest: ThemeManifest,
+    *,
+    config: SceneConfig,
+    sprites: Dict[str, RGBAImage],
+) -> None:
+    """Place both shear-lip strips one height unit inside their board edges."""
+    scale = manifest.image_scale
+    center_x = config.board.width_pixels / 2
+    for upper, lip in ((True, manifest.lips.upper), (False, manifest.lips.lower)):
+        travel = config.board.pixels_per_unit
+        line_y = travel if upper else config.board.height_pixels - travel
+        _blit_anchored(canvas, sprites[lip.image], anchor=lip.tip_anchor, target=(center_x, line_y), image_scale=scale)
 
 
 def _blit_picks(
@@ -150,6 +167,7 @@ def _load_sprites(manifest: ThemeManifest, directory: Path) -> Dict[str, RGBAIma
         filenames.update(orientation.images.values())
         filenames.add(orientation.shadow.image)
     filenames.update(pick.image for pick in manifest.picks.values())
+    filenames.update((manifest.lips.upper.image, manifest.lips.lower.image))
     return {filename: read_rgba_pixels(directory / filename) for filename in sorted(filenames)}
 
 

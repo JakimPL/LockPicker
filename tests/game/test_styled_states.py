@@ -57,6 +57,29 @@ def test_shadow_and_badge_prescaled(sprites: ThemeSprites) -> None:
     assert sprites.badge_offset > 0
 
 
+def test_lip_strips_prescaled_to_screen_width(sprites: ThemeSprites) -> None:
+    layout = Layout(settings.rules.default_max_height)
+    for upper in (True, False):
+        lip = sprites.lip(upper=upper)
+        assert lip.surface.get_width() == layout.screen_width
+        assert 0 <= lip.anchor[1] <= lip.surface.get_height()
+
+
+def test_shear_lines_brighter_than_chamber(
+    screen: pygame.surface.Surface,
+    sample_lock: Lock,
+) -> None:
+    game = Game(screen, sample_lock, renderer_mode=RendererMode.STYLED)
+    game.draw()
+    layout = game.layout
+    for upper in (True, False):
+        line_y = layout.shear_line_y(upper=upper)
+        inward = 20 if upper else -20
+        line_band = screen.subsurface((0, line_y - 2, layout.screen_width // 8, 4))
+        chamber_band = screen.subsurface((0, line_y + inward - 2, layout.screen_width // 8, 4))
+        assert average_brightness(line_band) > average_brightness(chamber_band)
+
+
 def test_pick_idle_variant_dimmed(sprites: ThemeSprites) -> None:
     for shape in set(settings.pick.shapes):
         active = sprites.pick(shape, active=True)

@@ -10,6 +10,8 @@ palette:
   plate_deep: "0C0A09"
   wood: "523C28"
   wood_dark: "32261B"
+  wood_deep: "1E1610"
+  wood_black: "0D0A07"
   bore: "151110"
   world_floor: "101112"
   world_mid: "5A6672"
@@ -17,6 +19,7 @@ palette:
   steel: {base: "8C9298", highlight: "E8EDF2"}
   brass: {base: "C9A24B", highlight: "F2D98C"}
   copper: {base: "B26E4F", highlight: "E8A87C"}
+  lip: {base: "A8AEB4", highlight: "F2F6FA"}
   pick: {base: "56687E", highlight: "9FB4CC"}
   grip_a: "AFC5AF"
   grip_b: "C5AFAF"

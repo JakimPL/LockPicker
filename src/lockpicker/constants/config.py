@@ -69,6 +69,7 @@ class ColorConfig(Section):
     border: Color
     post_release: Color
     arrow: Color
+    lip: Color
     tumblers: List[Color]
     picks: List[Color]
 

@@ -32,6 +32,10 @@ class Layout:
     def height_to_pixels(self, height: float) -> int:
         return int(height * self.scale)
 
+    def shear_line_y(self, *, upper: bool) -> int:
+        line = self.height_to_pixels(1)
+        return line if upper else self.screen_height - line
+
     def bar_bounds(self, location: Location, height: float) -> Tuple[int, int, int, int]:
         x = self.bar_x(location.position)
         h = self.height_to_pixels(height)

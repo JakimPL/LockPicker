@@ -1,0 +1,265 @@
+from typing import Tuple
+
+from bpy.types import (
+    Material,
+    Node,
+    NodeTree,
+    ShaderNodeBsdfPrincipled,
+    ShaderNodeBump,
+    ShaderNodeMapping,
+    ShaderNodeMapRange,
+    ShaderNodeNewGeometry,
+    ShaderNodeSeparateXYZ,
+    ShaderNodeTexCoord,
+    ShaderNodeTexNoise,
+)
+
+from locksmith.blender.materials import new_principled_material
+from locksmith.blender.nodes import (
+    MIX_A,
+    MIX_FACTOR,
+    MIX_RESULT,
+    input_by_identifier,
+    input_socket,
+    link_nodes,
+    link_sockets,
+    new_color_mix_node,
+    new_math_node,
+    new_node,
+    output_by_identifier,
+    output_socket,
+    set_float_input,
+    set_vector_input,
+)
+from locksmith.colors import linear_rgba, mixed_linear
+from locksmith.config.models.palette.palette import PaletteConfig
+from locksmith.config.models.shading.pocket import PocketShading
+from locksmith.config.models.shading.raceway import RacewayShading
+
+
+def _wire_lit_surface(
+    node_tree: NodeTree,
+    principled: ShaderNodeBsdfPrincipled,
+    color_source: Node,
+    *,
+    metallic: float,
+    roughness: float,
+    specular: float,
+    glow: float,
+) -> None:
+    """Drive both the lit response and a faint emission floor from one color chain.
+
+    The suns and cast shadows carry the depth; the floor keeps the authored
+    pattern readable inside fully shadowed recesses instead of letting them
+    collapse to black.
+    """
+    set_float_input(principled, "Metallic", metallic)
+    set_float_input(principled, "Roughness", roughness)
+    set_float_input(principled, "Specular IOR Level", specular)
+    set_float_input(principled, "Emission Strength", glow)
+    link_sockets(node_tree, output_by_identifier(color_source, MIX_RESULT), input_socket(principled, "Base Color"))
+    link_sockets(node_tree, output_by_identifier(color_source, MIX_RESULT), input_socket(principled, "Emission Color"))
+
+
+def make_pocket_material(
+    name: str, *, palette: PaletteConfig, config: PocketShading, half_height_units: float
+) -> Material:
+    """Machined bore steel for the column troughs, zoned by height.
+
+    The trough geometry gives the recess its shading, so the color chain
+    only splits the finish at the shear lines — pin-polished on the shell
+    bands, duller across the chamber run — then works the surface: soft
+    oil-stain mottle, vertical honing streaks with a matching bump so the
+    marks catch the suns, and a polished wear line where the bore faces
+    the camera — the strip the sliding pin actually rubs.
+    """
+    material, node_tree, principled = new_principled_material(name)
+    coordinates = new_node(node_tree, ShaderNodeTexCoord)
+
+    zone = _pocket_zone(node_tree, coordinates, palette=palette, config=config, half_height_units=half_height_units)
+    stained = _stain_layer(node_tree, coordinates, zone, palette=palette, config=config)
+    honed, streaks = _streak_layer(node_tree, coordinates, stained, palette=palette, config=config)
+    polished = _wear_layer(node_tree, honed, palette=palette, config=config)
+
+    bump = new_node(node_tree, ShaderNodeBump)
+    set_float_input(bump, "Strength", config.bump_strength)
+    link_nodes(node_tree, source=(streaks, "Fac"), target=(bump, "Height"))
+    link_nodes(node_tree, source=(bump, "Normal"), target=(principled, "Normal"))
+
+    _wire_lit_surface(
+        node_tree,
+        principled,
+        polished,
+        metallic=config.metallic,
+        roughness=config.roughness,
+        specular=config.specular,
+        glow=config.glow,
+    )
+    return material
+
+
+def _pocket_zone(
+    node_tree: NodeTree,
+    coordinates: ShaderNodeTexCoord,
+    *,
+    palette: PaletteConfig,
+    config: PocketShading,
+    half_height_units: float,
+) -> Node:
+    """Split the finish at the shear lines: polished band, dull chamber."""
+    separate = new_node(node_tree, ShaderNodeSeparateXYZ)
+    link_nodes(node_tree, source=(coordinates, "Object"), target=(separate, "Vector"))
+    edge_distance = new_math_node(node_tree, "ABSOLUTE", operand=None)
+    link_nodes(node_tree, source=(separate, "Z"), target=(edge_distance, "Value"))
+    boundary = half_height_units - config.offset_units
+    zone_range = new_node(node_tree, ShaderNodeMapRange)
+    set_float_input(zone_range, "From Min", boundary - config.feather)
+    set_float_input(zone_range, "From Max", boundary + config.feather)
+    link_nodes(node_tree, source=(edge_distance, "Value"), target=(zone_range, "Value"))
+
+    chamber = mixed_linear(
+        linear_rgba(palette.plate_deep), linear_rgba(palette.plate), config.chamber_mix, gain=config.chamber_gain
+    )
+    band = mixed_linear(
+        linear_rgba(palette.plate), linear_rgba(palette.key), config.band_key_mix, gain=config.band_gain
+    )
+    zone = new_color_mix_node(node_tree, a=chamber, b=band)
+    link_sockets(node_tree, output_socket(zone_range, "Result"), input_by_identifier(zone, MIX_FACTOR))
+    return zone
+
+
+def _stain_layer(
+    node_tree: NodeTree,
+    coordinates: ShaderNodeTexCoord,
+    base: Node,
+    *,
+    palette: PaletteConfig,
+    config: PocketShading,
+) -> Node:
+    """Darken broad soft patches toward the deep tone — old oil staining."""
+    mottle = new_node(node_tree, ShaderNodeTexNoise)
+    set_float_input(mottle, "Scale", config.mottle_scale)
+    set_float_input(mottle, "Detail", config.mottle_detail)
+    link_nodes(node_tree, source=(coordinates, "Object"), target=(mottle, "Vector"))
+    mottle_strength = new_math_node(node_tree, "MULTIPLY", operand=config.mottle_strength)
+    link_nodes(node_tree, source=(mottle, "Fac"), target=(mottle_strength, "Value"))
+    stained = new_color_mix_node(node_tree, a=None, b=linear_rgba(palette.plate_deep))
+    link_sockets(node_tree, output_by_identifier(base, MIX_RESULT), input_by_identifier(stained, MIX_A))
+    link_sockets(node_tree, output_socket(mottle_strength, "Value"), input_by_identifier(stained, MIX_FACTOR))
+    return stained
+
+
+def _streak_layer(
+    node_tree: NodeTree,
+    coordinates: ShaderNodeTexCoord,
+    base: Node,
+    *,
+    palette: PaletteConfig,
+    config: PocketShading,
+) -> Tuple[Node, ShaderNodeTexNoise]:
+    """Vertical honing marks along the pin travel; the noise also feeds the bump."""
+    mapping = new_node(node_tree, ShaderNodeMapping)
+    set_vector_input(mapping, "Scale", config.streak_mapping_scale)
+    link_nodes(node_tree, source=(coordinates, "Object"), target=(mapping, "Vector"))
+    streaks = new_node(node_tree, ShaderNodeTexNoise)
+    set_float_input(streaks, "Scale", config.streak_scale)
+    set_float_input(streaks, "Detail", config.streak_detail)
+    link_nodes(node_tree, source=(mapping, "Vector"), target=(streaks, "Vector"))
+    streak_strength = new_math_node(node_tree, "MULTIPLY", operand=config.streak_strength)
+    link_nodes(node_tree, source=(streaks, "Fac"), target=(streak_strength, "Value"))
+    worn = mixed_linear(
+        linear_rgba(palette.plate), linear_rgba(palette.key), config.streak_key_mix, gain=config.streak_gain
+    )
+    honed = new_color_mix_node(node_tree, a=None, b=worn)
+    link_sockets(node_tree, output_by_identifier(base, MIX_RESULT), input_by_identifier(honed, MIX_A))
+    link_sockets(node_tree, output_socket(streak_strength, "Value"), input_by_identifier(honed, MIX_FACTOR))
+    return honed, streaks
+
+
+def _wear_layer(
+    node_tree: NodeTree,
+    base: Node,
+    *,
+    palette: PaletteConfig,
+    config: PocketShading,
+) -> Node:
+    """Brighten the camera-facing strip of the bore — the pin's rub line."""
+    geometry = new_node(node_tree, ShaderNodeNewGeometry)
+    normal = new_node(node_tree, ShaderNodeSeparateXYZ)
+    link_nodes(node_tree, source=(geometry, "Normal"), target=(normal, "Vector"))
+    facing = new_math_node(node_tree, "MULTIPLY", operand=-1.0)
+    link_nodes(node_tree, source=(normal, "Y"), target=(facing, "Value"))
+    wear_range = new_node(node_tree, ShaderNodeMapRange)
+    set_float_input(wear_range, "From Min", config.wear_start)
+    set_float_input(wear_range, "From Max", 1.0)
+    link_nodes(node_tree, source=(facing, "Value"), target=(wear_range, "Value"))
+    wear_strength = new_math_node(node_tree, "MULTIPLY", operand=config.wear_strength)
+    link_nodes(node_tree, source=(wear_range, "Result"), target=(wear_strength, "Value"))
+    polish = mixed_linear(
+        linear_rgba(palette.plate), linear_rgba(palette.key), config.wear_key_mix, gain=config.wear_gain
+    )
+    polished = new_color_mix_node(node_tree, a=None, b=polish)
+    link_sockets(node_tree, output_by_identifier(base, MIX_RESULT), input_by_identifier(polished, MIX_A))
+    link_sockets(node_tree, output_socket(wear_strength, "Value"), input_by_identifier(polished, MIX_FACTOR))
+    return polished
+
+
+def make_pocket_stage_material(name: str, *, palette: PaletteConfig, config: PocketShading) -> Material:
+    """Bore steel frozen at the chamber tone, with no shear-line zoning.
+
+    Sprites bake beside whatever trough zone their bake position touches and
+    carry its reflections everywhere; the stage variant keeps the chamber
+    finish along the whole trough so the bake is position-free.
+    """
+    material, node_tree, principled = new_principled_material(name)
+    chamber = mixed_linear(
+        linear_rgba(palette.plate_deep), linear_rgba(palette.plate), config.chamber_mix, gain=config.chamber_gain
+    )
+    zone = new_color_mix_node(node_tree, a=chamber, b=chamber)
+    _wire_lit_surface(
+        node_tree,
+        principled,
+        zone,
+        metallic=config.metallic,
+        roughness=config.roughness,
+        specular=config.specular,
+        glow=config.glow,
+    )
+    return material
+
+
+def make_raceway_material(name: str, *, palette: PaletteConfig, config: RacewayShading) -> Material:
+    """Keyway raceway floor: darker than the chamber, brushed along the picks.
+
+    Noise compressed vertically leaves horizontal wear streaks — tools slide
+    through sideways — while the lit response lets the carved band edges
+    shadow the bed for real recess depth.
+    """
+    material, node_tree, principled = new_principled_material(name)
+
+    coordinates = new_node(node_tree, ShaderNodeTexCoord)
+    mapping = new_node(node_tree, ShaderNodeMapping)
+    set_vector_input(mapping, "Scale", config.streak_mapping_scale)
+    link_nodes(node_tree, source=(coordinates, "Object"), target=(mapping, "Vector"))
+    streaks = new_node(node_tree, ShaderNodeTexNoise)
+    set_float_input(streaks, "Scale", config.noise_scale)
+    set_float_input(streaks, "Detail", config.noise_detail)
+    link_nodes(node_tree, source=(mapping, "Vector"), target=(streaks, "Vector"))
+    streak_strength = new_math_node(node_tree, "MULTIPLY", operand=config.strength)
+    link_nodes(node_tree, source=(streaks, "Fac"), target=(streak_strength, "Value"))
+
+    deep = linear_rgba(palette.plate_deep)
+    base = mixed_linear(deep, linear_rgba(palette.plate), config.base_mix, gain=1.0)
+    worn = mixed_linear(linear_rgba(palette.plate), linear_rgba(palette.key), config.key_mix, gain=config.gain)
+    floor = new_color_mix_node(node_tree, a=base, b=worn)
+    link_sockets(node_tree, output_socket(streak_strength, "Value"), input_by_identifier(floor, MIX_FACTOR))
+    _wire_lit_surface(
+        node_tree,
+        principled,
+        floor,
+        metallic=config.metallic,
+        roughness=config.roughness,
+        specular=config.specular,
+        glow=config.glow,
+    )
+    return material

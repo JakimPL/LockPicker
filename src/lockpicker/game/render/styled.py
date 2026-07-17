@@ -60,8 +60,13 @@ class StyledRenderer(RendererBase):
     def draw_frame(self) -> None:
         self.screen.blit(self.sprites.frame, (0, 0))
 
+    def draw_shear_lips(self) -> None:
+        for upper in (True, False):
+            sprite = self.sprites.lip(upper=upper)
+            top = self.layout.shear_line_y(upper=upper) - sprite.anchor[1]
+            self.screen.blit(sprite.surface, (0, top))
+
     def draw_picks(self) -> None:
-        self.draw_frame()
         for pick in range(self.lock.level.number_of_picks):
             self.draw_pick(pick)
 

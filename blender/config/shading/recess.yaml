@@ -1,0 +1,38 @@
+pocket:
+  offset_units: 1.0
+  feather: 0.1
+  band_key_mix: 0.06
+  band_gain: 0.85
+  chamber_mix: 0.25
+  chamber_gain: 0.7
+  streak_mapping_scale: [8.0, 1.0, 0.5]
+  streak_scale: 2.4
+  streak_detail: 5.0
+  streak_strength: 0.45
+  streak_key_mix: 0.08
+  streak_gain: 0.55
+  mottle_scale: 1.4
+  mottle_detail: 3.0
+  mottle_strength: 0.28
+  wear_start: 0.93
+  wear_strength: 0.22
+  wear_key_mix: 0.08
+  wear_gain: 0.85
+  bump_strength: 0.3
+  metallic: 0.85
+  roughness: 0.5
+  specular: 0.5
+  glow: 0.1
+
+raceway:
+  base_mix: 0.05
+  streak_mapping_scale: [0.3, 1.0, 28.0]
+  noise_scale: 2.4
+  noise_detail: 5.0
+  strength: 0.25
+  key_mix: 0.1
+  gain: 0.3
+  metallic: 0.94
+  roughness: 0.75
+  specular: 0.05
+  glow: 0.75

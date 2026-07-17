@@ -12,13 +12,19 @@ def manifest() -> ThemeManifest:
 
 
 def test_manifest_is_valid_against_config(manifest: ThemeManifest) -> None:
-    assert manifest.schema_version == 1
+    assert manifest.schema_version == 2
     assert manifest.image_scale >= 1
     validate_manifest(manifest)
 
 
 def test_manifest_anchors_inside_canvas(manifest: ThemeManifest) -> None:
-    sprites = [manifest.tumblers.upper, manifest.tumblers.lower, *manifest.picks.values()]
+    sprites = [
+        manifest.tumblers.upper,
+        manifest.tumblers.lower,
+        *manifest.picks.values(),
+        manifest.lips.upper,
+        manifest.lips.lower,
+    ]
     for sprite in sprites:
         assert 0 <= sprite.tip_anchor[0] < sprite.size[0]
         assert 0 <= sprite.tip_anchor[1] < sprite.size[1]
@@ -47,6 +53,19 @@ def test_validate_manifest_rejects_missing_pick_shapes(manifest: ThemeManifest) 
     broken = manifest.model_copy(update={"picks": {}})
     with pytest.raises(ValueError, match="pick shapes"):
         validate_manifest(broken)
+
+
+def test_validate_manifest_rejects_narrow_lip_strip(manifest: ThemeManifest) -> None:
+    narrow = manifest.lips.upper.model_copy(update={"size": (manifest.board.logical_size[0] - 1, 16)})
+    broken = manifest.model_copy(update={"lips": manifest.lips.model_copy(update={"upper": narrow})})
+    with pytest.raises(ValueError, match="board width"):
+        validate_manifest(broken)
+
+
+def test_lip_strips_span_board_width(manifest: ThemeManifest) -> None:
+    for lip in (manifest.lips.upper, manifest.lips.lower):
+        assert lip.size[0] == manifest.board.logical_size[0]
+        assert lip.tip_anchor[0] == manifest.board.logical_size[0] // 2
 
 
 def test_scaled_pair_rounds_each_axis_independently() -> None:

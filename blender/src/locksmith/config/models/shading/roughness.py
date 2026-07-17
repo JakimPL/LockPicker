@@ -6,5 +6,6 @@ class MetalRoughness(SceneModel):
     brass: float
     copper: float
     rosette: float
+    lip: float
     pick: float
     ferrule: float

@@ -1,7 +1,9 @@
 from bpy.types import (
     Material,
+    NodeTree,
     ShaderNodeMapping,
     ShaderNodeMapRange,
+    ShaderNodeMix,
     ShaderNodeNewGeometry,
     ShaderNodeSeparateXYZ,
     ShaderNodeTexCoord,
@@ -32,14 +34,19 @@ from locksmith.blender.nodes import (
 from locksmith.colors import linear_rgba, mixed_linear
 from locksmith.config.models.palette.palette import PaletteConfig
 from locksmith.config.models.shading.plate.plate import PlateShading
+from locksmith.types import RGBAColor
 
 
-def make_plate_material(name: str, *, palette: PaletteConfig, config: PlateShading) -> Material:
-    """Self-lit housing plate: mottled iron, slot-rim glints, a warm lamp pool, and depth fade.
+def make_plate_material(
+    name: str, *, palette: PaletteConfig, config: PlateShading, half_height_units: float
+) -> Material:
+    """Self-lit housing plate: mottled iron, rim glints, lamp pool, shell band, and depth fade.
 
     Painting the values into an emission surface keeps the plate at exact
     palette levels under any light rig while it still blocks light for the
-    pin shadows; the depth fade sends slot interiors near-black.
+    pin shadows; the depth fade sends slot interiors near-black. The shell
+    band brightens the first height unit at both board edges — the region a
+    seated pin retracts into — using |Z| so both edges match.
     """
     base = linear_rgba(palette.plate)
     dark = linear_rgba(palette.plate_dark)
@@ -88,5 +95,41 @@ def make_plate_material(name: str, *, palette: PaletteConfig, config: PlateShadi
     link_sockets(node_tree, output_by_identifier(pool, MIX_RESULT), input_by_identifier(deep, MIX_A))
     link_sockets(node_tree, output_socket(fade_range, "Result"), input_by_identifier(deep, MIX_FACTOR))
 
-    link_sockets(node_tree, output_by_identifier(deep, MIX_RESULT), input_socket(emission, "Color"))
+    shell = _shell_band_mix(
+        node_tree, separate=separate, base=base, key=key, config=config, half_height_units=half_height_units
+    )
+    link_sockets(node_tree, output_by_identifier(deep, MIX_RESULT), input_by_identifier(shell, MIX_A))
+
+    link_sockets(node_tree, output_by_identifier(shell, MIX_RESULT), input_socket(emission, "Color"))
     return material
+
+
+def _shell_band_mix(
+    node_tree: NodeTree,
+    *,
+    separate: ShaderNodeSeparateXYZ,
+    base: RGBAColor,
+    key: RGBAColor,
+    config: PlateShading,
+    half_height_units: float,
+) -> ShaderNodeMix:
+    """Mix node brightening the first height unit at both board edges.
+
+    The band mixes after the depth fade: the recessed rails between slots are
+    deep-faded near-black, and a band mixed before the fade vanishes with
+    them — the polished shell face must read across the whole board width.
+    |Z| distance drives the band so both edges match.
+    """
+    edge_distance = new_math_node(node_tree, "ABSOLUTE", operand=None)
+    link_nodes(node_tree, source=(separate, "Z"), target=(edge_distance, "Value"))
+    shell_range = new_node(node_tree, ShaderNodeMapRange)
+    set_float_input(shell_range, "From Min", half_height_units - config.shell.offset_units - config.shell.feather)
+    set_float_input(shell_range, "From Max", half_height_units - config.shell.offset_units)
+    link_nodes(node_tree, source=(edge_distance, "Value"), target=(shell_range, "Value"))
+    shell_strength = new_math_node(node_tree, "MULTIPLY", operand=config.shell.strength)
+    link_nodes(node_tree, source=(shell_range, "Result"), target=(shell_strength, "Value"))
+    shell = new_color_mix_node(
+        node_tree, a=None, b=mixed_linear(base, key, config.shell.key_mix, gain=config.shell.gain)
+    )
+    link_sockets(node_tree, output_socket(shell_strength, "Value"), input_by_identifier(shell, MIX_FACTOR))
+    return shell

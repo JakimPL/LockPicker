@@ -2,7 +2,7 @@ assets:
   theme: workshop
   image_scale: 2
   padding_pixels: 4
-  shadow_margin_pixels: 8
+  shadow_margin_pixels: 28
   badge_tip_offset_pixels: 30.0
   pin_bake_tip_z: 0.0
   groups: [steel, brass, copper]
