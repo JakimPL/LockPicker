@@ -1,6 +1,8 @@
 plate:
   margin: 12.0
   bezel: 0.6
+  rebate_depth: 0.5
+  rebate_margin: 0.15
   face_y: -0.15
   back_y: 0.55
   subdivision_cuts: 72

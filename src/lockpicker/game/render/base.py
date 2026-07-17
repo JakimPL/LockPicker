@@ -43,6 +43,16 @@ class RendererBase:
         rect = pygame.Rect(*self.get_tumbler_bounds(tumbler) if bounds is None else bounds)
         return bool(rect.collidepoint(mouse_position))
 
+    def get_pick_position(self, pick: int) -> Tuple[float, float]:
+        change = self.animation.pick_change(pick)
+        if change is None:
+            return self.get_pick_anchor(pick, self.lock.get_pick(pick))
+
+        progress = self.animation.progress
+        start_x, start_y = self.get_pick_anchor(pick, change.start)
+        end_x, end_y = self.get_pick_anchor(pick, change.end)
+        return start_x + (end_x - start_x) * progress, start_y + (end_y - start_y) * progress
+
     def get_pick_anchor(self, pick: int, location: Optional[Location]) -> Tuple[int, float]:
         if location is None:
             x = self.layout.px(settings.pick.idle_offset)

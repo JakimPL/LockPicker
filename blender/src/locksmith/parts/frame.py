@@ -52,4 +52,24 @@ def build_frame(
         )
     cutter = mesh_object_from("frame_slots_cut", cutter_builder, collection=collection, materials=[])
     apply_boolean_difference(plate, name="slots", cutter=cutter)
+
+    rebate_left = board.column_center_x(0) - board.column_width / 2 - anatomy.rebate_margin
+    rebate_right = board.column_center_x(board.config.columns - 1) + board.column_width / 2 + anatomy.rebate_margin
+    overshoot = anatomy.cutter_depth_margin / 2
+    rebate_builder = new_bmesh()
+    box_vertices(
+        rebate_builder,
+        size=(
+            rebate_right - rebate_left,
+            anatomy.rebate_depth + overshoot,
+            height + anatomy.cutter_height_margin,
+        ),
+        center=(
+            (rebate_left + rebate_right) / 2,
+            anatomy.face_y - overshoot + (anatomy.rebate_depth + overshoot) / 2,
+            0.0,
+        ),
+    )
+    rebate = mesh_object_from("frame_rebate_cut", rebate_builder, collection=collection, materials=[])
+    apply_boolean_difference(plate, name="rebate", cutter=rebate)
     return plate

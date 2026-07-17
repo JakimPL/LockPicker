@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 from lockpicker.engine.lock import Lock
 from lockpicker.game.animation import compute_animation_steps
@@ -21,6 +21,10 @@ def level_paths() -> List[Path]:
 
 def _key(location: Location) -> str:
     return f"{location.position}:{int(location.upper)}"
+
+
+def _pick_key(location: Optional[Location]) -> Optional[str]:
+    return None if location is None else _key(location)
 
 
 def scripted_moves(level: Level) -> List[Tuple[str, Union[int, Location]]]:
@@ -53,13 +57,21 @@ def _probe_location(level: Level) -> Location:
     return sorted(level.tumblers.keys())[0]
 
 
-def replay_recent_changes(path: Path) -> List[Dict[str, List[int]]]:
+def replay_recent_changes(path: Path) -> List[Dict[str, Union[Dict[str, List[int]], Dict[str, List[Optional[str]]]]]]:
     level = Level.load(path)
     lock = Lock(level)
     lock.select_pick(0)
     lock.push(_probe_location(level))
     steps = compute_animation_steps(lock.drain_snapshots())
-    return [{_key(loc): list(pair) for loc, pair in step.items()} for step in steps]
+    return [
+        {
+            "tumblers": {_key(location): list(change) for location, change in step.tumblers.items()},
+            "picks": {
+                str(pick): [_pick_key(change.start), _pick_key(change.end)] for pick, change in step.picks.items()
+            },
+        }
+        for step in steps
+    ]
 
 
 def _generate() -> None:

@@ -131,7 +131,7 @@ class Game:
             self.lock.change_current_pick()
 
     def check_win(self) -> bool:
-        if self.lock.check_win():
+        if self.lock.check_win() and not self.animation.active:
             self.running = False
             return True
 

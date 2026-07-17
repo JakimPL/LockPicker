@@ -3,6 +3,7 @@ from typing import Dict, List, Optional
 
 from lockpicker.engine.pick import PickSet
 from lockpicker.level.level import Level
+from lockpicker.state.snapshot import Snapshot
 from lockpicker.state.state import LocatedTumblerState, PickState, State
 from lockpicker.tumbler.location import Location
 from lockpicker.tumbler.tumbler import Tumbler
@@ -15,7 +16,7 @@ class Lock:
         self._validate_level()
 
         self._picks = PickSet(self.level.number_of_picks)
-        self._states = [self._get_state()]
+        self._states: List[Snapshot] = [self._capture_snapshot()]
 
     def push(self, location: Location) -> None:
         tumbler = self.get_tumbler(location)
@@ -30,7 +31,7 @@ class Lock:
             self._release_tumbler(location)
             self._revise_picks()
 
-    def drain_snapshots(self) -> List[Dict[Location, int]]:
+    def drain_snapshots(self) -> List[Snapshot]:
         snapshots = self._states
         self._states = [self._states[-1]]
         return snapshots
@@ -82,11 +83,12 @@ class Lock:
 
     def _initialize_state(self) -> None:
         self._picks = PickSet(self.level.number_of_picks)
-        self._states = [self._get_state()]
+        self._states = [self._capture_snapshot()]
 
     def _push_tumbler(self, tumbler: Tumbler) -> None:
         location = tumbler.location
         self._picks.set_current(location)
+        self._record_snapshot()
         if tumbler.jammed:
             tumbler.unjam()
             return
@@ -95,7 +97,7 @@ class Lock:
         tumbler.push()
 
         self._apply_bindings_iteratively(location, pushed=True)
-        self._add_current_state()
+        self._record_snapshot()
         self._apply_master_tumbler(tumbler)
 
     def _release_tumbler(self, location: Location) -> None:
@@ -104,7 +106,7 @@ class Lock:
             tumbler.release(direct=True)
 
         self._apply_bindings_iteratively(location, pushed=False)
-        self._add_current_state()
+        self._record_snapshot()
 
     def _lower_tumblers_free(self, location: Location) -> bool:
         for lower_position in range(location.position):
@@ -127,15 +129,14 @@ class Lock:
 
         return True
 
-    def _get_state(self) -> Dict[Location, int]:
-        state: Dict[Location, int] = {}
-        for location, tumbler in self._level.tumblers.items():
-            state[location] = tumbler.height
+    def _capture_snapshot(self) -> Snapshot:
+        heights = {location: tumbler.height for location, tumbler in self._level.tumblers.items()}
+        return Snapshot(heights, dict(self._picks.items()))
 
-        return state
-
-    def _add_current_state(self) -> None:
-        self._states.append(self._get_state())
+    def _record_snapshot(self) -> None:
+        snapshot = self._capture_snapshot()
+        if snapshot != self._states[-1]:
+            self._states.append(snapshot)
 
     def _apply_bindings(self, location: Location, pushed: bool) -> None:
         tumbler = self._require_tumbler(location)
@@ -156,8 +157,9 @@ class Lock:
 
     def _apply_bindings_iteratively(self, location: Location, pushed: bool) -> None:
         self._apply_bindings(location, pushed)
+        self._record_snapshot()
         if not self._revise_picks():
-            self._add_current_state()
+            self._record_snapshot()
             self._apply_bindings(location, pushed)
 
     def _apply_master_tumbler(self, tumbler: Tumbler) -> None:
@@ -167,7 +169,7 @@ class Lock:
                 group_tumbler.jam()
                 group_tumbler.set_difference(0)
 
-        self._add_current_state()
+        self._record_snapshot()
 
     def _check_if_pick_is_valid(self, pick: int) -> bool:
         location = self._picks.get(pick)
@@ -188,7 +190,6 @@ class Lock:
                     self._apply_bindings(location, False)
                     self._picks.clear(pick)
                     self._release_tumbler(location)
-                    self._add_current_state()
 
         return number_of_revisions == 1
 
@@ -214,6 +215,8 @@ class Lock:
 
         for pick, pick_location in state.picks:
             self._picks.set(pick, pick_location)
+
+        self._states = [self._capture_snapshot()]
 
     @property
     def level(self) -> Level:

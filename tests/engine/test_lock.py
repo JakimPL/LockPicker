@@ -122,8 +122,90 @@ def test_drain_snapshots_returns_history_and_keeps_the_last_state(build_lock: Lo
 
     snapshots = lock.drain_snapshots()
     assert len(snapshots) >= 2
-    assert snapshots[-1][Location(0, False)] == 1
+    assert snapshots[-1].heights[Location(0, False)] == 1
     assert len(lock.drain_snapshots()) == 1
+
+
+def test_push_records_pick_arrival_before_movement(build_lock: LockFactory) -> None:
+    lock = build_lock([define(0, height=5)])
+    lock.select_pick(0)
+    lock.push(Location(0, False))
+
+    snapshots = lock.drain_snapshots()
+    assert snapshots[0].picks[0] is None
+    assert snapshots[1].picks[0] == Location(0, False)
+    assert snapshots[1].heights[Location(0, False)] == 5
+    assert snapshots[2].heights[Location(0, False)] == 1
+
+
+def test_push_on_jammed_tumbler_records_pick_arrival(build_lock: LockFactory) -> None:
+    lock = build_lock([define(0, height=5)])
+    lock.get_tumbler(Location(0, False)).jam()
+    lock.select_pick(0)
+    lock.push(Location(0, False))
+
+    snapshots = lock.drain_snapshots()
+    assert len(snapshots) == 2
+    assert snapshots[1].picks[0] == Location(0, False)
+    assert snapshots[1].heights == snapshots[0].heights
+
+
+def test_identical_snapshots_are_deduplicated(build_lock: LockFactory) -> None:
+    lock = build_lock([define(0, height=5, master=False)])
+    lock.select_pick(0)
+    lock.push(Location(0, False))
+
+    snapshots = lock.drain_snapshots()
+    assert len(snapshots) == 3
+    assert all(first != second for first, second in zip(snapshots, snapshots[1:]))
+
+
+def test_cascade_records_each_event_separately(build_lock: LockFactory) -> None:
+    lock = build_lock(
+        [
+            define(0, height=1, master=False),
+            define(1, group=1, height=5, master=False),
+            define(2, group=2, height=5, master=False),
+        ],
+        number_of_picks=2,
+        max_height=20,
+        bindings={Location(2, False): {Location(0, False): 3}},
+    )
+    lock.select_pick(0)
+    lock.push(Location(1, False))
+    lock.drain_snapshots()
+
+    lock.select_pick(1)
+    lock.push(Location(2, False))
+
+    snapshots = lock.drain_snapshots()
+    assert len(snapshots) == 5
+    assert snapshots[1].picks[1] == Location(2, False)
+    assert snapshots[1].heights == snapshots[0].heights
+    assert snapshots[2].heights[Location(2, False)] == 1
+    assert snapshots[2].heights[Location(0, False)] == 4
+    assert snapshots[2].picks[0] == Location(1, False)
+    assert snapshots[3].picks[0] is None
+    assert snapshots[3].heights[Location(1, False)] == 5
+    assert snapshots[3].picks[1] == Location(2, False)
+    assert snapshots[4].picks[1] is None
+    assert snapshots[4].heights[Location(2, False)] == 5
+    assert snapshots[4].heights[Location(0, False)] == 1
+
+
+def test_load_state_rebases_snapshots(build_lock: LockFactory) -> None:
+    lock = build_lock([define(0, height=5)])
+    state = lock.get_state()
+    lock.select_pick(0)
+    lock.push(Location(0, False))
+    lock.drain_snapshots()
+
+    lock.load_state(state)
+
+    snapshots = lock.drain_snapshots()
+    assert len(snapshots) == 1
+    assert snapshots[0].heights[Location(0, False)] == 5
+    assert snapshots[0].picks[0] is None
 
 
 def test_pick_selection_tracks_current_and_wraps(build_lock: LockFactory) -> None:

@@ -66,9 +66,8 @@ class StyledRenderer(RendererBase):
             self.draw_pick(pick)
 
     def draw_pick(self, pick: int) -> None:
-        location = self.lock.get_pick(pick)
         sprite = self.sprites.pick(settings.pick.shapes[pick], active=pick == self.lock.current_pick)
-        self.blit_anchored(sprite, self.get_pick_anchor(pick, location))
+        self.blit_anchored(sprite, self.get_pick_position(pick))
 
     def blit_anchored(self, sprite: ScaledSprite, target: Tuple[float, float]) -> None:
         left = round(target[0]) - sprite.anchor[0]

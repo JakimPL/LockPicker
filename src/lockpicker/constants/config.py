@@ -82,6 +82,7 @@ class AlphaConfig(Section):
 
 class AnimationConfig(Section):
     speed: float
+    pick_travel: float
     fps: int
 
 

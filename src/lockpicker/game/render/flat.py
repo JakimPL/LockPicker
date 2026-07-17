@@ -35,12 +35,11 @@ class FlatRenderer(RendererBase):
             self.draw_pick(pick)
 
     def draw_pick(self, pick: int) -> None:
-        location = self.lock.get_pick(pick)
         alpha = settings.alpha.opaque if pick == self.lock.current_pick else settings.alpha.dimmed
-        x, y = self.get_pick_anchor(pick, location)
+        x, y = self.get_pick_position(pick)
         self.draw_pick_shape(pick, x, y, alpha)
 
-    def draw_pick_shape(self, pick: int, x: int, y: float, alpha: int) -> None:
+    def draw_pick_shape(self, pick: int, x: float, y: float, alpha: int) -> None:
         color = (*settings.color.picks[pick], alpha)
         shape_surface = pygame.Surface(self.screen.get_size(), pygame.SRCALPHA)
         size = self.layout.px(settings.pick.size)

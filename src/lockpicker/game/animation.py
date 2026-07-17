@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, List, NamedTuple, TypeAlias
+from typing import TYPE_CHECKING, Dict, List, NamedTuple, Optional
 
 from lockpicker.constants.config import settings
+from lockpicker.state.snapshot import Snapshot
 from lockpicker.tumbler.location import Location
 
 if TYPE_CHECKING:
@@ -14,71 +15,104 @@ class HeightChange(NamedTuple):
     end: int
 
 
-AnimationStep: TypeAlias = Dict[Location, HeightChange]
+class PickChange(NamedTuple):
+    start: Optional[Location]
+    end: Optional[Location]
 
 
-def compute_animation_steps(snapshots: List[Dict[Location, int]]) -> List[AnimationStep]:
+class AnimationStep(NamedTuple):
+    tumblers: Dict[Location, HeightChange]
+    picks: Dict[int, PickChange]
+
+
+def compute_animation_steps(snapshots: List[Snapshot]) -> List[AnimationStep]:
     steps: List[AnimationStep] = []
     for current, following in zip(snapshots, snapshots[1:]):
-        step: AnimationStep = {
-            location: HeightChange(height, following.get(location, height)) for location, height in current.items()
+        tumblers = {
+            location: HeightChange(height, following.heights.get(location, height))
+            for location, height in current.heights.items()
         }
-        if step:
+        picks = {
+            pick: PickChange(location, following.picks.get(pick, location)) for pick, location in current.picks.items()
+        }
+        step = AnimationStep(tumblers, picks)
+        if _step_changes(step):
             steps.append(step)
 
     return list(reversed(steps))
+
+
+def _step_changes(step: AnimationStep) -> bool:
+    changes = list(step.tumblers.values()) + list(step.picks.values())
+    return any(change.start != change.end for change in changes)
 
 
 class Animation:
     def __init__(self) -> None:
         self.value = 0.0
         self.items: List[AnimationStep] = []
-        self.current_item: AnimationStep = {}
+        self.current_item: Optional[AnimationStep] = None
 
     @property
     def active(self) -> bool:
-        return bool(self.items or self.current_item)
+        return bool(self.items) or self.current_item is not None
 
     def load(self, steps: List[AnimationStep]) -> None:
         self.items = steps
+        self.value = 0.0
+        self.current_item = self.items.pop() if self.items else None
 
     def reset(self) -> None:
         self.value = 0.0
         self.items = []
-        self.current_item = {}
+        self.current_item = None
 
     def advance(self) -> bool:
         if not self.active:
             return False
 
         self.value += settings.animation.speed
-        if self.current_item and self.value >= self._max_value():
-            self.current_item = {}
+        if self.current_item is not None and self.value >= self._span(self.current_item):
+            self.current_item = None
 
-        if self.items and not self.current_item:
+        if self.items and self.current_item is None:
             self.current_item = self.items.pop()
             self.value = 0.0
 
         return True
 
-    def _max_value(self) -> int:
-        return max(abs(change.end - change.start) for change in self.current_item.values())
+    @property
+    def progress(self) -> float:
+        if self.current_item is None:
+            return 1.0
 
-    def _eased_value(self) -> float:
-        span = self._max_value()
-        if span == 0:
-            return self.value
+        span = self._span(self.current_item)
+        if span <= 0.0:
+            return 1.0
 
-        progress = min(self.value / span, 1.0)
-        return span * progress * progress * (3.0 - 2.0 * progress)
+        ratio = min(self.value / span, 1.0)
+        return ratio * ratio * (3.0 - 2.0 * ratio)
 
     def height(self, tumbler: Tumbler) -> float:
-        change = self.current_item.get(tumbler.location)
+        if self.current_item is None:
+            return tumbler.height
+
+        change = self.current_item.tumblers.get(tumbler.location)
         if change is None:
             return tumbler.height
 
-        value = self._eased_value()
-        if change.end > change.start:
-            return change.start + min(value, change.end - change.start)
+        return change.start + (change.end - change.start) * self.progress
 
-        return change.start + max(-value, change.end - change.start)
+    def pick_change(self, pick: int) -> Optional[PickChange]:
+        if self.current_item is None:
+            return None
+
+        return self.current_item.picks.get(pick)
+
+    @staticmethod
+    def _span(step: AnimationStep) -> float:
+        span = float(max((abs(change.end - change.start) for change in step.tumblers.values()), default=0))
+        if any(change.start != change.end for change in step.picks.values()):
+            span = max(span, settings.animation.pick_travel)
+
+        return span
