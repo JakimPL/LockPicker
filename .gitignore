@@ -22,4 +22,5 @@ __pycache__/
 *.blend
 *.blend1
 /assets/
+/build/
 /docs/lookdev/

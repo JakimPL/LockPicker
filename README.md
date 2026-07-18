@@ -11,7 +11,7 @@ same time.
 
 ## Requirements
 
-- Python ≥ 3.12
+- Python 3.13 (the `bpy` dependency is pinned to it)
 - [uv](https://docs.astral.sh/uv/) (recommended) or pip
 
 ## Install
@@ -27,18 +27,18 @@ rendered theme (`assets/themes/workshop/`) is a build artifact and is not
 committed — on a fresh clone the game refuses to start until you generate it:
 
 ```bash
-cd blender
 uv run locksmith assets
 ```
 
-`blender/` is a separate uv project (`locksmith`) that scripts Blender through
-the `bpy` wheel; the first invocation downloads it (a few hundred MB, one
-time). Rendering picks the best available Cycles device automatically — an
-NVIDIA GPU via OptiX/CUDA when present, otherwise CPU (slower). The bake
-writes the sprite set plus `manifest.json` and takes under a minute on a GPU.
+`locksmith` (`src/locksmith/`) scripts Blender through the `bpy` wheel, which
+`uv sync` installs alongside the game (a few hundred MB, one time). Rendering
+picks the best available Cycles device automatically — an NVIDIA GPU via
+OptiX/CUDA when present, otherwise CPU (slower). The bake writes the sprite
+set plus `manifest.json` and takes under a minute on a GPU; intermediate
+`.blend` files land in `build/`.
 
-Re-run the command whenever anything under `blender/` changes (scene geometry,
-`blender/config/*.yaml` palette/shading/anatomy knobs). To run the game
+Re-run the command whenever the scene changes (geometry code or the
+`src/locksmith/config/*.yaml` palette/shading/anatomy knobs). To run the game
 without generated assets — e.g. a quick logic check — use the flat debug
 renderer: `--renderer flat`.
 
@@ -49,20 +49,16 @@ empty level is created with the given dimensions (useful together with `--edit`)
 
 ```bash
 # Play a level
-uv run python main.py levels/level_01_01.lvl
-
-# Equivalent invocations
-uv run python -m lockpicker levels/level_01_01.lvl
 uv run lockpicker levels/level_01_01.lvl
 
 # Open a level in the editor
-uv run python main.py levels/level_01_01.lvl --edit
+uv run lockpicker levels/level_01_01.lvl --edit
 
 # Watch / run random moves alongside your own input
-uv run python main.py levels/level_01_01.lvl --random_moves
+uv run lockpicker levels/level_01_01.lvl --random_moves
 
 # Headless random-agent simulation (no window; CI-safe)
-SDL_VIDEODRIVER=dummy uv run python main.py levels/level_01_01.lvl --random_agent
+SDL_VIDEODRIVER=dummy uv run lockpicker levels/level_01_01.lvl --random_agent
 ```
 
 CLI options:
@@ -119,34 +115,10 @@ format owned by the serialization codec.
 
 ## Architecture
 
-The domain core is framework-free (no PyGame); everything PyGame lives under
+Two packages live under `src/`: `lockpicker` (the game) and `locksmith` (the
+Blender scene builder that bakes the game's sprites). Within the game, the
+domain core is framework-free (no PyGame); everything PyGame lives under
 `game/`.
-
-```
-src/lockpicker/
-├── lock.py            # Lock: the rules engine (push/release, bindings,
-│                      #   masters, win check, state save/load, board snapshots)
-├── pick.py            # PickSet: pick-slot bookkeeping
-├── level/
-│   ├── level.py       # Level: tumblers + bindings, (de)serialization, save/load
-│   ├── data.py        # LevelData: the on-disk block layout
-│   └── validation.py  # Pydantic load-boundary validation
-├── tumbler/
-│   ├── definition.py  # TumblerDefinition: frozen authored data + wire codec
-│   ├── state.py       # TumblerState: mutable runtime state
-│   ├── tumbler.py     # Tumbler: aggregate (definition + state + counter wiring)
-│   └── location.py    # Location: (position, upper) coordinate
-├── state/state.py     # State: value-equal snapshot used for undo/redo
-├── game/
-│   ├── base.py        # BaseGame: shared rendering + input
-│   ├── game.py        # Game: play loop
-│   ├── editor.py      # Editor: level authoring + snapshot-based undo
-│   ├── layout.py      # Layout: pure geometry (height ↔ pixel transforms)
-│   └── animation.py   # Board-snapshot deltas → animation steps
-├── agents/random.py   # RandomAgent + headless simulation
-├── constants/config.py# Pydantic settings loaded from config.yaml
-└── paths.py           # Path resolution
-```
 
 Three tumbler types are kept deliberately, separated by lifecycle and consumer:
 `TumblerDefinition` is the frozen, authored, serialized unit; `TumblerState` is
@@ -158,7 +130,8 @@ per-tumbler height animation, keeping animation concerns out of the core.
 ## Development
 
 ```bash
-uv run pytest          # tests (characterization goldens + unit tests)
-uv run mypy            # strict type checking
+uv run pytest                 # tests (characterization goldens + unit tests)
+uv run mypy                   # strict type checking (both packages)
+uv run pylint src/locksmith   # lint the scene builder
 uv run pre-commit run --all-files
 ```
