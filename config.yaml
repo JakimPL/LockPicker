@@ -49,7 +49,7 @@ alpha:
   jam_divisor: 3
 
 animation:
-  speed: 0.05
+  speed: 0.07
   pick_travel: 2.0
   fps: 60
 
@@ -71,3 +71,6 @@ theme:
   jam_tint: [128, 122, 134]
   shadow_alpha: 160
   badge_alpha: 255
+  lip_glint_frames: 18
+  lip_glint_tint: [96, 72, 40]
+  win_flourish_frames: 45

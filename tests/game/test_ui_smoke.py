@@ -5,10 +5,14 @@ from typing import Tuple
 
 import pygame
 import pytest
+
 from lockpicker.constants.config import RendererMode, settings
 from lockpicker.engine.lock import Lock
 from lockpicker.game.editor.editor import Editor
 from lockpicker.game.game import Game
+from lockpicker.tumbler.definition import TumblerDefinition
+from lockpicker.tumbler.location import Location
+from tests.conftest import LockFactory
 
 
 def grid_point(position: int, *, upper: bool) -> Tuple[int, int]:
@@ -58,6 +62,27 @@ def test_game_handles_click_and_undo(
     game.frame()
     assert game.running is True
     assert_level_within_bounds(game.lock)
+
+
+def test_win_flourish_delays_exit(
+    screen: pygame.surface.Surface,
+    build_lock: LockFactory,
+    renderer_mode: RendererMode,
+) -> None:
+    location = Location(0, False)
+    lock = build_lock([TumblerDefinition(location, 0, 2, 0, False)])
+    game = Game(screen, lock, random_moves=False, renderer_mode=renderer_mode)
+    game.running = True
+    game.lock.push(location)
+
+    frames = 0
+    while game.running and frames < 600:
+        game.frame()
+        frames += 1
+
+    assert game.running is False
+    assert game.effects.flourish_finished
+    assert frames >= settings.theme.win_flourish_frames
 
 
 def test_editor_frame_renders_and_quit_stops(

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pygame
 import pytest
+
 from lockpicker.constants.config import RendererMode, settings
 from lockpicker.engine.lock import Lock
 from lockpicker.game.assets.library import AssetLibrary
@@ -65,6 +66,15 @@ def test_lip_strips_prescaled_to_screen_width(sprites: ThemeSprites) -> None:
         assert 0 <= lip.anchor[1] <= lip.surface.get_height()
 
 
+def test_lip_glint_variant_brighter_than_base(sprites: ThemeSprites) -> None:
+    for upper in (True, False):
+        base = sprites.lip(upper=upper)
+        glint = sprites.lip_glint(upper=upper)
+        assert average_brightness(glint.surface) > average_brightness(base.surface)
+        assert glint.anchor == base.anchor
+        assert glint.surface.get_size() == base.surface.get_size()
+
+
 def test_shear_lines_brighter_than_chamber(
     screen: pygame.surface.Surface,
     sample_lock: Lock,
@@ -118,3 +128,35 @@ def test_styled_pick_switch_changes_output(
     sample_lock.change_current_pick()
     switched = render_bytes(game)
     assert switched != baseline
+
+
+def test_glint_changes_output_and_decays_to_baseline(
+    screen: pygame.surface.Surface,
+    sample_lock: Lock,
+) -> None:
+    game = Game(screen, sample_lock, renderer_mode=RendererMode.STYLED)
+    baseline = render_bytes(game)
+
+    location = next(iter(sample_lock.get_tumblers_by_location()))
+    game.effects.observe(location, 2.0)
+    game.effects.observe(location, 1.0)
+    assert render_bytes(game) != baseline
+
+    for _ in range(settings.theme.lip_glint_frames):
+        game.effects.advance()
+
+    assert render_bytes(game) == baseline
+
+
+def test_flourish_changes_output(
+    screen: pygame.surface.Surface,
+    sample_lock: Lock,
+) -> None:
+    game = Game(screen, sample_lock, renderer_mode=RendererMode.STYLED)
+    baseline = render_bytes(game)
+
+    game.effects.start_flourish()
+    for _ in range(settings.theme.win_flourish_frames // 2):
+        game.effects.advance()
+
+    assert render_bytes(game) != baseline

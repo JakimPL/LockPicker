@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Dict, Optional, Tuple
 
 import pygame
+
 from lockpicker.constants.config import PickShape, settings
 from lockpicker.game.assets.library import AssetLibrary
 from lockpicker.game.assets.manifest import PixelPair
@@ -60,6 +61,7 @@ class ThemeSprites:
             self._shadows[upper] = ScaledSprite(shadow, self._scaled(orientation.shadow.tip_anchor))
 
         self._lips: Dict[bool, ScaledSprite] = {}
+        self._lip_glints: Dict[bool, ScaledSprite] = {}
         for upper, lip_asset in ((True, manifest.lips.upper), (False, manifest.lips.lower)):
             lip_size = (layout.screen_width, max(1, round(lip_asset.size[1] * self.scale_y)))
             lip_surface = pygame.transform.smoothscale(library.surface(lip_asset.image), lip_size)
@@ -68,6 +70,9 @@ class ThemeSprites:
                 round(lip_asset.tip_anchor[1] * self.scale_y),
             )
             self._lips[upper] = ScaledSprite(lip_surface, lip_anchor)
+            glint_surface = lip_surface.copy()
+            glint_surface.fill(settings.theme.lip_glint_tint, special_flags=pygame.BLEND_RGB_ADD)
+            self._lip_glints[upper] = ScaledSprite(glint_surface, lip_anchor)
 
         badge = manifest.badges.master
         badge_surface = pygame.transform.smoothscale(library.surface(badge.image), self._scaled(badge.size))
@@ -118,6 +123,9 @@ class ThemeSprites:
 
     def lip(self, *, upper: bool) -> ScaledSprite:
         return self._lips[upper]
+
+    def lip_glint(self, *, upper: bool) -> ScaledSprite:
+        return self._lip_glints[upper]
 
     def pick(self, shape: PickShape, *, active: bool) -> ScaledSprite:
         return self._picks[(shape, active)]

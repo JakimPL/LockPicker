@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Optional, Tuple
 
 import pygame
+
 from lockpicker.constants.config import PickShape, settings
 from lockpicker.game.render.base import RendererBase
 from lockpicker.tumbler.tumbler import Tumbler
@@ -32,9 +33,23 @@ class FlatRenderer(RendererBase):
 
     def draw_shear_lips(self) -> None:
         width = max(1, self.layout.px(2))
+        flourish = self.effects.flourish_strength
+        margin = round(self.layout.bar_pitch) - self.layout.bar_width
         for upper in (True, False):
             y = self.layout.shear_line_y(upper=upper)
             pygame.draw.line(self.screen, settings.color.lip, (0, y), (self.layout.screen_width, y), width)
+            for position, strength in self.effects.glints(upper=upper):
+                left = self.layout.bar_x(position) - margin
+                self.draw_lip_highlight(left, self.layout.bar_width + 2 * margin, y, strength)
+
+            if flourish > 0.0:
+                self.draw_lip_highlight(0, self.layout.screen_width, y, flourish)
+
+    def draw_lip_highlight(self, x: int, width: int, y: int, strength: float) -> None:
+        thickness = max(2, self.layout.px(6))
+        surface = pygame.Surface((width, thickness), pygame.SRCALPHA)
+        surface.fill((*settings.color.highlight, round(255 * strength)))
+        self.screen.blit(surface, (x, y - thickness // 2))
 
     def draw_picks(self) -> None:
         for pick in range(self.lock.level.number_of_picks):

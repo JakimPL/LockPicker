@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Callable, Optional, Union
 
 import pygame
+
 from lockpicker.constants.config import RendererMode
 from lockpicker.engine.lock import Lock
 from lockpicker.game.animation import Animation
@@ -11,6 +12,7 @@ from lockpicker.game.editor.input import EditorInput
 from lockpicker.game.editor.rendering import EditorRenderer
 from lockpicker.game.editor.snapshot import EditorSnapshots
 from lockpicker.game.editor.state import EditorState
+from lockpicker.game.effects import LipEffects
 from lockpicker.game.input import Key, MouseState
 from lockpicker.game.layout import Layout
 from lockpicker.game.loop import run_loop
@@ -38,9 +40,10 @@ class Editor:
         self.mouse = MouseState()
         self.mouse.offset = self.viewport.offset
         self.animation = Animation()
+        self.effects = LipEffects()
         self.layout = Layout(lock.level.max_height, self.viewport.ui_scale)
         self.renderer: BoardRenderer = create_renderer(
-            self.viewport.board, lock, self.layout, self.animation, mode=renderer_mode
+            self.viewport.board, lock, self.layout, self.animation, self.effects, mode=renderer_mode
         )
 
         self.run_game_callback = run_game_callback
@@ -99,7 +102,7 @@ class Editor:
         self.layout.rescale(self.viewport.ui_scale)
         self.mouse.offset = self.viewport.offset
         self.renderer = create_renderer(
-            self.viewport.board, self.lock, self.layout, self.animation, mode=self.renderer_mode
+            self.viewport.board, self.lock, self.layout, self.animation, self.effects, mode=self.renderer_mode
         )
         self.rendering.renderer = self.renderer
 

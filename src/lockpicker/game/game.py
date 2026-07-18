@@ -2,10 +2,12 @@ from collections import deque
 from typing import Deque, Optional
 
 import pygame
+
 from lockpicker.agents.random import RandomAgent
 from lockpicker.constants.config import RendererMode
 from lockpicker.engine.lock import Lock
 from lockpicker.game.animation import Animation, compute_animation_steps
+from lockpicker.game.effects import LipEffects
 from lockpicker.game.input import Key, MouseState
 from lockpicker.game.layout import Layout
 from lockpicker.game.loop import run_loop
@@ -36,9 +38,10 @@ class Game:
         self.mouse = MouseState()
         self.mouse.offset = self.viewport.offset
         self.animation = Animation()
+        self.effects = LipEffects()
         self.layout = Layout(lock.level.max_height, self.viewport.ui_scale)
         self.renderer: BoardRenderer = create_renderer(
-            self.viewport.board, lock, self.layout, self.animation, mode=renderer_mode
+            self.viewport.board, lock, self.layout, self.animation, self.effects, mode=renderer_mode
         )
         self.highlighted: Optional[Location] = None
 
@@ -53,6 +56,7 @@ class Game:
         self.gather_events()
         self.mouse.update()
         self.draw()
+        self.effects.advance()
         self.action()
         self.mouse.commit()
         self.check_win()
@@ -76,7 +80,7 @@ class Game:
         self.layout.rescale(self.viewport.ui_scale)
         self.mouse.offset = self.viewport.offset
         self.renderer = create_renderer(
-            self.viewport.board, self.lock, self.layout, self.animation, mode=self.renderer_mode
+            self.viewport.board, self.lock, self.layout, self.animation, self.effects, mode=self.renderer_mode
         )
 
     def handle_key(self, key: int) -> None:
@@ -104,6 +108,7 @@ class Game:
     def draw_tumblers(self) -> None:
         self.highlighted = None
         for location, tumbler in self.lock.get_tumblers_by_location().items():
+            self.effects.observe(location, self.renderer.get_current_height(tumbler))
             bounds = self.renderer.get_tumbler_bounds(tumbler)
             highlighted = self.renderer.is_mouse_hovering_tumbler(tumbler, self.mouse.position, bounds)
             self.renderer.draw_tumbler(tumbler, bounds, highlighted=highlighted)
@@ -134,14 +139,17 @@ class Game:
 
     def check_win(self) -> bool:
         if self.lock.check_win() and not self.animation.active:
-            self.running = False
-            return True
+            self.effects.start_flourish()
+            if self.effects.flourish_finished:
+                self.running = False
+                return True
 
         return False
 
     def restart(self) -> None:
         self.lock.reset()
         self.animation.reset()
+        self.effects.reset()
 
     def save_state(self) -> None:
         last_state = self.undo_history[-1] if self.undo_history else None
@@ -153,6 +161,7 @@ class Game:
     def undo(self) -> None:
         if self.undo_history:
             self.animation.reset()
+            self.effects.reset()
             self.redo_history.append(self.lock.get_state())
             state = self.undo_history.pop()
             self.lock.load_state(state)
@@ -160,6 +169,7 @@ class Game:
     def redo(self) -> None:
         if self.redo_history:
             self.animation.reset()
+            self.effects.reset()
             self.undo_history.append(self.lock.get_state())
             state = self.redo_history.pop()
             self.lock.load_state(state)

@@ -3,9 +3,11 @@ from __future__ import annotations
 from typing import Optional, Tuple
 
 import pygame
+
 from lockpicker.constants.config import settings
 from lockpicker.engine.lock import Lock
 from lockpicker.game.animation import Animation
+from lockpicker.game.effects import LipEffects
 from lockpicker.game.layout import Layout
 from lockpicker.tumbler.location import Location
 from lockpicker.tumbler.tumbler import Tumbler
@@ -18,11 +20,13 @@ class RendererBase:
         lock: Lock,
         layout: Layout,
         animation: Animation,
+        effects: LipEffects,
     ) -> None:
         self.screen = screen
         self.lock = lock
         self.layout = layout
         self.animation = animation
+        self.effects = effects
 
     def draw_frame(self) -> None:
         pass

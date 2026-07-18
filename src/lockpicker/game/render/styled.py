@@ -3,10 +3,12 @@ from __future__ import annotations
 from typing import Optional, Tuple
 
 import pygame
+
 from lockpicker.constants.config import settings
 from lockpicker.engine.lock import Lock
 from lockpicker.game.animation import Animation
 from lockpicker.game.assets.sprites import ScaledSprite, ThemeSprites
+from lockpicker.game.effects import LipEffects
 from lockpicker.game.layout import Layout
 from lockpicker.game.render.base import RendererBase
 from lockpicker.tumbler.tumbler import Tumbler
@@ -19,9 +21,10 @@ class StyledRenderer(RendererBase):
         lock: Lock,
         layout: Layout,
         animation: Animation,
+        effects: LipEffects,
         sprites: ThemeSprites,
     ) -> None:
-        super().__init__(screen, lock, layout, animation)
+        super().__init__(screen, lock, layout, animation, effects)
         self.sprites = sprites
 
     def draw_background(self) -> None:
@@ -61,10 +64,24 @@ class StyledRenderer(RendererBase):
         self.screen.blit(self.sprites.frame, (0, 0))
 
     def draw_shear_lips(self) -> None:
+        flourish = self.effects.flourish_strength
         for upper in (True, False):
             sprite = self.sprites.lip(upper=upper)
             top = self.layout.shear_line_y(upper=upper) - sprite.anchor[1]
             self.screen.blit(sprite.surface, (0, top))
+
+            glint = self.sprites.lip_glint(upper=upper)
+            margin = round(self.layout.bar_pitch) - self.layout.bar_width
+            for position, strength in self.effects.glints(upper=upper):
+                left = self.layout.bar_x(position) - margin
+                width = self.layout.bar_width + 2 * margin
+                area = pygame.Rect(left, 0, width, glint.surface.get_height())
+                glint.surface.set_alpha(round(255 * strength))
+                self.screen.blit(glint.surface, (left, top), area)
+
+            if flourish > 0.0:
+                glint.surface.set_alpha(round(255 * flourish))
+                self.screen.blit(glint.surface, (0, top))
 
     def draw_picks(self) -> None:
         for pick in range(self.lock.level.number_of_picks):
