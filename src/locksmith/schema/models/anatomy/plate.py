@@ -30,5 +30,6 @@ class PlateAnatomy(SceneModel):
     back_y: float
     subdivision_cuts: int
     slot_clearance: float
+    land_inset: float
     cutter_depth_margin: float
     cutter_height_margin: float

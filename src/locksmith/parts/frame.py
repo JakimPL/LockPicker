@@ -15,6 +15,17 @@ def plate_span(*, board: BoardGeometry, anatomy: PlateAnatomy) -> Tuple[float, f
     return left, right
 
 
+def slot_width(*, board: BoardGeometry, anatomy: PlateAnatomy) -> float:
+    """Width of one bore hole through the plate, matched to the bore diameter.
+
+    Sized a hair under the column pitch so a strip of plate — the land —
+    survives between neighbouring holes; the pin drops through with a sliver
+    of clearance and the plate rim frames it, so each column reads as a hole
+    drilled through solid metal.
+    """
+    return board.column_width - 2 * anatomy.land_inset
+
+
 def build_frame(
     *,
     board: BoardGeometry,
@@ -22,15 +33,15 @@ def build_frame(
     material: Material,
     collection: Collection,
 ) -> Object:
-    """Housing plate with one slot cut per column; pins slide inside the slots.
+    """Housing faceplate with one bore hole drilled per column; pins sink through them.
 
     The plate is subdivided before the booleans so pointiness-driven shading
-    stays local to the cut rims, and the cutters overshoot the plate so the
-    booleans leave no coplanar faces. The chamber cut sinks everything
-    between the shear lines into the depth fade: the shell face stays proud
-    only on the first-height-unit bands, so each column reads as a pocket in
-    the shell and the middle reads as the open raceway, running through both
-    bezels — the mechanism continues past either edge of the case.
+    stays local to the cut rims — a bright glint on each hole rim — and the
+    cutters overshoot the plate so the booleans leave no coplanar faces. One
+    hole per column leaves solid lands between them, so the field reads as
+    bores through a faceplate rather than an open window. The chamber cut
+    sinks everything between the shear lines into the depth fade, running
+    through both bezels — the mechanism continues past either edge of the case.
     """
     mesh_builder = new_bmesh()
     left, right = plate_span(board=board, anatomy=anatomy)
@@ -44,11 +55,12 @@ def build_frame(
     plate = mesh_object_from("frame_plate", mesh_builder, collection=collection, materials=[material])
 
     cutter_builder = new_bmesh()
+    hole_width = slot_width(board=board, anatomy=anatomy)
     for position in range(board.config.columns):
         box_vertices(
             cutter_builder,
             size=(
-                board.column_width + anatomy.slot_clearance,
+                hole_width,
                 depth + anatomy.cutter_depth_margin,
                 height + anatomy.cutter_height_margin,
             ),
@@ -106,11 +118,12 @@ def build_sprite_stage(
     stage = mesh_object_from("sprite_stage", mesh_builder, collection=collection, materials=[material])
 
     cutter_builder = new_bmesh()
+    hole_width = slot_width(board=board, anatomy=anatomy)
     for position in range(board.config.columns):
         box_vertices(
             cutter_builder,
             size=(
-                board.column_width + anatomy.slot_clearance,
+                hole_width,
                 depth + anatomy.cutter_depth_margin,
                 height + anatomy.cutter_height_margin,
             ),

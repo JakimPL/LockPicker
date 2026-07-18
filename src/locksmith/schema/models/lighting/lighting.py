@@ -5,3 +5,4 @@ from locksmith.schema.models.lighting.sun import SunConfig
 class LightingConfig(SceneModel):
     key: SunConfig
     rim: SunConfig
+    fill: SunConfig

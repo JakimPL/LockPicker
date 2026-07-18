@@ -26,6 +26,7 @@ from locksmith.world import build_world
 
 _KEY_SUN_NAME: Final[str] = "sun_key"
 _RIM_SUN_NAME: Final[str] = "sun_rim"
+_FILL_SUN_NAME: Final[str] = "sun_fill"
 
 
 @dataclass(frozen=True)
@@ -54,6 +55,7 @@ class WorkshopScene:
     shadow_catcher: Object
     key_sun: Object
     rim_sun: Object
+    fill_sun: Object
     board_camera: Object
     render_settings: AppliedRenderSettings
 
@@ -72,7 +74,7 @@ def build_scene(config: SceneConfig) -> WorkshopScene:
         anatomy=config.anatomy.background,
         plate=config.anatomy.plate,
         wall_material=library.bore,
-        pocket_material=library.pocket,
+        pocket_material=library.bore,
         collection=collections.background,
     )
     frame_plate = build_frame(
@@ -165,6 +167,14 @@ def build_scene(config: SceneConfig) -> WorkshopScene:
         angle=config.lighting.rim.angle,
         collection=collections.rig,
     )
+    fill_sun = new_sun_light(
+        _FILL_SUN_NAME,
+        direction=config.lighting.fill.direction,
+        color=linear_rgb(config.palette.rim),
+        energy=config.lighting.fill.energy,
+        angle=config.lighting.fill.angle,
+        collection=collections.rig,
+    )
     board_camera = build_board_camera(views=config.views, board=board, collection=collections.rig)
 
     build_lookdev(
@@ -197,6 +207,7 @@ def build_scene(config: SceneConfig) -> WorkshopScene:
         shadow_catcher=shadow_catcher,
         key_sun=key_sun,
         rim_sun=rim_sun,
+        fill_sun=fill_sun,
         board_camera=board_camera,
         render_settings=render_settings,
     )

@@ -146,6 +146,6 @@ def main() -> None:
         try:
             run_game()
         except KeyboardInterrupt:
-            print("Bye!")
+            print("\nBye!", flush=True)
 
     pygame.quit()

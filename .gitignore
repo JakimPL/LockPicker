@@ -6,7 +6,6 @@ __pycache__/
 .mypy_cache/
 .pytest_cache/
 .venv/
-.venv-build/
 .vscode/
 
 **/*.idea

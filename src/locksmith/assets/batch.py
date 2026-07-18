@@ -134,7 +134,6 @@ def _render_tumbler_orientation(
     prototype.location = Vector((_slot_x(workshop), 0.0, config.assets.pin_bake_tip_z))
     workshop.frame_plate.hide_render = True
     workshop.sprite_stage.hide_render = False
-    override_slot_material(workshop.background_wall, slot=1, material=workshop.library.pocket_stage)
     bounds = local_bounds(prototype)
     framing = sprite_framing(
         bounds,
@@ -150,7 +149,6 @@ def _render_tumbler_orientation(
         _render_sprite(workshop, prototype=prototype, framing=framing, config=config, path=directory / filename)
         images[metal] = filename
     prototype.hide_render = True
-    override_slot_material(workshop.background_wall, slot=1, material=workshop.library.pocket)
     workshop.sprite_stage.hide_render = True
     workshop.frame_plate.hide_render = False
     shadow = _render_shadow(
@@ -195,9 +193,11 @@ def _render_shadow(
     workshop.collections.background.hide_render = True
     workshop.collections.frame.hide_render = True
     workshop.rim_sun.hide_render = True
+    workshop.fill_sun.hide_render = True
     scene.world = None
     _render_sprite(workshop, prototype=prototype, framing=framing, config=config, path=path)
     scene.world = world
+    workshop.fill_sun.hide_render = False
     workshop.rim_sun.hide_render = False
     workshop.collections.background.hide_render = False
     workshop.collections.frame.hide_render = False

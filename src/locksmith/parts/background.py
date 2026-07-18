@@ -14,8 +14,15 @@ from locksmith.schema.models.anatomy.plate import PlateAnatomy
 
 
 def trough_radius(*, board: BoardGeometry, plate: PlateAnatomy) -> float:
-    """Radius of one bore trough, sized so its rims hide behind the window jambs."""
-    return (board.column_width + 2 * plate.slot_clearance) / 2
+    """Radius of one bore, shrunk just below the pitch so plate lands survive.
+
+    Sized a hair under the column half-width so the bore aligns with the hole
+    drilled through the faceplate above it: the pin drops into the bore, and
+    neighbouring bores no longer overlap, leaving a strip of plate — the land
+    — between every column. The outermost rims still hide behind the plate's
+    end jambs.
+    """
+    return board.column_width / 2 - plate.land_inset
 
 
 def build_background(
@@ -29,12 +36,11 @@ def build_background(
 ) -> Object:
     """Back wall behind the mechanism, with a real bore trough per column.
 
-    Each column carries a full-height concave half-cylinder channel sized to
-    the slot window, so the cylindrical pin visibly rides in the groove that
-    fits it: the scene suns shade the curve and the window jambs cast real
-    shadows into it, instead of a painted gradient on a flat panel. The
-    trough overshoots the window by one slot clearance per side so its
-    grazing rims hide behind the jambs.
+    Each column is a full-height concave half-cylinder channel behind its
+    faceplate hole: the pin sinks into the bore that fits it and the scene
+    suns shade the curve, instead of a painted gradient on a flat panel. The
+    channel sits behind the plate, so the plate's drilled rim frames it and
+    the deep wall behind stays dark.
     """
     mesh_builder = new_bmesh()
     box_vertices(
@@ -45,11 +51,12 @@ def build_background(
     assign_untagged_faces(mesh_builder, material_index=0)
 
     radius = trough_radius(board=board, plate=plate)
+    span = board.height + anatomy.margin
     for position in range(board.config.columns):
         trough_vertices = half_pipe_vertices(
             mesh_builder,
             radius=radius,
-            span=board.height + anatomy.margin,
+            span=span,
             segments=anatomy.pocket_segments,
         )
         translate_vertices(
