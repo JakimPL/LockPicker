@@ -5,11 +5,12 @@ from typing import Dict, List
 
 import msgpack
 import pytest
+from pydantic import ValidationError
+
 from lockpicker.level.level import Level
 from lockpicker.level.validation import LevelSpec
 from lockpicker.tumbler.definition import TumblerDefinition
 from lockpicker.tumbler.location import Location
-from pydantic import ValidationError
 from tests.conftest import LevelFactory
 
 

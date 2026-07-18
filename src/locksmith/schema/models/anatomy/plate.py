@@ -20,6 +20,14 @@ class PlateAnatomy(SceneModel):
     so each column reads as a pocket in the shell and the middle reads as
     the open raceway, cut through both bezels — the mechanism passes the
     case on either side rather than dead-ending in it.
+
+    `countersink_width`/`countersink_depth` bevel the front vertical edges of
+    each slot: a second cutter widens the mouth by `countersink_width` on
+    each side at the plate face and tapers back to the bore over
+    `countersink_depth`, so every hole reads as a real drilled countersink —
+    a machined shoulder graded by the depth fade — instead of a knife-sharp
+    slot edge with a bare pointiness glint. Sized so neighbouring
+    countersinks leave a slim flat land between them.
     """
 
     margin: float
@@ -33,3 +41,5 @@ class PlateAnatomy(SceneModel):
     land_inset: float
     cutter_depth_margin: float
     cutter_height_margin: float
+    countersink_width: float
+    countersink_depth: float

@@ -10,3 +10,5 @@ plate:
   land_inset: 0.03
   cutter_depth_margin: 0.4
   cutter_height_margin: 0.2
+  countersink_width: 0.05
+  countersink_depth: 0.35

@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import pytest
+
 from tests._characterization import (
     CHANGES_GOLDEN,
     REPLAY_GOLDEN,

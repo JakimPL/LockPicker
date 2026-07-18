@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Dict, Optional, Tuple
 
 import pygame
+
 from lockpicker.constants.config import PickShape, settings
 from lockpicker.game.assets.library import AssetLibrary
 from lockpicker.game.assets.manifest import PixelPair

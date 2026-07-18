@@ -1,8 +1,9 @@
 from typing import Tuple
 
+from bmesh.types import BMesh
 from bpy.types import Collection, Material, Object
 
-from locksmith.blender.meshes import box_vertices, mesh_object_from, new_bmesh, subdivide_all_edges
+from locksmith.blender.meshes import box_vertices, cube_vertices, mesh_object_from, new_bmesh, subdivide_all_edges
 from locksmith.blender.modifiers import apply_boolean_difference
 from locksmith.board import BoardGeometry
 from locksmith.schema.models.anatomy.plate import PlateAnatomy
@@ -24,6 +25,33 @@ def slot_width(*, board: BoardGeometry, anatomy: PlateAnatomy) -> float:
     drilled through solid metal.
     """
     return board.column_width - 2 * anatomy.land_inset
+
+
+def _countersink_cutter(*, board: BoardGeometry, anatomy: PlateAnatomy, hole_width: float, height: float) -> BMesh:
+    """One tapered prism per column that carves the front of each slot to a chamfer.
+
+    Each prism is a cube distorted into a wedge: its front face (toward the
+    camera) spans `countersink_width` wider than the bore on each side, its
+    back face narrows to the bore over `countersink_depth`, and the top and
+    bottom stay vertical so only the column-facing rims — the lands between
+    columns — get the machined shoulder. A front overshoot clears the plate
+    face so the boolean leaves no coplanar sliver.
+    """
+    builder = new_bmesh()
+    front_half = hole_width / 2 + anatomy.countersink_width
+    back_half = hole_width / 2
+    overshoot = anatomy.cutter_depth_margin / 2
+    front_y = anatomy.face_y - overshoot
+    back_y = anatomy.face_y + anatomy.countersink_depth
+    half_z = (height + anatomy.cutter_height_margin) / 2
+    for position in range(board.config.columns):
+        center_x = board.column_center_x(position)
+        for vertex in cube_vertices(builder):
+            front = vertex.co.y < 0.0
+            vertex.co.x = center_x + (1.0 if vertex.co.x > 0.0 else -1.0) * (front_half if front else back_half)
+            vertex.co.y = front_y if front else back_y
+            vertex.co.z = (1.0 if vertex.co.z > 0.0 else -1.0) * half_z
+    return builder
 
 
 def build_frame(
@@ -68,6 +96,14 @@ def build_frame(
         )
     cutter = mesh_object_from("frame_slots_cut", cutter_builder, collection=collection, materials=[])
     apply_boolean_difference(plate, name="slots", cutter=cutter)
+
+    countersink = mesh_object_from(
+        "frame_countersink_cut",
+        _countersink_cutter(board=board, anatomy=anatomy, hole_width=hole_width, height=height),
+        collection=collection,
+        materials=[],
+    )
+    apply_boolean_difference(plate, name="countersink", cutter=countersink)
 
     overshoot = anatomy.cutter_depth_margin / 2
     chamber_left = left - overshoot

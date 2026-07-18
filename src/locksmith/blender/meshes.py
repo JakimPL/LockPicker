@@ -1,4 +1,5 @@
-from typing import List, Literal, Sequence, cast
+import math
+from typing import List, Literal, Sequence, Tuple, cast
 
 import bmesh
 import bpy
@@ -50,6 +51,48 @@ def cube_vertices(mesh_builder: BMesh) -> List[BMVert]:
     return cast(List[BMVert], created["verts"])
 
 
+def crowned_box_vertices(mesh_builder: BMesh, *, size: Vec3, center: Vec3, crown: float, segments: int) -> List[BMVert]:
+    """Box whose front (-y) face bulges toward the camera in a shallow arc.
+
+    The front face is sampled across x into `segments` strips and pulled
+    toward the camera by up to `crown` at the middle, tapering to the flat
+    edges, and smooth-shaded so a distant sun renders a real luminance
+    gradient across the plank instead of one flat tone. The other five faces
+    stay square, keeping each plank a closed solid whose seams read as
+    grooves between neighbours.
+    """
+    half = (size[0] / 2.0, size[1] / 2.0, size[2] / 2.0)
+    low_x, high_x = center[0] - half[0], center[0] + half[0]
+    front_y, back_y = center[1] - half[1], center[1] + half[1]
+    low_z, high_z = center[2] - half[2], center[2] + half[2]
+    top_front: List[BMVert] = []
+    bottom_front: List[BMVert] = []
+    for index in range(segments + 1):
+        fraction = index / segments
+        x = low_x + (high_x - low_x) * fraction
+        y = front_y - crown * math.sin(math.pi * fraction)
+        top_front.append(mesh_builder.verts.new((x, y, high_z)))
+        bottom_front.append(mesh_builder.verts.new((x, y, low_z)))
+    back = [
+        mesh_builder.verts.new((corner_x, back_y, corner_z))
+        for corner_z in (high_z, low_z)
+        for corner_x in (low_x, high_x)
+    ]
+    for index in range(segments):
+        face = mesh_builder.faces.new(
+            (top_front[index], top_front[index + 1], bottom_front[index + 1], bottom_front[index])
+        )
+        face.smooth = True
+        if face.normal.y > 0.0:
+            face.normal_flip()
+    mesh_builder.faces.new((back[1], back[0], back[2], back[3]))
+    mesh_builder.faces.new((top_front[0], back[0], back[2], bottom_front[0]))
+    mesh_builder.faces.new((top_front[-1], bottom_front[-1], back[3], back[1]))
+    mesh_builder.faces.new(tuple(top_front) + (back[1], back[0]))
+    mesh_builder.faces.new(tuple(reversed(bottom_front)) + (back[2], back[3]))
+    return top_front + bottom_front + back
+
+
 def cone_vertices(
     mesh_builder: BMesh,
     *,
@@ -70,38 +113,44 @@ def cone_vertices(
     return cast(List[BMVert], created["verts"])
 
 
-def half_pipe_vertices(
-    mesh_builder: BMesh,
-    *,
-    radius: float,
-    span: float,
-    segments: int,
-) -> List[BMVert]:
-    """Concave half-cylinder trough along z, centered on the origin, opening toward -y.
+def cosine_flute_profile(
+    *, start_x: float, end_x: float, phase_x: float, pitch: float, depth: float, steps: int
+) -> List[Tuple[float, float]]:
+    """Cross-section of raised-cosine flutes: hollows on the pitch, crests between.
 
-    The kept surface runs from rim (x=-radius, y=0) through the deepest line
-    (x=0, y=radius) to the other rim, with normals facing the opening and
-    smooth shading across the arc — a bore seen in section, shaded by the
-    scene lights instead of painted. `segments` counts the full circle and
-    must be a multiple of four so no face straddles the rim plane.
+    Each column sits in a concave hollow `depth` deep at `phase_x` plus whole
+    pitches; midway between two hollows the curve tops out at a smooth crest
+    at y=0 with a flat tangent, so consecutive flutes meet without a seam or a
+    sharp rim. Sampled across `[start_x, end_x]` so the whole field is one
+    continuous surface, the luminosity glides from bore to boundary with no
+    hard step to a deep gap.
     """
-    created = bmesh.ops.create_cone(
-        mesh_builder,
-        cap_ends=False,
-        segments=segments,
-        radius1=radius,
-        radius2=radius,
-        depth=span,
-    )
-    vertices = cast(List[BMVert], created["verts"])
-    faces = {face for vertex in vertices for face in vertex.link_faces}
-    kept = [face for face in faces if face.calc_center_median().y > 0.0]
-    discarded = [face for face in faces if face.calc_center_median().y <= 0.0]
-    bmesh.ops.reverse_faces(mesh_builder, faces=kept)
-    for face in kept:
+    points: List[Tuple[float, float]] = []
+    for index in range(steps + 1):
+        x = start_x + (end_x - start_x) * index / steps
+        y = depth * 0.5 * (1.0 + math.cos(2.0 * math.pi * (x - phase_x) / pitch))
+        points.append((x, y))
+    return points
+
+
+def extruded_profile_vertices(
+    mesh_builder: BMesh, *, profile: Sequence[Tuple[float, float]], span: float
+) -> List[BMVert]:
+    """Sweep a 2D x-y profile along z into a smooth-shaded surface facing -y.
+
+    The profile is a bore seen in section; extruding it the full span gives
+    the trough its length, and the faces are wound so their normals face the
+    opening (the camera) and smooth-shade across the curve.
+    """
+    half_z = span / 2.0
+    top = [mesh_builder.verts.new((x, y, half_z)) for x, y in profile]
+    bottom = [mesh_builder.verts.new((x, y, -half_z)) for x, y in profile]
+    for index in range(len(profile) - 1):
+        face = mesh_builder.faces.new((top[index], bottom[index], bottom[index + 1], top[index + 1]))
         face.smooth = True
-    bmesh.ops.delete(mesh_builder, geom=discarded, context="FACES")
-    return list({vertex for face in kept for vertex in face.verts})
+        if face.normal.y > 0.0:
+            face.normal_flip()
+    return top + bottom
 
 
 def uv_sphere_vertices(

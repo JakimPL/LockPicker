@@ -4,6 +4,7 @@ from enum import IntEnum
 from typing import Final, NamedTuple, Tuple
 
 import pygame
+
 from lockpicker.constants.config import settings
 
 

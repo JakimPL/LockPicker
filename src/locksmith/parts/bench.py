@@ -5,7 +5,7 @@ from typing import List, Optional, Sequence, Tuple
 from bmesh.types import BMesh
 from bpy.types import Collection, Material, Object
 
-from locksmith.blender.meshes import assign_untagged_faces, box_vertices, mesh_object_from, new_bmesh
+from locksmith.blender.meshes import assign_untagged_faces, crowned_box_vertices, mesh_object_from, new_bmesh
 from locksmith.board import BoardGeometry
 from locksmith.schema.models.anatomy.bench import BenchAnatomy
 
@@ -127,7 +127,7 @@ def _panel_planks(
                 if segment_high - segment_low < anatomy.gap:
                     continue
 
-                box_vertices(
+                crowned_box_vertices(
                     mesh_builder,
                     size=(segment_high - segment_low, back - face, span.top - span.bottom),
                     center=(
@@ -135,6 +135,8 @@ def _panel_planks(
                         (face + back) / 2,
                         (span.bottom + span.top) / 2,
                     ),
+                    crown=anatomy.crown,
+                    segments=anatomy.crown_segments,
                 )
                 assign_untagged_faces(mesh_builder, material_index=span.material_index)
 

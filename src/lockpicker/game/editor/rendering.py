@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Optional, Tuple
 
 import pygame
+
 from lockpicker.constants.config import settings
 from lockpicker.engine.lock import Lock
 from lockpicker.game.editor.geometry import EditorGeometry

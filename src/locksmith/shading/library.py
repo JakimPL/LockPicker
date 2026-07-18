@@ -11,7 +11,7 @@ from locksmith.shading.enamel import make_enamel_material
 from locksmith.shading.grip import make_grip_material
 from locksmith.shading.metal import make_metal_material
 from locksmith.shading.plate import make_plate_material
-from locksmith.shading.recess import make_pocket_material, make_pocket_stage_material, make_raceway_material
+from locksmith.shading.recess import make_pocket_material, make_raceway_material
 from locksmith.shading.wood import make_wood_material
 from locksmith.types import HexColor, Metal, PickShape, TumblerState
 
@@ -29,7 +29,6 @@ class MaterialLibrary:
     wood_carved: Material
     bore: Material
     pocket: Material
-    pocket_stage: Material
     raceway: Material
     enamel: Material
     rosette: Material
@@ -129,14 +128,19 @@ def make_material_library(
         wood=make_wood_material("bench_wood", palette=palette, config=shading.wood),
         wood_carved=make_wood_material(
             "bench_wood_carved",
-            palette=palette.model_copy(update={"wood": palette.wood_deep, "wood_dark": palette.wood_black}),
+            palette=palette.model_copy(
+                update={
+                    "wood_light": palette.wood_dark,
+                    "wood": palette.wood_deep,
+                    "wood_dark": palette.wood_black,
+                }
+            ),
             config=shading.wood,
         ),
         bore=make_bore_material("bore_iron", color=palette.bore, config=shading.bore),
         pocket=make_pocket_material(
             "pocket_bore", palette=palette, config=shading.pocket, half_height_units=plate_half_height
         ),
-        pocket_stage=make_pocket_stage_material("pocket_stage", palette=palette, config=shading.pocket),
         raceway=make_raceway_material("raceway_floor", palette=palette, config=shading.raceway),
         enamel=make_enamel_material("badge_enamel", color=palette.enamel, config=shading.enamel),
         rosette=make_metal_material(

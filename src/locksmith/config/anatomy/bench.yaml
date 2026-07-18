@@ -7,4 +7,6 @@ bench:
   overlap: 0.08
   plank_width: 1.35
   gap: 0.035
+  crown: 0.16
+  crown_segments: 14
   depth_jitter: [0.0, -0.014, 0.008, -0.006, 0.016, -0.01]

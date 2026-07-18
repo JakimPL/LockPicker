@@ -1,7 +1,6 @@
 from enum import StrEnum
 from typing import List, NamedTuple, Tuple, Type
 
-from lockpicker.paths import CONFIG_FILE
 from pydantic import BaseModel, ConfigDict
 from pydantic_settings import (
     BaseSettings,
@@ -9,6 +8,8 @@ from pydantic_settings import (
     SettingsConfigDict,
     YamlConfigSettingsSource,
 )
+
+from lockpicker.paths import CONFIG_FILE
 
 
 class Color(NamedTuple):

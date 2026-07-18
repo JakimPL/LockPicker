@@ -1,7 +1,13 @@
 from bpy.types import Collection, Object
 
 from locksmith.blender.cycles import mark_shadow_catcher
-from locksmith.blender.meshes import half_pipe_vertices, mesh_object_from, new_bmesh, translate_vertices
+from locksmith.blender.meshes import (
+    cosine_flute_profile,
+    extruded_profile_vertices,
+    mesh_object_from,
+    new_bmesh,
+    translate_vertices,
+)
 from locksmith.board import BoardGeometry
 from locksmith.parts.background import trough_radius
 from locksmith.schema.models.anatomy.background import BackgroundAnatomy
@@ -26,12 +32,16 @@ def build_shadow_catcher(
     stays out of ordinary renders.
     """
     mesh_builder = new_bmesh()
-    trough_vertices = half_pipe_vertices(
-        mesh_builder,
-        radius=trough_radius(board=board, plate=plate),
-        span=board.height + anatomy.margin,
-        segments=background.pocket_segments,
+    pitch = board.column_center_x(1) - board.column_center_x(0)
+    profile = cosine_flute_profile(
+        start_x=-pitch / 2.0,
+        end_x=pitch / 2.0,
+        phase_x=0.0,
+        pitch=pitch,
+        depth=trough_radius(board=board, plate=plate),
+        steps=background.pocket_segments,
     )
+    trough_vertices = extruded_profile_vertices(mesh_builder, profile=profile, span=board.height + anatomy.margin)
     translate_vertices(mesh_builder, trough_vertices, offset=(0.0, background.pocket_y, 0.0))
     catcher = mesh_object_from("shadowcatcher", mesh_builder, collection=collection, materials=[])
     mark_shadow_catcher(catcher)

@@ -17,21 +17,6 @@ pocket:
   mottle_scale: 1.4
   mottle_detail: 3.0
   mottle_strength: 0.4
-  cavity_start: 0.35
-  cavity_end: 0.9
-  cavity_strength: 0.0
-  patina_start: 0.25
-  patina_end: 0.80
-  patina_strength: 0.0
-  patina_scale: 2.2
-  patina_detail: 3.0
-  patina_mix: 0.85
-  patina_gain: 0.9
-  ridge_start: 0.55
-  ridge_end: 0.97
-  ridge_strength: 0.0
-  ridge_sheen_mix: 0.22
-  ridge_gain: 1.0
   bump_strength: 0.6
   metallic: 0.1
   roughness: 0.6

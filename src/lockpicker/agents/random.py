@@ -1,8 +1,9 @@
 import random
 
+from tqdm import tqdm
+
 from lockpicker.constants.config import settings
 from lockpicker.engine.lock import Lock
-from tqdm import tqdm
 
 
 class RandomAgent:
