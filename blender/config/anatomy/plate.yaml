@@ -1,7 +1,7 @@
 plate:
   margin: 12.0
   bezel_left: 0.15
-  bezel_right: 0.6
+  bezel_right: 0.15
   chamber_depth: 0.5
   face_y: -0.15
   back_y: 0.55

@@ -9,12 +9,11 @@ class PlateAnatomy(SceneModel):
     only vertices sit on those rims, pointiness interpolates across the whole
     face and the entire plate reads as a worn edge.
 
-    The plate spans the slot columns plus a bezel on each side; the wooden
-    bench panels fill the rest of the board. `bezel_left` stays slim so the
-    bench runs almost to the first column, `bezel_right` a little wider for
-    the fastened end of the case. `margin` still stretches the plate
-    vertically past the visible board so full-travel pins bake inside its
-    emission field.
+    The plate spans the slot columns plus a slim symmetric bezel on each
+    side, so the pocket reads as a whole number of columns; the wooden
+    bench panels fill the rest of the board on both flanks. `margin` still
+    stretches the plate vertically past the visible board so full-travel
+    pins bake inside its emission field.
 
     `chamber_depth` sinks everything between the shear lines into the depth
     fade, leaving the shell face proud only on the first-height-unit bands,

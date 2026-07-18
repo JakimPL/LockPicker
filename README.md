@@ -20,6 +20,28 @@ same time.
 uv sync
 ```
 
+## Generating assets
+
+The default renderer composites pre-rendered 3D sprites baked in Blender. The
+rendered theme (`assets/themes/workshop/`) is a build artifact and is not
+committed — on a fresh clone the game refuses to start until you generate it:
+
+```bash
+cd blender
+uv run locksmith assets
+```
+
+`blender/` is a separate uv project (`locksmith`) that scripts Blender through
+the `bpy` wheel; the first invocation downloads it (a few hundred MB, one
+time). Rendering picks the best available Cycles device automatically — an
+NVIDIA GPU via OptiX/CUDA when present, otherwise CPU (slower). The bake
+writes the sprite set plus `manifest.json` and takes under a minute on a GPU.
+
+Re-run the command whenever anything under `blender/` changes (scene geometry,
+`blender/config/*.yaml` palette/shading/anatomy knobs). To run the game
+without generated assets — e.g. a quick logic check — use the flat debug
+renderer: `--renderer flat`.
+
 ## Running
 
 The entry point takes a path to a level file. If the file does not exist, a new
@@ -52,6 +74,9 @@ CLI options:
 | `--random_agent`    | Run a headless simulation of random games; prints whether it won. |
 | `--number_of_picks` | Picks for a freshly created level (used when the file is absent). |
 | `--max_height`      | Maximum tumbler height for a freshly created level.               |
+| `--renderer`        | `styled` (default; needs generated assets) or `flat` (debug view, no assets). |
+| `--resolution`      | Window size as `WIDTHxHEIGHT` (defaults to the display config).   |
+| `--fullscreen`      | Fullscreen at desktop resolution.                                 |
 
 ## Controls
 

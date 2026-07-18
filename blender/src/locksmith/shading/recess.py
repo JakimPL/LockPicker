@@ -249,7 +249,12 @@ def make_raceway_material(name: str, *, palette: PaletteConfig, config: RacewayS
     link_nodes(node_tree, source=(streaks, "Fac"), target=(streak_strength, "Value"))
 
     deep = linear_rgba(palette.plate_deep)
-    base = mixed_linear(deep, linear_rgba(palette.plate), config.base_mix, gain=1.0)
+    base = mixed_linear(
+        mixed_linear(deep, linear_rgba(palette.plate), config.base_mix, gain=1.0),
+        linear_rgba(palette.patina),
+        config.patina_mix,
+        gain=1.0,
+    )
     worn = mixed_linear(linear_rgba(palette.plate), linear_rgba(palette.key), config.key_mix, gain=config.gain)
     floor = new_color_mix_node(node_tree, a=base, b=worn)
     link_sockets(node_tree, output_socket(streak_strength, "Value"), input_by_identifier(floor, MIX_FACTOR))

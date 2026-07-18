@@ -26,6 +26,7 @@ pocket:
 
 raceway:
   base_mix: 0.05
+  patina_mix: 0.10
   streak_mapping_scale: [0.3, 1.0, 28.0]
   noise_scale: 2.4
   noise_detail: 5.0

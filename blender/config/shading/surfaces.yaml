@@ -14,7 +14,7 @@ bore:
 enamel: {roughness: 0.12, coat_weight: 1.0, coat_roughness: 0.08}
 grip: {roughness: 0.65, wave_scale: 25.0, bump_strength: 0.35, dim_factor: 0.75}
 wood:
-  specular: 0.2
+  specular: 0.15
   roughness: 0.62
   ring_scale: 3.0
   ring_detail: 2.0

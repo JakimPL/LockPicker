@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from typing import Dict, Optional, Tuple
 
 import pygame
-
 from lockpicker.constants.config import PickShape, settings
 from lockpicker.game.assets.library import AssetLibrary
 from lockpicker.game.assets.manifest import PixelPair
@@ -82,9 +81,10 @@ class ThemeSprites:
 
         self._picks: Dict[Tuple[PickShape, bool], ScaledSprite] = {}
         for shape, asset in manifest.picks.items():
-            active = pygame.transform.smoothscale(library.surface(asset.image), self._scaled(asset.size))
-            idle = active.copy()
-            idle.set_alpha(settings.alpha.dimmed)
+            idle = pygame.transform.smoothscale(library.surface(asset.image), self._scaled(asset.size))
+            active = idle.copy()
+            active.fill(settings.theme.pick_active_tint, special_flags=pygame.BLEND_RGB_ADD)
+            idle.set_alpha(settings.theme.pick_idle_alpha)
             pick_anchor = self._scaled(asset.tip_anchor)
             self._picks[(shape, True)] = ScaledSprite(active, pick_anchor)
             self._picks[(shape, False)] = ScaledSprite(idle, pick_anchor)

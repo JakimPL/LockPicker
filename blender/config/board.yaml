@@ -5,5 +5,5 @@ board:
   column_width_pixels: 80.0
   column_pitch_pixels: 85.0
   column_offset_pixels: 150.0
-  columns: 7
+  columns: 8
   max_height: 11.0

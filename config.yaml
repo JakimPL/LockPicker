@@ -74,3 +74,5 @@ theme:
   lip_glint_frames: 18
   lip_glint_tint: [96, 72, 40]
   win_flourish_frames: 45
+  pick_idle_alpha: 200
+  pick_active_tint: [36, 26, 14]

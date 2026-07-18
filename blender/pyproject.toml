@@ -57,7 +57,15 @@ warn_required_dynamic_aliases = true
 
 [tool.pylint.main]
 py-version = "3.13"
-ignored-modules = ["bpy", "bpy.types", "bpy.ops", "bmesh", "bmesh.types", "bmesh.ops", "mathutils"]
+ignored-modules = [
+    "bpy",
+    "bpy.types",
+    "bpy.ops",
+    "bmesh",
+    "bmesh.types",
+    "bmesh.ops",
+    "mathutils",
+]
 
 [tool.pylint."messages control"]
 disable = [

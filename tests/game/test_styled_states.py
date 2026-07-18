@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import pygame
 import pytest
-
 from lockpicker.constants.config import RendererMode, settings
 from lockpicker.engine.lock import Lock
 from lockpicker.game.assets.library import AssetLibrary
@@ -94,7 +93,8 @@ def test_pick_idle_variant_dimmed(sprites: ThemeSprites) -> None:
     for shape in set(settings.pick.shapes):
         active = sprites.pick(shape, active=True)
         idle = sprites.pick(shape, active=False)
-        assert idle.surface.get_alpha() == settings.alpha.dimmed
+        assert idle.surface.get_alpha() == settings.theme.pick_idle_alpha
+        assert average_brightness(active.surface) > average_brightness(idle.surface)
         assert idle.surface is not active.surface
         assert idle.anchor == active.anchor
 
