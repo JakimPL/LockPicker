@@ -1,21 +1,22 @@
 pocket:
   offset_units: 1.0
   feather: 0.1
-  band_sheen_mix: 0.06
-  band_gain: 0.85
-  chamber_mix: 0.25
-  chamber_gain: 0.7
+  cool_mix: 0.18
+  band_sheen_mix: 0.05
+  band_gain: 0.24
+  chamber_mix: 0.22
+  chamber_gain: 0.22
   noise_low: 0.38
   noise_high: 0.62
   streak_mapping_scale: [8.0, 1.0, 0.5]
   streak_scale: 2.4
   streak_detail: 5.0
-  streak_strength: 0.6
-  streak_sheen_mix: 0.08
-  streak_gain: 0.4
+  streak_strength: 0.5
+  streak_sheen_mix: 0.10
+  streak_gain: 0.35
   mottle_scale: 1.4
   mottle_detail: 3.0
-  mottle_strength: 0.35
+  mottle_strength: 0.4
   cavity_start: 0.35
   cavity_end: 0.9
   cavity_strength: 0.0
@@ -31,11 +32,11 @@ pocket:
   ridge_strength: 0.0
   ridge_sheen_mix: 0.22
   ridge_gain: 1.0
-  bump_strength: 0.55
-  metallic: 0.5
-  roughness: 0.65
-  specular: 0.4
-  glow: 0.03
+  bump_strength: 0.6
+  metallic: 0.1
+  roughness: 0.6
+  specular: 0.1
+  glow: 0.05
 
 raceway:
   base_mix: 0.05

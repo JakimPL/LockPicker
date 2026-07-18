@@ -135,12 +135,9 @@ def _pocket_zone(
     set_float_input(zone_range, "From Max", boundary + config.feather)
     link_nodes(node_tree, source=(edge_distance, "Value"), target=(zone_range, "Value"))
 
-    chamber = mixed_linear(
-        linear_rgba(palette.plate_deep), linear_rgba(palette.plate), config.chamber_mix, gain=config.chamber_gain
-    )
-    band = mixed_linear(
-        linear_rgba(palette.plate), linear_rgba(palette.rim), config.band_sheen_mix, gain=config.band_gain
-    )
+    steel = mixed_linear(linear_rgba(palette.plate), linear_rgba(palette.rim), config.cool_mix, gain=1.0)
+    chamber = mixed_linear(linear_rgba(palette.plate_deep), steel, config.chamber_mix, gain=config.chamber_gain)
+    band = mixed_linear(steel, linear_rgba(palette.rim), config.band_sheen_mix, gain=config.band_gain)
     zone = new_color_mix_node(node_tree, a=chamber, b=band)
     link_sockets(node_tree, output_socket(zone_range, "Result"), input_by_identifier(zone, MIX_FACTOR))
     return zone

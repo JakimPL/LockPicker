@@ -8,7 +8,10 @@ class PocketShading(SceneModel):
     The trough geometry carries the depth — the suns shade the curve — so
     this material only zones the finish: polished pin-worn steel on the
     first-height-unit bands (|Z| past `half - offset_units`), duller and
-    darker across the chamber run. The `*_sheen_mix` accents brighten
+    darker across the chamber run. `cool_mix` shifts the warm plate mid-tone
+    toward the cool rim before either zone is built, so the bore albedo reads
+    as brushed steel rather than oiled bronze under the warm key and stays
+    distinct from the wood bench. The `*_sheen_mix` accents brighten
     toward the cool rim tone — polished steel reads gray, not warm — while
     the warm key sun supplies whatever warmth the lit walls carry. Three
     layers break up the bare gradient: `streak_*` lays vertical honing
@@ -32,6 +35,7 @@ class PocketShading(SceneModel):
 
     offset_units: float
     feather: float
+    cool_mix: float
     band_sheen_mix: float
     band_gain: float
     chamber_mix: float

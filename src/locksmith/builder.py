@@ -74,7 +74,7 @@ def build_scene(config: SceneConfig) -> WorkshopScene:
         anatomy=config.anatomy.background,
         plate=config.anatomy.plate,
         wall_material=library.bore,
-        pocket_material=library.bore,
+        pocket_material=library.pocket,
         collection=collections.background,
     )
     frame_plate = build_frame(
