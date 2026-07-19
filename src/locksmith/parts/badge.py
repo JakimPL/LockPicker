@@ -1,6 +1,3 @@
-import math
-from typing import Final
-
 from bpy.types import Collection, Material, Object
 
 from locksmith.blender.meshes import (
@@ -11,9 +8,8 @@ from locksmith.blender.meshes import (
     rotate_vertices,
     translate_vertices,
 )
+from locksmith.constants import QUARTER_TURN
 from locksmith.schema.models.anatomy.badge.badge import BadgeAnatomy
-
-_QUARTER_TURN: Final[float] = math.pi / 2
 
 
 def build_badge(
@@ -33,7 +29,7 @@ def build_badge(
         top_radius=anatomy.ring.face_radius,
         depth=anatomy.ring.depth,
     )
-    rotate_vertices(mesh_builder, ring_vertices, axis="X", radians=_QUARTER_TURN)
+    rotate_vertices(mesh_builder, ring_vertices, axis="X", radians=QUARTER_TURN)
     translate_vertices(mesh_builder, ring_vertices, offset=(0.0, anatomy.ring.y, 0.0))
     assign_untagged_faces(mesh_builder, material_index=0)
 
@@ -44,7 +40,7 @@ def build_badge(
         top_radius=anatomy.inlay.radius,
         depth=anatomy.inlay.depth,
     )
-    rotate_vertices(mesh_builder, inlay_vertices, axis="X", radians=_QUARTER_TURN)
+    rotate_vertices(mesh_builder, inlay_vertices, axis="X", radians=QUARTER_TURN)
     translate_vertices(mesh_builder, inlay_vertices, offset=(0.0, anatomy.inlay.y, 0.0))
     assign_untagged_faces(mesh_builder, material_index=1)
 

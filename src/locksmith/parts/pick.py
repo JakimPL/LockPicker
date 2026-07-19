@@ -1,6 +1,3 @@
-import math
-from typing import Final
-
 from bpy.types import Collection, Material, Object
 
 from locksmith.blender.meshes import (
@@ -15,11 +12,9 @@ from locksmith.blender.meshes import (
     uv_sphere_vertices,
 )
 from locksmith.board import BoardGeometry
+from locksmith.constants import EIGHTH_TURN, QUARTER_TURN
 from locksmith.schema.models.anatomy.pick.pick import PickAnatomy
 from locksmith.types import PickShape
-
-_QUARTER_TURN: Final[float] = math.pi / 2  # TODO: repeated constant definition
-_EIGHTH_TURN: Final[float] = math.pi / 4
 
 
 # TODO: refactor
@@ -49,7 +44,7 @@ def build_pick(
         top_radius=anatomy.shaft.radius,
         depth=anatomy.shaft.length,
     )
-    rotate_vertices(mesh_builder, shaft_vertices, axis="Y", radians=_QUARTER_TURN)
+    rotate_vertices(mesh_builder, shaft_vertices, axis="Y", radians=QUARTER_TURN)
     translate_vertices(
         mesh_builder,
         shaft_vertices,
@@ -69,7 +64,7 @@ def build_pick(
                     anatomy.diamond_tip.height,
                 ),
             )
-            rotate_vertices(mesh_builder, tip_vertices, axis="Y", radians=_EIGHTH_TURN)
+            rotate_vertices(mesh_builder, tip_vertices, axis="Y", radians=EIGHTH_TURN)
         case PickShape.CIRCLE:
             tip_vertices = uv_sphere_vertices(
                 mesh_builder,
@@ -87,7 +82,7 @@ def build_pick(
         top_radius=anatomy.ferrule.radius,
         depth=anatomy.ferrule.length,
     )
-    rotate_vertices(mesh_builder, ferrule_vertices, axis="Y", radians=_QUARTER_TURN)
+    rotate_vertices(mesh_builder, ferrule_vertices, axis="Y", radians=QUARTER_TURN)
     translate_vertices(mesh_builder, ferrule_vertices, offset=(anatomy.ferrule.center_x, 0.0, 0.0))
     assign_untagged_faces(mesh_builder, material_index=1)
 
@@ -98,7 +93,7 @@ def build_pick(
         top_radius=anatomy.grip.radius,
         depth=anatomy.grip.length,
     )
-    rotate_vertices(mesh_builder, grip_vertices, axis="Y", radians=_QUARTER_TURN)
+    rotate_vertices(mesh_builder, grip_vertices, axis="Y", radians=QUARTER_TURN)
     translate_vertices(mesh_builder, grip_vertices, offset=(anatomy.grip.center_x, 0.0, 0.0))
     assign_untagged_faces(mesh_builder, material_index=2)
 

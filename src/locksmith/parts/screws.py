@@ -1,6 +1,3 @@
-import math
-from typing import Final
-
 from bpy.types import Collection, Material, Object
 
 from locksmith.blender.meshes import (
@@ -13,9 +10,8 @@ from locksmith.blender.meshes import (
     scale_vertices,
     translate_vertices,
 )
+from locksmith.constants import QUARTER_TURN
 from locksmith.schema.models.anatomy.screws.screws import ScrewsAnatomy
-
-_QUARTER_TURN: Final[float] = math.pi / 2
 
 
 def build_screws(
@@ -35,7 +31,7 @@ def build_screws(
             top_radius=anatomy.head.face_radius,
             depth=anatomy.head.depth,
         )
-        rotate_vertices(mesh_builder, head_vertices, axis="X", radians=_QUARTER_TURN)
+        rotate_vertices(mesh_builder, head_vertices, axis="X", radians=QUARTER_TURN)
         translate_vertices(mesh_builder, head_vertices, offset=(placement.x, anatomy.head.y, placement.z))
         assign_untagged_faces(mesh_builder, material_index=0)
 

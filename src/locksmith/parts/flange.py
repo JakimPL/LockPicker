@@ -1,5 +1,4 @@
-import math
-from typing import Final, Tuple
+from typing import Tuple
 
 from bpy.types import Collection, Material, Object
 
@@ -15,9 +14,8 @@ from locksmith.blender.meshes import (
     translate_vertices,
 )
 from locksmith.board import BoardGeometry
+from locksmith.constants import QUARTER_TURN
 from locksmith.schema.models.anatomy.flange.flange import FlangeAnatomy
-
-_QUARTER_TURN: Final[float] = math.pi / 2  # TODO: repeating constant definitions, worth defining in constants
 
 
 # TODO: refactor
@@ -70,7 +68,7 @@ def build_flanges(
             top_radius=anatomy.head.face_radius,
             depth=anatomy.head.depth,
         )
-        rotate_vertices(mesh_builder, head_vertices, axis="X", radians=_QUARTER_TURN)
+        rotate_vertices(mesh_builder, head_vertices, axis="X", radians=QUARTER_TURN)
         translate_vertices(
             mesh_builder,
             head_vertices,
