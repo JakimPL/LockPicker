@@ -66,26 +66,36 @@ class StyledRenderer(RendererBase):
     def draw_frame(self) -> None:
         self.screen.blit(self.sprites.frame, (0, 0))
 
-    # TODO: refactor
     def draw_shear_lips(self) -> None:
         flourish = self.effects.flourish_strength
         for upper in (True, False):
-            sprite = self.sprites.lip(upper=upper)
-            top = self.layout.shear_line_y(upper=upper) - sprite.anchor[1]
-            self.screen.blit(sprite.surface, (0, top))
+            top = self._draw_lip(upper=upper)
+            self._draw_glints(upper=upper, top=top)
+            self._draw_flourish(upper=upper, top=top, flourish=flourish)
 
-            glint = self.sprites.lip_glint(upper=upper)
-            margin = round(self.layout.bar_pitch) - self.layout.bar_width
-            for position, strength in self.effects.glints(upper=upper):
-                left = self.layout.bar_x(position) - margin
-                width = self.layout.bar_width + 2 * margin
-                area = pygame.Rect(left, 0, width, glint.surface.get_height())
-                glint.surface.set_alpha(round(255 * strength))
-                self.screen.blit(glint.surface, (left, top), area)
+    def _draw_lip(self, *, upper: bool) -> int:
+        sprite = self.sprites.lip(upper=upper)
+        top = self.layout.shear_line_y(upper=upper) - sprite.anchor[1]
+        self.screen.blit(sprite.surface, (0, top))
+        return top
 
-            if flourish > 0.0:
-                glint.surface.set_alpha(round(255 * flourish))
-                self.screen.blit(glint.surface, (0, top))
+    def _draw_glints(self, *, upper: bool, top: int) -> None:
+        glint = self.sprites.lip_glint(upper=upper)
+        margin = round(self.layout.bar_pitch) - self.layout.bar_width
+        for position, strength in self.effects.glints(upper=upper):
+            left = self.layout.bar_x(position) - margin
+            width = self.layout.bar_width + 2 * margin
+            area = pygame.Rect(left, 0, width, glint.surface.get_height())
+            glint.surface.set_alpha(round(255 * strength))
+            self.screen.blit(glint.surface, (left, top), area)
+
+    def _draw_flourish(self, *, upper: bool, top: int, flourish: float) -> None:
+        if flourish <= 0.0:
+            return
+
+        glint = self.sprites.lip_glint(upper=upper)
+        glint.surface.set_alpha(round(255 * flourish))
+        self.screen.blit(glint.surface, (0, top))
 
     def draw_picks(self) -> None:
         for pick in range(self.lock.level.number_of_picks):
