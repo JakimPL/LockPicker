@@ -10,35 +10,22 @@ from locksmith.blender.meshes import (
     mesh_object_from,
     new_bmesh,
 )
-from locksmith.blender.modifiers import apply_boolean_difference
 from locksmith.board import BoardGeometry
+from locksmith.parts.slots import cut_column_slots
 from locksmith.schema.models.anatomy.lip import LipAnatomy
 from locksmith.schema.models.anatomy.plate import PlateAnatomy
 
 _LENGTH_TOLERANCE: Final[float] = 1e-3
 
 
-# TODO: refactor
-def build_lip(
+def _build_rail_blank(
     name: str,
     *,
     board: BoardGeometry,
     anatomy: LipAnatomy,
-    plate: PlateAnatomy,
-    line_z: float,
     material: Material,
     collection: Collection,
 ) -> Object:
-    """Slotted shear-rail crossing the whole case, z-centered on its origin.
-
-    The origin lands exactly on the shear line, so the sprite framing anchor
-    publishes the line row. One slot punched per column lets the pins pass
-    behind the rail — the apertures are the tumbler slots on the line —
-    while the beveled long edges catch the key sun as the polished-wear
-    highlight. The rail runs past both screen edges, bounding the carved
-    raceway along the whole case. The slot boolean stays live, so the
-    cutter must ride along to `line_z` with the rail.
-    """
     mesh_builder = new_bmesh()
     thickness = board.units(anatomy.thickness_pixels)
     left = -board.width / 2 - thickness
@@ -61,36 +48,47 @@ def build_lip(
         segments=anatomy.bevel.segments,
         profile=anatomy.bevel.profile,
     )
-    lip = mesh_object_from(
+    return mesh_object_from(
         name,
         mesh_builder,
         collection=collection,
         materials=[material],
     )
 
-    cutter_builder = new_bmesh()
-    for position in range(board.config.columns):
-        box_vertices(
-            cutter_builder,
-            size=(
-                board.column_width + plate.slot_clearance,
-                anatomy.depth + plate.cutter_depth_margin,
-                thickness + plate.cutter_height_margin,
-            ),
-            center=(
-                board.column_center_x(position),
-                anatomy.face_y + anatomy.depth / 2,
-                0.0,
-            ),
-        )
 
-    cutter = mesh_object_from(
-        f"{name}_slots_cut",
-        cutter_builder,
+def build_lip(
+    name: str,
+    *,
+    board: BoardGeometry,
+    anatomy: LipAnatomy,
+    plate: PlateAnatomy,
+    line_z: float,
+    material: Material,
+    collection: Collection,
+) -> Object:
+    """Slotted shear-rail crossing the whole case, z-centered on its origin.
+
+    The origin lands exactly on the shear line, so the sprite framing anchor
+    publishes the line row. One slot punched per column lets the pins pass
+    behind the rail — the apertures are the tumbler slots on the line —
+    while the beveled long edges catch the key sun as the polished-wear
+    highlight. The rail runs past both screen edges, bounding the carved
+    raceway along the whole case. The slot boolean stays live, so the
+    cutter must ride along to `line_z` with the rail.
+    """
+    thickness = board.units(anatomy.thickness_pixels)
+    lip = _build_rail_blank(name, board=board, anatomy=anatomy, material=material, collection=collection)
+    cutter = cut_column_slots(
+        lip,
+        board=board,
+        anatomy=plate,
+        name=f"{name}_slots_cut",
+        hole_width=board.column_width + plate.slot_clearance,
+        depth=anatomy.depth,
+        height=thickness,
+        center_y=anatomy.face_y + anatomy.depth / 2,
         collection=collection,
-        materials=[],
     )
-    apply_boolean_difference(lip, name="slots", cutter=cutter)
     lip.location = Vector((0.0, 0.0, line_z))
     cutter.location = Vector((0.0, 0.0, line_z))
     return lip
