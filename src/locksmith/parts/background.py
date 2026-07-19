@@ -1,3 +1,4 @@
+from bmesh.types import BMesh
 from bpy.types import Collection, Material, Object
 
 from locksmith.blender.meshes import (
@@ -26,7 +27,6 @@ def trough_radius(*, board: BoardGeometry, plate: PlateAnatomy) -> float:
     return board.column_width / 2 - plate.land_inset
 
 
-# TODO: refactor
 def build_background(
     *,
     board: BoardGeometry,
@@ -46,6 +46,12 @@ def build_background(
     plate's drilled rims frame column by column.
     """
     mesh_builder = new_bmesh()
+    _build_back_wall(mesh_builder, board=board, anatomy=anatomy)
+    _build_flute_field(mesh_builder, board=board, anatomy=anatomy, plate=plate)
+    return mesh_object_from("bg_wall", mesh_builder, collection=collection, materials=[wall_material, pocket_material])
+
+
+def _build_back_wall(mesh_builder: BMesh, *, board: BoardGeometry, anatomy: BackgroundAnatomy) -> None:
     box_vertices(
         mesh_builder,
         size=(board.width + anatomy.margin, anatomy.depth, board.height + anatomy.margin),
@@ -53,6 +59,14 @@ def build_background(
     )
     assign_untagged_faces(mesh_builder, material_index=0)
 
+
+def _build_flute_field(
+    mesh_builder: BMesh,
+    *,
+    board: BoardGeometry,
+    anatomy: BackgroundAnatomy,
+    plate: PlateAnatomy,
+) -> None:
     span = board.height + anatomy.margin
     first = board.column_center_x(0)
     pitch = board.column_center_x(1) - first
@@ -67,5 +81,3 @@ def build_background(
     trough_vertices = extruded_profile_vertices(mesh_builder, profile=profile, span=span)
     translate_vertices(mesh_builder, trough_vertices, offset=(0.0, anatomy.pocket_y, 0.0))
     assign_untagged_faces(mesh_builder, material_index=1)
-
-    return mesh_object_from("bg_wall", mesh_builder, collection=collection, materials=[wall_material, pocket_material])

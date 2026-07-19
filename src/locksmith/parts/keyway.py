@@ -1,5 +1,6 @@
 from typing import Tuple
 
+from bmesh.types import BMesh
 from bpy.types import Collection, Material, Object
 
 from locksmith.blender.meshes import (
@@ -23,7 +24,6 @@ def keyway_mouth_span(
     return center - half_width, center + half_width
 
 
-# TODO: refactor
 def build_keyway(
     *,
     board: BoardGeometry,
@@ -40,6 +40,17 @@ def build_keyway(
     lines so their ends hide behind the planks and the lip rails.
     """
     mesh_builder = new_bmesh()
+    _add_liners(mesh_builder, board=board, anatomy=anatomy)
+    _add_bed(mesh_builder, board=board, anatomy=anatomy)
+    return mesh_object_from(
+        "keyway_mouth",
+        mesh_builder,
+        collection=collection,
+        materials=[bushing_material, bed_material],
+    )
+
+
+def _add_liners(mesh_builder: BMesh, *, board: BoardGeometry, anatomy: KeywayAnatomy) -> None:
     slot_left, slot_right = keyway_mouth_span(board=board, anatomy=anatomy)
     liner_width = board.units(anatomy.bushing.width_pixels)
     band_inner = board.tip_z(upper=True, height=1.0)
@@ -53,6 +64,12 @@ def build_keyway(
         )
     assign_untagged_faces(mesh_builder, material_index=0)
 
+
+def _add_bed(mesh_builder: BMesh, *, board: BoardGeometry, anatomy: KeywayAnatomy) -> None:
+    slot_left, slot_right = keyway_mouth_span(board=board, anatomy=anatomy)
+    liner_width = board.units(anatomy.bushing.width_pixels)
+    band_inner = board.tip_z(upper=True, height=1.0)
+
     bed_left = slot_left - liner_width - anatomy.overshoot
     bed_right = slot_right + liner_width + anatomy.overshoot
     bed_half_span = band_inner + anatomy.overshoot
@@ -63,10 +80,3 @@ def build_keyway(
         center=((bed_left + bed_right) / 2, anatomy.bed_face_y + bed_depth / 2, 0.0),
     )
     assign_untagged_faces(mesh_builder, material_index=1)
-
-    return mesh_object_from(
-        "keyway_mouth",
-        mesh_builder,
-        collection=collection,
-        materials=[bushing_material, bed_material],
-    )

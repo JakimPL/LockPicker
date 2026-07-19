@@ -1,4 +1,4 @@
-from typing import Final, Sequence
+from typing import Final, List, Sequence
 
 from bmesh.types import BMEdge, BMesh
 from bpy.types import Collection, Material, Object
@@ -20,7 +20,6 @@ _TIP_TOLERANCE: Final[float] = 1e-4
 _FACE_TOLERANCE: Final[float] = 0.01
 
 
-# TODO: refactor
 def build_pin(
     name: str,
     *,
@@ -47,23 +46,39 @@ def build_pin(
         center=(0.0, anatomy.depth / 2, direction * length / 2),
     )
 
-    long_edges = [
+    long_edges = _long_edges(mesh_builder, length=length)
+    front_edges = _front_edges(long_edges)
+    back_edges = _back_edges(long_edges, depth=anatomy.depth)
+    _bevel(mesh_builder, front_edges, anatomy.shoulder_bevel)
+    _bevel(mesh_builder, back_edges, anatomy.back_bevel)
+    _bevel(mesh_builder, _tip_edges(mesh_builder), anatomy.tip_bevel)
+
+    _add_collar(mesh_builder, width=width, direction=direction, anatomy=anatomy)
+
+    return mesh_object_from(name, mesh_builder, collection=collection, materials=[material])
+
+
+def _long_edges(mesh_builder: BMesh, *, length: float) -> List[BMEdge]:
+    return [
         edge
         for edge in all_edges(mesh_builder)
         if abs(edge.verts[0].co.z - edge.verts[1].co.z) > length - _LENGTH_TOLERANCE
     ]
-    front_edges = [edge for edge in long_edges if all(vertex.co.y < _FACE_TOLERANCE for vertex in edge.verts)]
-    back_edges = [
-        edge for edge in long_edges if all(vertex.co.y > anatomy.depth - _FACE_TOLERANCE for vertex in edge.verts)
-    ]
-    _bevel(mesh_builder, front_edges, anatomy.shoulder_bevel)
-    _bevel(mesh_builder, back_edges, anatomy.back_bevel)
 
-    tip_edges = [
-        edge for edge in all_edges(mesh_builder) if all(abs(vertex.co.z) < _TIP_TOLERANCE for vertex in edge.verts)
-    ]
-    _bevel(mesh_builder, tip_edges, anatomy.tip_bevel)
 
+def _front_edges(edges: Sequence[BMEdge]) -> List[BMEdge]:
+    return [edge for edge in edges if all(vertex.co.y < _FACE_TOLERANCE for vertex in edge.verts)]
+
+
+def _back_edges(edges: Sequence[BMEdge], *, depth: float) -> List[BMEdge]:
+    return [edge for edge in edges if all(vertex.co.y > depth - _FACE_TOLERANCE for vertex in edge.verts)]
+
+
+def _tip_edges(mesh_builder: BMesh) -> List[BMEdge]:
+    return [edge for edge in all_edges(mesh_builder) if all(abs(vertex.co.z) < _TIP_TOLERANCE for vertex in edge.verts)]
+
+
+def _add_collar(mesh_builder: BMesh, *, width: float, direction: float, anatomy: PinAnatomy) -> None:
     collar = anatomy.collar
     collar_vertices = box_vertices(
         mesh_builder,
@@ -71,8 +86,6 @@ def build_pin(
         center=(0.0, anatomy.depth / 2, direction * collar.tip_distance),
     )
     _bevel(mesh_builder, edges_of_vertices(collar_vertices), collar.bevel)
-
-    return mesh_object_from(name, mesh_builder, collection=collection, materials=[material])
 
 
 def _bevel(mesh_builder: BMesh, edges: Sequence[BMEdge], bevel: EdgeBevel) -> None:

@@ -1,6 +1,7 @@
 from typing import Final, Tuple
 
 from bpy.types import (
+    NodeTree,
     Scene,
     ShaderNodeMapRange,
     ShaderNodeSeparateXYZ,
@@ -29,7 +30,6 @@ _WORLD_NAME: Final[str] = "workshop"
 _GRADIENT_DOMAIN: Final[Tuple[float, float]] = (-1.0, 1.0)
 
 
-# TODO: refactor: split into helper functions so the build_world reads as prose
 def build_world(
     scene: Scene,
     *,
@@ -44,6 +44,15 @@ def build_world(
     """
     world, node_tree, background = new_world(_WORLD_NAME)
 
+    gradient = _build_gradient_factor(node_tree, config=config)
+    ramp = _build_gradient_ramp(node_tree, palette=palette, config=config)
+    link_nodes(node_tree, source=(gradient, "Result"), target=(ramp, "Fac"))
+    link_nodes(node_tree, source=(ramp, "Color"), target=(background, "Color"))
+    set_float_input(background, "Strength", config.strength)
+    scene.world = world
+
+
+def _build_gradient_factor(node_tree: NodeTree, *, config: WorldConfig) -> ShaderNodeMapRange:
     coordinates = new_node(node_tree, ShaderNodeTexCoord)
     separate = new_node(node_tree, ShaderNodeSeparateXYZ)
     link_nodes(node_tree, source=(coordinates, "Generated"), target=(separate, "Vector"))
@@ -60,7 +69,10 @@ def build_world(
     set_float_input(normalized, "From Min", domain_start)
     set_float_input(normalized, "From Max", domain_end)
     link_nodes(node_tree, source=(combined, "Value"), target=(normalized, "Value"))
+    return normalized
 
+
+def _build_gradient_ramp(node_tree: NodeTree, *, palette: PaletteConfig, config: WorldConfig) -> ShaderNodeValToRGB:
     ramp = new_node(node_tree, ShaderNodeValToRGB)
     color_ramp = require_color_ramp(ramp)
     set_color_ramp_stop(color_ramp, 0, position=0.0, color=linear_rgba(palette.world_floor))
@@ -71,8 +83,4 @@ def build_world(
         color=mixed_linear(linear_rgba(palette.key), WHITE, config.top_white_mix, gain=config.top_gain),
     )
     add_color_ramp_stop(color_ramp, position=config.mid_position, color=linear_rgba(palette.world_mid))
-    link_nodes(node_tree, source=(normalized, "Result"), target=(ramp, "Fac"))
-
-    link_nodes(node_tree, source=(ramp, "Color"), target=(background, "Color"))
-    set_float_input(background, "Strength", config.strength)
-    scene.world = world
+    return ramp

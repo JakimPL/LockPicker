@@ -54,7 +54,6 @@ def cube_vertices(mesh_builder: BMesh) -> List[BMVert]:
     return cast(List[BMVert], created["verts"])
 
 
-# TODO: refactor
 def crowned_box_vertices(
     mesh_builder: BMesh,
     *,
@@ -76,6 +75,32 @@ def crowned_box_vertices(
     low_x, high_x = center[0] - half[0], center[0] + half[0]
     front_y, back_y = center[1] - half[1], center[1] + half[1]
     low_z, high_z = center[2] - half[2], center[2] + half[2]
+    top_front, bottom_front = _crowned_front_strips(
+        mesh_builder,
+        low_x=low_x,
+        high_x=high_x,
+        front_y=front_y,
+        low_z=low_z,
+        high_z=high_z,
+        crown=crown,
+        segments=segments,
+    )
+    back = _back_corners(mesh_builder, low_x=low_x, high_x=high_x, back_y=back_y, low_z=low_z, high_z=high_z)
+    _stitch_crown_faces(mesh_builder, top_front=top_front, bottom_front=bottom_front, back=back, segments=segments)
+    return top_front + bottom_front + back
+
+
+def _crowned_front_strips(
+    mesh_builder: BMesh,
+    *,
+    low_x: float,
+    high_x: float,
+    front_y: float,
+    low_z: float,
+    high_z: float,
+    crown: float,
+    segments: int,
+) -> Tuple[List[BMVert], List[BMVert]]:
     top_front: List[BMVert] = []
     bottom_front: List[BMVert] = []
     for index in range(segments + 1):
@@ -85,12 +110,33 @@ def crowned_box_vertices(
         top_front.append(mesh_builder.verts.new((x, y, high_z)))
         bottom_front.append(mesh_builder.verts.new((x, y, low_z)))
 
-    back = [
+    return top_front, bottom_front
+
+
+def _back_corners(
+    mesh_builder: BMesh,
+    *,
+    low_x: float,
+    high_x: float,
+    back_y: float,
+    low_z: float,
+    high_z: float,
+) -> List[BMVert]:
+    return [
         mesh_builder.verts.new((corner_x, back_y, corner_z))
         for corner_z in (high_z, low_z)
         for corner_x in (low_x, high_x)
     ]
 
+
+def _stitch_crown_faces(
+    mesh_builder: BMesh,
+    *,
+    top_front: List[BMVert],
+    bottom_front: List[BMVert],
+    back: List[BMVert],
+    segments: int,
+) -> None:
     for index in range(segments):
         face = mesh_builder.faces.new(
             (top_front[index], top_front[index + 1], bottom_front[index + 1], bottom_front[index])
@@ -104,7 +150,6 @@ def crowned_box_vertices(
     mesh_builder.faces.new((top_front[-1], bottom_front[-1], back[3], back[1]))
     mesh_builder.faces.new(tuple(top_front) + (back[1], back[0]))
     mesh_builder.faces.new(tuple(reversed(bottom_front)) + (back[2], back[3]))
-    return top_front + bottom_front + back
 
 
 def cone_vertices(
