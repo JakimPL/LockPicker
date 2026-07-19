@@ -4,7 +4,7 @@ from typing import Optional
 
 from locksmith.assets.batch.pipeline import render_assets
 from locksmith.assets.manifest.theme import MANIFEST_FILENAME, load_manifest
-from locksmith.assets.preview import render_preview
+from locksmith.assets.preview.pipeline import render_preview
 from locksmith.blender.session import render_still, save_blend
 from locksmith.builder import build_scene
 from locksmith.paths import BLEND_OUTPUT_PATH, CONFIG_DIRECTORY, LOOKDEV_DIRECTORY, LOOKDEV_STILL_PATH, THEMES_DIRECTORY
