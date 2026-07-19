@@ -2,7 +2,7 @@ import argparse
 from pathlib import Path
 from typing import Optional
 
-from locksmith.assets.batch import render_assets
+from locksmith.assets.batch.pipeline import render_assets
 from locksmith.assets.manifest.theme import MANIFEST_FILENAME, load_manifest
 from locksmith.assets.preview import render_preview
 from locksmith.blender.session import render_still, save_blend
