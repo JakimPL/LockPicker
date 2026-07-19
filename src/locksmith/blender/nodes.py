@@ -15,8 +15,11 @@ from bpy.types import (
     NodeSocketVectorTranslation,
     NodeSocketVectorXYZ,
     NodeTree,
+    ShaderNodeBsdfPrincipled,
+    ShaderNodeBump,
     ShaderNodeMath,
     ShaderNodeMix,
+    ShaderNodeTexWave,
     ShaderNodeValToRGB,
     World,
 )
@@ -26,6 +29,7 @@ from locksmith.types import RGBAColor, Vec3
 NodeT = TypeVar("NodeT", bound=Node)
 
 MathOperation = Literal["ABSOLUTE", "ADD", "SUBTRACT", "MULTIPLY", "POWER"]
+BandsDirection = Literal["X", "Y", "Z", "DIAGONAL"]
 
 MIX_FACTOR: Final[str] = "Factor_Float"
 MIX_A: Final[str] = "A_Color"
@@ -233,6 +237,32 @@ def _set_socket_color(node: Node, identifier: str, color: RGBAColor) -> None:
         raise TypeError(f"socket {identifier} on {node.name} holds no color value")
 
     socket.default_value = color
+
+
+def new_banded_wave(
+    node_tree: NodeTree,
+    *,
+    scale: float,
+    direction: BandsDirection = "X",
+) -> ShaderNodeTexWave:
+    wave = new_node(node_tree, ShaderNodeTexWave)
+    wave.wave_type = "BANDS"
+    wave.bands_direction = direction
+    set_float_input(wave, "Scale", scale)
+    return wave
+
+
+def link_bump_normal(
+    node_tree: NodeTree,
+    principled: ShaderNodeBsdfPrincipled,
+    *,
+    height: NodeSocket,
+    strength: float,
+) -> None:
+    bump = new_node(node_tree, ShaderNodeBump)
+    set_float_input(bump, "Strength", strength)
+    link_sockets(node_tree, height, input_socket(bump, "Height"))
+    link_nodes(node_tree, source=(bump, "Normal"), target=(principled, "Normal"))
 
 
 def require_color_ramp(node: ShaderNodeValToRGB) -> ColorRamp:

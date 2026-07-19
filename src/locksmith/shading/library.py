@@ -5,6 +5,7 @@ from bpy.types import Material
 
 from locksmith.schema.models.palette.metal_colors import MetalColors
 from locksmith.schema.models.palette.palette import PaletteConfig
+from locksmith.schema.models.shading.metals import MetalsConfig
 from locksmith.schema.models.shading.shading import ShadingConfig
 from locksmith.shading.bore import make_bore_material
 from locksmith.shading.enamel import make_enamel_material
@@ -47,7 +48,21 @@ class MaterialLibrary:
                 return self.tumblers[metal]
 
 
-# TODO: refactor!
+@dataclass(frozen=True)
+class _MetalRecipe:
+    base: HexColor
+    highlight: HexColor
+    roughness: float
+    verdigris: Optional[HexColor]
+
+
+@dataclass(frozen=True)
+class _TumblerVariant:
+    suffix: str
+    hover: Optional[HexColor]
+    jam: Optional[HexColor]
+
+
 def make_material_library(
     *,
     palette: PaletteConfig,
@@ -55,71 +70,10 @@ def make_material_library(
     plate_half_height: float,
 ) -> MaterialLibrary:
     metals = shading.metals
-
-    def colors_of(metal: Metal) -> MetalColors:
-        match metal:
-            case Metal.STEEL:
-                return palette.steel
-            case Metal.BRASS:
-                return palette.brass
-            case Metal.COPPER:
-                return palette.copper
-
-    def roughness_of(metal: Metal) -> float:
-        match metal:
-            case Metal.STEEL:
-                return metals.roughness.steel
-            case Metal.BRASS:
-                return metals.roughness.brass
-            case Metal.COPPER:
-                return metals.roughness.copper
-
-    def verdigris_of(metal: Metal) -> Optional[HexColor]:
-        return palette.patina if metal is Metal.COPPER else None
-
-    tumblers = {
-        metal: make_metal_material(
-            f"pin_{metal.value}",
-            base=colors_of(metal).base,
-            highlight=colors_of(metal).highlight,
-            roughness=roughness_of(metal),
-            config=metals,
-            verdigris=verdigris_of(metal),
-            hover=None,
-            jam=None,
-        )
-        for metal in Metal
-    }
-    hovered = {
-        metal: make_metal_material(
-            f"pin_{metal.value}_hover",
-            base=colors_of(metal).base,
-            highlight=colors_of(metal).highlight,
-            roughness=roughness_of(metal),
-            config=metals,
-            verdigris=verdigris_of(metal),
-            hover=palette.hover,
-            jam=None,
-        )
-        for metal in Metal
-    }
-    jammed = {
-        metal: make_metal_material(
-            f"pin_{metal.value}_jam",
-            base=colors_of(metal).base,
-            highlight=colors_of(metal).highlight,
-            roughness=roughness_of(metal),
-            config=metals,
-            verdigris=verdigris_of(metal),
-            hover=None,
-            jam=palette.jam,
-        )
-        for metal in Metal
-    }
     return MaterialLibrary(
-        tumblers=tumblers,
-        hovered=hovered,
-        jammed=jammed,
+        tumblers=_metal_variants(variant=_TumblerVariant("", None, None), palette=palette, metals=metals),
+        hovered=_metal_variants(variant=_TumblerVariant("_hover", palette.hover, None), palette=palette, metals=metals),
+        jammed=_metal_variants(variant=_TumblerVariant("_jam", None, palette.jam), palette=palette, metals=metals),
         plate=make_plate_material(
             "frame_plate",
             palette=palette,
@@ -171,45 +125,33 @@ def make_material_library(
             color=palette.enamel,
             config=shading.enamel,
         ),
-        rosette=make_metal_material(
+        rosette=_plain_metal(
             "badge_rosette",
             base=palette.rosette,
             highlight=palette.steel.base,
             roughness=metals.roughness.rosette,
-            config=metals,
-            verdigris=None,
-            hover=None,
-            jam=None,
+            metals=metals,
         ),
-        lip=make_metal_material(
+        lip=_plain_metal(
             "lip_steel",
             base=palette.lip.base,
             highlight=palette.lip.highlight,
             roughness=metals.roughness.lip,
-            config=metals,
-            verdigris=None,
-            hover=None,
-            jam=None,
+            metals=metals,
         ),
-        pick=make_metal_material(
+        pick=_plain_metal(
             "pick_steel",
             base=palette.pick.base,
             highlight=palette.pick.highlight,
             roughness=metals.roughness.pick,
-            config=metals,
-            verdigris=None,
-            hover=None,
-            jam=None,
+            metals=metals,
         ),
-        ferrule=make_metal_material(
+        ferrule=_plain_metal(
             "pick_ferrule",
             base=palette.brass.base,
             highlight=palette.brass.highlight,
             roughness=metals.roughness.ferrule,
-            config=metals,
-            verdigris=None,
-            hover=None,
-            jam=None,
+            metals=metals,
         ),
         grips={
             PickShape.DIAMOND: make_grip_material(
@@ -224,3 +166,82 @@ def make_material_library(
             ),
         },
     )
+
+
+def _metal_variants(
+    *,
+    variant: _TumblerVariant,
+    palette: PaletteConfig,
+    metals: MetalsConfig,
+) -> Dict[Metal, Material]:
+    return {metal: _tumbler_metal(metal, variant=variant, palette=palette, metals=metals) for metal in Metal}
+
+
+def _tumbler_metal(
+    metal: Metal,
+    *,
+    variant: _TumblerVariant,
+    palette: PaletteConfig,
+    metals: MetalsConfig,
+) -> Material:
+    recipe = _recipe_of(metal, palette=palette, metals=metals)
+    return make_metal_material(
+        f"pin_{metal.value}{variant.suffix}",
+        base=recipe.base,
+        highlight=recipe.highlight,
+        roughness=recipe.roughness,
+        config=metals,
+        verdigris=recipe.verdigris,
+        hover=variant.hover,
+        jam=variant.jam,
+    )
+
+
+def _plain_metal(
+    name: str,
+    *,
+    base: HexColor,
+    highlight: HexColor,
+    roughness: float,
+    metals: MetalsConfig,
+) -> Material:
+    return make_metal_material(
+        name,
+        base=base,
+        highlight=highlight,
+        roughness=roughness,
+        config=metals,
+        verdigris=None,
+        hover=None,
+        jam=None,
+    )
+
+
+def _recipe_of(metal: Metal, *, palette: PaletteConfig, metals: MetalsConfig) -> _MetalRecipe:
+    colors = _colors_of(metal, palette=palette)
+    return _MetalRecipe(
+        base=colors.base,
+        highlight=colors.highlight,
+        roughness=_roughness_of(metal, metals=metals),
+        verdigris=palette.patina if metal is Metal.COPPER else None,
+    )
+
+
+def _colors_of(metal: Metal, *, palette: PaletteConfig) -> MetalColors:
+    match metal:
+        case Metal.STEEL:
+            return palette.steel
+        case Metal.BRASS:
+            return palette.brass
+        case Metal.COPPER:
+            return palette.copper
+
+
+def _roughness_of(metal: Metal, *, metals: MetalsConfig) -> float:
+    match metal:
+        case Metal.STEEL:
+            return metals.roughness.steel
+        case Metal.BRASS:
+            return metals.roughness.brass
+        case Metal.COPPER:
+            return metals.roughness.copper

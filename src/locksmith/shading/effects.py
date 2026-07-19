@@ -1,6 +1,7 @@
 from typing import Final
 
 from bpy.types import (
+    NodeSocket,
     NodeTree,
     ShaderNodeBevel,
     ShaderNodeBsdfPrincipled,
@@ -17,6 +18,7 @@ from bpy.types import (
 from locksmith.blender.nodes import (
     MIX_FACTOR,
     input_by_identifier,
+    input_socket,
     input_socket_at,
     link_nodes,
     link_sockets,
@@ -42,7 +44,6 @@ from locksmith.types import RGBAColor
 _NOISE_MIDPOINT: Final[float] = 0.5
 
 
-# TODO: refactor
 def apply_roughness_breakup(
     node_tree: NodeTree,
     principled: ShaderNodeBsdfPrincipled,
@@ -50,6 +51,15 @@ def apply_roughness_breakup(
     roughness: float,
     config: BreakupConfig,
 ) -> None:
+    spread = _apply_noise_spread(node_tree, roughness=roughness, config=config)
+    streak = _apply_anisotropic_streak(node_tree, config=config)
+    total = new_math_node(node_tree, "ADD", operand=None)
+    link_sockets(node_tree, spread, input_socket(total, "Value"))
+    link_sockets(node_tree, streak, input_socket_at(total, 1))
+    link_nodes(node_tree, source=(total, "Value"), target=(principled, "Roughness"))
+
+
+def _apply_noise_spread(node_tree: NodeTree, *, roughness: float, config: BreakupConfig) -> NodeSocket:
     noise = new_node(node_tree, ShaderNodeTexNoise)
     set_float_input(noise, "Scale", config.noise_scale)
     set_float_input(noise, "Detail", config.noise_detail)
@@ -59,7 +69,10 @@ def apply_roughness_breakup(
     set_float_input(spread_range, "To Min", max(roughness - config.spread, config.minimum))
     set_float_input(spread_range, "To Max", min(roughness + config.spread, 1.0))
     link_nodes(node_tree, source=(noise, "Fac"), target=(spread_range, "Value"))
+    return output_socket(spread_range, "Result")
 
+
+def _apply_anisotropic_streak(node_tree: NodeTree, *, config: BreakupConfig) -> NodeSocket:
     coordinates = new_node(node_tree, ShaderNodeTexCoord)
     mapping = new_node(node_tree, ShaderNodeMapping)
     set_vector_input(mapping, "Scale", config.streak_mapping_scale)
@@ -72,11 +85,7 @@ def apply_roughness_breakup(
     link_nodes(node_tree, source=(streaks, "Fac"), target=(centered, "Value"))
     strength = new_math_node(node_tree, "MULTIPLY", operand=config.strength)
     link_nodes(node_tree, source=(centered, "Value"), target=(strength, "Value"))
-
-    total = new_math_node(node_tree, "ADD", operand=None)
-    link_nodes(node_tree, source=(spread_range, "Result"), target=(total, "Value"))
-    link_sockets(node_tree, output_socket(strength, "Value"), input_socket_at(total, 1))
-    link_nodes(node_tree, source=(total, "Value"), target=(principled, "Roughness"))
+    return output_socket(strength, "Value")
 
 
 def add_edge_wear(

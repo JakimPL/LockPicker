@@ -37,7 +37,6 @@ from locksmith.schema.models.shading.plate.plate import PlateShading
 from locksmith.types import RGBAColor
 
 
-# TODO: refactor
 def make_plate_material(
     name: str,
     *,
@@ -60,46 +59,17 @@ def make_plate_material(
     material, node_tree, emission = new_emission_material(name)
     set_float_input(emission, "Strength", config.emission_strength)
 
-    mottle = new_node(node_tree, ShaderNodeTexNoise)
-    set_float_input(mottle, "Scale", config.mottle.scale)
-    set_float_input(mottle, "Detail", config.mottle.detail)
-    darkened = new_color_mix_node(node_tree, a=base, b=dark)
-    link_sockets(node_tree, output_socket(mottle, "Fac"), input_by_identifier(darkened, MIX_FACTOR))
-
-    geometry = new_node(node_tree, ShaderNodeNewGeometry)
-    rim_ramp = new_node(node_tree, ShaderNodeValToRGB)
-    set_color_ramp_positions(require_color_ramp(rim_ramp), start=config.rim.start, end=config.rim.end)
-    link_nodes(node_tree, source=(geometry, "Pointiness"), target=(rim_ramp, "Fac"))
-    rim_strength = new_math_node(node_tree, "MULTIPLY", operand=config.rim.strength)
-    link_nodes(node_tree, source=(rim_ramp, "Color"), target=(rim_strength, "Value"))
-    rim = new_color_mix_node(node_tree, a=None, b=mixed_linear(base, key, config.rim.key_mix, gain=config.rim.gain))
-    link_sockets(node_tree, output_by_identifier(darkened, MIX_RESULT), input_by_identifier(rim, MIX_A))
-    link_sockets(node_tree, output_socket(rim_strength, "Value"), input_by_identifier(rim, MIX_FACTOR))
-
     coordinates = new_node(node_tree, ShaderNodeTexCoord)
-    pool_mapping = new_node(node_tree, ShaderNodeMapping)
-    set_vector_input(pool_mapping, "Location", config.pool.location)
-    set_vector_input(pool_mapping, "Scale", (config.pool.scale, config.pool.scale, config.pool.scale))
-    link_nodes(node_tree, source=(coordinates, "Object"), target=(pool_mapping, "Vector"))
-    pool_gradient = new_node(node_tree, ShaderNodeTexGradient)
-    pool_gradient.gradient_type = "SPHERICAL"
-    link_nodes(node_tree, source=(pool_mapping, "Vector"), target=(pool_gradient, "Vector"))
-    pool_strength = new_math_node(node_tree, "MULTIPLY", operand=config.pool.strength)
-    link_nodes(node_tree, source=(pool_gradient, "Fac"), target=(pool_strength, "Value"))
-    pool = new_color_mix_node(node_tree, a=None, b=mixed_linear(base, key, config.pool.key_mix, gain=config.pool.gain))
-    link_sockets(node_tree, output_by_identifier(rim, MIX_RESULT), input_by_identifier(pool, MIX_A))
-    link_sockets(node_tree, output_socket(pool_strength, "Value"), input_by_identifier(pool, MIX_FACTOR))
-
     separate = new_node(node_tree, ShaderNodeSeparateXYZ)
     link_nodes(node_tree, source=(coordinates, "Object"), target=(separate, "Vector"))
-    fade_range = new_node(node_tree, ShaderNodeMapRange)
-    set_float_input(fade_range, "From Min", config.depth_fade.near_y)
-    set_float_input(fade_range, "From Max", config.depth_fade.far_y)
-    link_nodes(node_tree, source=(separate, "Y"), target=(fade_range, "Value"))
-    deep = new_color_mix_node(node_tree, a=None, b=linear_rgba(palette.plate_deep))
-    link_sockets(node_tree, output_by_identifier(pool, MIX_RESULT), input_by_identifier(deep, MIX_A))
-    link_sockets(node_tree, output_socket(fade_range, "Result"), input_by_identifier(deep, MIX_FACTOR))
 
+    mottle = _mottle_mix(node_tree, base=base, dark=dark, config=config)
+    rim = _rim_mix(node_tree, base=base, key=key, config=config)
+    link_sockets(node_tree, output_by_identifier(mottle, MIX_RESULT), input_by_identifier(rim, MIX_A))
+    pool = _pool_mix(node_tree, coordinates=coordinates, base=base, key=key, config=config)
+    link_sockets(node_tree, output_by_identifier(rim, MIX_RESULT), input_by_identifier(pool, MIX_A))
+    deep = _depth_fade_mix(node_tree, separate=separate, palette=palette, config=config)
+    link_sockets(node_tree, output_by_identifier(pool, MIX_RESULT), input_by_identifier(deep, MIX_A))
     shell = _shell_band_mix(
         node_tree,
         separate=separate,
@@ -112,6 +82,77 @@ def make_plate_material(
 
     link_sockets(node_tree, output_by_identifier(shell, MIX_RESULT), input_socket(emission, "Color"))
     return material
+
+
+def _mottle_mix(
+    node_tree: NodeTree,
+    *,
+    base: RGBAColor,
+    dark: RGBAColor,
+    config: PlateShading,
+) -> ShaderNodeMix:
+    mottle = new_node(node_tree, ShaderNodeTexNoise)
+    set_float_input(mottle, "Scale", config.mottle.scale)
+    set_float_input(mottle, "Detail", config.mottle.detail)
+    darkened = new_color_mix_node(node_tree, a=base, b=dark)
+    link_sockets(node_tree, output_socket(mottle, "Fac"), input_by_identifier(darkened, MIX_FACTOR))
+    return darkened
+
+
+def _rim_mix(
+    node_tree: NodeTree,
+    *,
+    base: RGBAColor,
+    key: RGBAColor,
+    config: PlateShading,
+) -> ShaderNodeMix:
+    geometry = new_node(node_tree, ShaderNodeNewGeometry)
+    rim_ramp = new_node(node_tree, ShaderNodeValToRGB)
+    set_color_ramp_positions(require_color_ramp(rim_ramp), start=config.rim.start, end=config.rim.end)
+    link_nodes(node_tree, source=(geometry, "Pointiness"), target=(rim_ramp, "Fac"))
+    rim_strength = new_math_node(node_tree, "MULTIPLY", operand=config.rim.strength)
+    link_nodes(node_tree, source=(rim_ramp, "Color"), target=(rim_strength, "Value"))
+    rim = new_color_mix_node(node_tree, a=None, b=mixed_linear(base, key, config.rim.key_mix, gain=config.rim.gain))
+    link_sockets(node_tree, output_socket(rim_strength, "Value"), input_by_identifier(rim, MIX_FACTOR))
+    return rim
+
+
+def _pool_mix(
+    node_tree: NodeTree,
+    *,
+    coordinates: ShaderNodeTexCoord,
+    base: RGBAColor,
+    key: RGBAColor,
+    config: PlateShading,
+) -> ShaderNodeMix:
+    pool_mapping = new_node(node_tree, ShaderNodeMapping)
+    set_vector_input(pool_mapping, "Location", config.pool.location)
+    set_vector_input(pool_mapping, "Scale", (config.pool.scale, config.pool.scale, config.pool.scale))
+    link_nodes(node_tree, source=(coordinates, "Object"), target=(pool_mapping, "Vector"))
+    pool_gradient = new_node(node_tree, ShaderNodeTexGradient)
+    pool_gradient.gradient_type = "SPHERICAL"
+    link_nodes(node_tree, source=(pool_mapping, "Vector"), target=(pool_gradient, "Vector"))
+    pool_strength = new_math_node(node_tree, "MULTIPLY", operand=config.pool.strength)
+    link_nodes(node_tree, source=(pool_gradient, "Fac"), target=(pool_strength, "Value"))
+    pool = new_color_mix_node(node_tree, a=None, b=mixed_linear(base, key, config.pool.key_mix, gain=config.pool.gain))
+    link_sockets(node_tree, output_socket(pool_strength, "Value"), input_by_identifier(pool, MIX_FACTOR))
+    return pool
+
+
+def _depth_fade_mix(
+    node_tree: NodeTree,
+    *,
+    separate: ShaderNodeSeparateXYZ,
+    palette: PaletteConfig,
+    config: PlateShading,
+) -> ShaderNodeMix:
+    fade_range = new_node(node_tree, ShaderNodeMapRange)
+    set_float_input(fade_range, "From Min", config.depth_fade.near_y)
+    set_float_input(fade_range, "From Max", config.depth_fade.far_y)
+    link_nodes(node_tree, source=(separate, "Y"), target=(fade_range, "Value"))
+    deep = new_color_mix_node(node_tree, a=None, b=linear_rgba(palette.plate_deep))
+    link_sockets(node_tree, output_socket(fade_range, "Result"), input_by_identifier(deep, MIX_FACTOR))
+    return deep
 
 
 def _shell_band_mix(
