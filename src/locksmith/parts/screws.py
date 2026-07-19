@@ -1,8 +1,8 @@
 from bpy.types import Collection, Material, Object
 
 from locksmith.blender.meshes import (
+    add_placed_cone,
     assign_untagged_faces,
-    cone_vertices,
     cube_vertices,
     mesh_object_from,
     new_bmesh,
@@ -24,15 +24,16 @@ def build_screws(
     """All plate screws in one mesh: countersunk heads with darkened driver slots."""
     mesh_builder = new_bmesh()
     for placement in anatomy.placements:
-        head_vertices = cone_vertices(
+        add_placed_cone(
             mesh_builder,
             segments=anatomy.head.segments,
             base_radius=anatomy.head.base_radius,
             top_radius=anatomy.head.face_radius,
             depth=anatomy.head.depth,
+            axis="X",
+            radians=QUARTER_TURN,
+            offset=(placement.x, anatomy.head.y, placement.z),
         )
-        rotate_vertices(mesh_builder, head_vertices, axis="X", radians=QUARTER_TURN)
-        translate_vertices(mesh_builder, head_vertices, offset=(placement.x, anatomy.head.y, placement.z))
         assign_untagged_faces(mesh_builder, material_index=0)
 
         slot_vertices = cube_vertices(mesh_builder)

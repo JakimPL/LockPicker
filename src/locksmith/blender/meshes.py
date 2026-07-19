@@ -127,6 +127,29 @@ def cone_vertices(
     return cast(List[BMVert], created["verts"])
 
 
+def add_placed_cone(
+    mesh_builder: BMesh,
+    *,
+    segments: int,
+    base_radius: float,
+    top_radius: float,
+    depth: float,
+    axis: Axis,
+    radians: float,
+    offset: Vec3,
+) -> List[BMVert]:
+    vertices = cone_vertices(
+        mesh_builder,
+        segments=segments,
+        base_radius=base_radius,
+        top_radius=top_radius,
+        depth=depth,
+    )
+    rotate_vertices(mesh_builder, vertices, axis=axis, radians=radians)
+    translate_vertices(mesh_builder, vertices, offset=offset)
+    return vertices
+
+
 def cosine_flute_profile(
     *,
     start_x: float,

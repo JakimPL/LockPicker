@@ -1,11 +1,12 @@
-from typing import Tuple
+from typing import List, Tuple
 
+from bmesh.types import BMesh
 from bpy.types import Collection, Material, Object
 
 from locksmith.blender.meshes import (
+    add_placed_cone,
     assign_untagged_faces,
     box_vertices,
-    cone_vertices,
     cube_vertices,
     mesh_object_from,
     new_bmesh,
@@ -18,7 +19,82 @@ from locksmith.constants import QUARTER_TURN
 from locksmith.schema.models.anatomy.flange.flange import FlangeAnatomy
 
 
-# TODO: refactor
+def _build_seam_strips(
+    mesh_builder: BMesh,
+    *,
+    board: BoardGeometry,
+    anatomy: FlangeAnatomy,
+    seam_xs: Tuple[float, float],
+    carved: Tuple[bool, bool],
+) -> None:
+    width = board.units(anatomy.width_pixels)
+    band_inner = board.tip_z(upper=True, height=1.0)
+    band_outer = board.height / 2 + anatomy.margin / 2
+    for seam_x, seam_carved in zip(seam_xs, carved):
+        spans = ((band_inner, band_outer), (-band_outer, -band_inner)) if seam_carved else ((-band_outer, band_outer),)
+        for bottom, top in spans:
+            box_vertices(
+                mesh_builder,
+                size=(width, anatomy.depth, top - bottom),
+                center=(seam_x, anatomy.face_y + anatomy.depth / 2, (bottom + top) / 2),
+            )
+
+    assign_untagged_faces(mesh_builder, material_index=0)
+
+
+def _fastener_placements(
+    *,
+    board: BoardGeometry,
+    anatomy: FlangeAnatomy,
+    seam_xs: Tuple[float, float],
+    carved: Tuple[bool, bool],
+) -> List[Tuple[float, float]]:
+    band_inner = board.tip_z(upper=True, height=1.0)
+    steps = int(board.height / 2 // anatomy.spacing_z)
+    return [
+        (seam_x, step * anatomy.spacing_z)
+        for seam_x, seam_carved in zip(seam_xs, carved)
+        for step in range(-steps, steps + 1)
+        if not (seam_carved and abs(step * anatomy.spacing_z) < band_inner + anatomy.head.base_radius)
+    ]
+
+
+def _add_fastener(
+    mesh_builder: BMesh,
+    *,
+    x: float,
+    z: float,
+    index: int,
+    anatomy: FlangeAnatomy,
+) -> None:
+    add_placed_cone(
+        mesh_builder,
+        segments=anatomy.head.segments,
+        base_radius=anatomy.head.base_radius,
+        top_radius=anatomy.head.face_radius,
+        depth=anatomy.head.depth,
+        axis="X",
+        radians=QUARTER_TURN,
+        offset=(x, anatomy.head.y, z),
+    )
+    assign_untagged_faces(mesh_builder, material_index=1)
+
+    slot_vertices = cube_vertices(mesh_builder)
+    scale_vertices(
+        mesh_builder,
+        slot_vertices,
+        factors=(anatomy.slot.length, anatomy.slot.depth, anatomy.slot.height),
+    )
+    angle = anatomy.slot_angles[index % len(anatomy.slot_angles)]
+    rotate_vertices(mesh_builder, slot_vertices, axis="Y", radians=angle)
+    translate_vertices(
+        mesh_builder,
+        slot_vertices,
+        offset=(x, anatomy.slot.y, z),
+    )
+    assign_untagged_faces(mesh_builder, material_index=2)
+
+
 def build_flanges(
     *,
     board: BoardGeometry,
@@ -38,58 +114,10 @@ def build_flanges(
     crosses the open mouth.
     """
     mesh_builder = new_bmesh()
-    width = board.units(anatomy.width_pixels)
-    band_inner = board.tip_z(upper=True, height=1.0)
-    band_outer = board.height / 2 + anatomy.margin / 2
-    for seam_x, seam_carved in zip(seam_xs, carved):
-        spans = ((band_inner, band_outer), (-band_outer, -band_inner)) if seam_carved else ((-band_outer, band_outer),)
-        for bottom, top in spans:
-            box_vertices(
-                mesh_builder,
-                size=(width, anatomy.depth, top - bottom),
-                center=(seam_x, anatomy.face_y + anatomy.depth / 2, (bottom + top) / 2),
-            )
-
-    assign_untagged_faces(mesh_builder, material_index=0)
-
-    steps = int(board.height / 2 // anatomy.spacing_z)
-    placements = [
-        (seam_x, step * anatomy.spacing_z)
-        for seam_x, seam_carved in zip(seam_xs, carved)
-        for step in range(-steps, steps + 1)
-        if not (seam_carved and abs(step * anatomy.spacing_z) < band_inner + anatomy.head.base_radius)
-    ]
-
+    _build_seam_strips(mesh_builder, board=board, anatomy=anatomy, seam_xs=seam_xs, carved=carved)
+    placements = _fastener_placements(board=board, anatomy=anatomy, seam_xs=seam_xs, carved=carved)
     for index, (fastener_x, fastener_z) in enumerate(placements):
-        head_vertices = cone_vertices(
-            mesh_builder,
-            segments=anatomy.head.segments,
-            base_radius=anatomy.head.base_radius,
-            top_radius=anatomy.head.face_radius,
-            depth=anatomy.head.depth,
-        )
-        rotate_vertices(mesh_builder, head_vertices, axis="X", radians=QUARTER_TURN)
-        translate_vertices(
-            mesh_builder,
-            head_vertices,
-            offset=(fastener_x, anatomy.head.y, fastener_z),
-        )
-        assign_untagged_faces(mesh_builder, material_index=1)
-
-        slot_vertices = cube_vertices(mesh_builder)
-        scale_vertices(
-            mesh_builder,
-            slot_vertices,
-            factors=(anatomy.slot.length, anatomy.slot.depth, anatomy.slot.height),
-        )
-        angle = anatomy.slot_angles[index % len(anatomy.slot_angles)]
-        rotate_vertices(mesh_builder, slot_vertices, axis="Y", radians=angle)
-        translate_vertices(
-            mesh_builder,
-            slot_vertices,
-            offset=(fastener_x, anatomy.slot.y, fastener_z),
-        )
-        assign_untagged_faces(mesh_builder, material_index=2)
+        _add_fastener(mesh_builder, x=fastener_x, z=fastener_z, index=index, anatomy=anatomy)
 
     return mesh_object_from(
         "case_flanges",
