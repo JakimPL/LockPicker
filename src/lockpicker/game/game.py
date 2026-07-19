@@ -8,7 +8,7 @@ from lockpicker.constants.config import RendererMode
 from lockpicker.engine.events import Sound
 from lockpicker.engine.lock import Lock
 from lockpicker.game.animation import Animation, compute_animation_steps
-from lockpicker.game.audio import SoundBoard
+from lockpicker.game.audio.board import SoundBoard
 from lockpicker.game.effects import LipEffects
 from lockpicker.game.input import Key, MouseState
 from lockpicker.game.layout import Layout
