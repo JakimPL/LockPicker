@@ -145,7 +145,7 @@ def _tip_target(
 ) -> Tuple[float, float]:
     """Logical pixel position of the tumbler's free tip; image y grows downward."""
     center_x = (
-        board.column_offset_pixels + placement.position * board.column_pitch_pixels + board.column_width_pixels / 2,
+        board.column_offset_pixels + placement.position * board.column_pitch_pixels + board.column_width_pixels / 2
     )
     travel = placement.height * board.pixels_per_unit
     tip_y = travel if placement.upper else board.height_pixels - travel
