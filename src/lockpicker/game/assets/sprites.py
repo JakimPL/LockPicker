@@ -5,9 +5,9 @@ from typing import Dict, Optional, Tuple
 
 import pygame
 
-from lockpicker.constants.config import PickShape, settings
+from lockpicker.constants.config import Color, PickShape, settings
 from lockpicker.game.assets.library import AssetLibrary
-from lockpicker.game.assets.manifest import PixelPair
+from lockpicker.game.assets.manifest import PixelPair, SpriteAsset, TumblerOrientationAssets
 from lockpicker.game.layout import Layout
 
 
@@ -22,76 +22,118 @@ def scaled_pair(pair: PixelPair, *, scale_x: float, scale_y: float) -> PixelPair
 
 
 TumblerKey = Tuple[int, bool, bool, bool]
+TumblerState = Tuple[bool, bool]
 
 
 class ThemeSprites:
     def __init__(self, library: AssetLibrary, layout: Layout) -> None:
-        manifest = library.manifest
-        self.scale_x = layout.bar_width / manifest.tumblers.column_width_pixels
-        self.scale_y = layout.scale / manifest.tumblers.pixels_per_height_unit
+        self._library = library
+        self._layout = layout
+        self._manifest = library.manifest
+        self.scale_x = layout.bar_width / self._manifest.tumblers.column_width_pixels
+        self.scale_y = layout.scale / self._manifest.tumblers.pixels_per_height_unit
 
-        screen_size = (layout.screen_width, layout.screen_height)
-        self.background = pygame.transform.smoothscale(library.surface(manifest.board.background), screen_size)
-        self.frame = pygame.transform.smoothscale(library.surface(manifest.board.frame), screen_size)
+        self.background = self._scale_board(self._manifest.board.background)
+        self.frame = self._scale_board(self._manifest.board.frame)
 
-        self._tumblers: Dict[TumblerKey, ScaledSprite] = {}
+        self._tumblers = self._build_tumblers()
+        self._shadows = self._build_shadows()
         self._faded: Dict[Tuple[TumblerKey, int], ScaledSprite] = {}
-        self._shadows: Dict[bool, ScaledSprite] = {}
-        for upper, orientation in ((True, manifest.tumblers.upper), (False, manifest.tumblers.lower)):
-            size = self._scaled(orientation.size)
-            anchor = self._scaled(orientation.tip_anchor)
-            for group, metal in enumerate(manifest.tumblers.groups):
-                base = pygame.transform.smoothscale(library.surface(orientation.images[metal]), size)
-                for jammed in (False, True):
-                    variant = base
-                    if jammed:
-                        variant = base.copy()
-                        variant.fill(settings.theme.jam_tint, special_flags=pygame.BLEND_RGB_MULT)
-
-                    hover = variant.copy()
-                    hover.fill(settings.theme.highlight_tint, special_flags=pygame.BLEND_RGB_ADD)
-                    self._tumblers[(group, upper, False, jammed)] = ScaledSprite(variant, anchor)
-                    self._tumblers[(group, upper, True, jammed)] = ScaledSprite(hover, anchor)
-
-            shadow = pygame.transform.smoothscale(
-                library.surface(orientation.shadow.image),
-                self._scaled(orientation.shadow.size),
-            )
-            shadow.set_alpha(settings.theme.shadow_alpha)
-            self._shadows[upper] = ScaledSprite(shadow, self._scaled(orientation.shadow.tip_anchor))
-
-        self._lips: Dict[bool, ScaledSprite] = {}
-        self._lip_glints: Dict[bool, ScaledSprite] = {}
-        for upper, lip_asset in ((True, manifest.lips.upper), (False, manifest.lips.lower)):
-            lip_size = (layout.screen_width, max(1, round(lip_asset.size[1] * self.scale_y)))
-            lip_surface = pygame.transform.smoothscale(library.surface(lip_asset.image), lip_size)
-            lip_anchor = (
-                round(lip_asset.tip_anchor[0] * layout.screen_width / lip_asset.size[0]),
-                round(lip_asset.tip_anchor[1] * self.scale_y),
-            )
-            self._lips[upper] = ScaledSprite(lip_surface, lip_anchor)
-            glint_surface = lip_surface.copy()
-            glint_surface.fill(settings.theme.lip_glint_tint, special_flags=pygame.BLEND_RGB_ADD)
-            self._lip_glints[upper] = ScaledSprite(glint_surface, lip_anchor)
-
-        badge = manifest.badges.master
-        badge_surface = pygame.transform.smoothscale(library.surface(badge.image), self._scaled(badge.size))
-        badge_surface.set_alpha(settings.theme.badge_alpha)
-        self.badge = ScaledSprite(badge_surface, self._scaled(badge.center_anchor))
-        self.badge_offset = round(badge.tip_offset_pixels * self.scale_y)
-
-        self._picks: Dict[Tuple[PickShape, bool], ScaledSprite] = {}
-        for shape, asset in manifest.picks.items():
-            idle = pygame.transform.smoothscale(library.surface(asset.image), self._scaled(asset.size))
-            active = idle.copy()
-            active.fill(settings.theme.pick_active_tint, special_flags=pygame.BLEND_RGB_ADD)
-            idle.set_alpha(settings.theme.pick_idle_alpha)
-            pick_anchor = self._scaled(asset.tip_anchor)
-            self._picks[(shape, True)] = ScaledSprite(active, pick_anchor)
-            self._picks[(shape, False)] = ScaledSprite(idle, pick_anchor)
+        self._lips, self._lip_glints = self._build_lips()
+        self.badge, self.badge_offset = self._build_badge()
+        self._picks = self._build_picks()
 
     def _scaled(self, pair: PixelPair) -> PixelPair:
         return scaled_pair(pair, scale_x=self.scale_x, scale_y=self.scale_y)
+
+    def _smoothscale(self, image: str, size: PixelPair) -> pygame.surface.Surface:
+        return pygame.transform.smoothscale(self._library.surface(image), size)
+
+    def _scale_board(self, image: str) -> pygame.surface.Surface:
+        screen_size = (self._layout.screen_width, self._layout.screen_height)
+        return pygame.transform.smoothscale(self._library.surface(image), screen_size)
+
+    @staticmethod
+    def _tint(surface: pygame.surface.Surface, tint: Color, *, blend: int) -> pygame.surface.Surface:
+        tinted = surface.copy()
+        tinted.fill(tint, special_flags=blend)
+        return tinted
+
+    def _orientations(self) -> Tuple[Tuple[bool, TumblerOrientationAssets], Tuple[bool, TumblerOrientationAssets]]:
+        tumblers = self._manifest.tumblers
+        return (True, tumblers.upper), (False, tumblers.lower)
+
+    def _build_tumblers(self) -> Dict[TumblerKey, ScaledSprite]:
+        tumblers: Dict[TumblerKey, ScaledSprite] = {}
+        for upper, orientation in self._orientations():
+            size = self._scaled(orientation.size)
+            anchor = self._scaled(orientation.tip_anchor)
+            for group, metal in enumerate(self._manifest.tumblers.groups):
+                base = self._smoothscale(orientation.images[metal], size)
+                for (highlighted, jammed), sprite in self._tumbler_states(base, anchor).items():
+                    tumblers[(group, upper, highlighted, jammed)] = sprite
+
+        return tumblers
+
+    def _tumbler_states(self, base: pygame.surface.Surface, anchor: PixelPair) -> Dict[TumblerState, ScaledSprite]:
+        states: Dict[TumblerState, ScaledSprite] = {}
+        for jammed in (False, True):
+            variant = base if not jammed else self._tint(base, settings.theme.jam_tint, blend=pygame.BLEND_RGB_MULT)
+            highlighted = self._tint(variant, settings.theme.highlight_tint, blend=pygame.BLEND_RGB_ADD)
+            states[(False, jammed)] = ScaledSprite(variant, anchor)
+            states[(True, jammed)] = ScaledSprite(highlighted, anchor)
+
+        return states
+
+    def _build_shadows(self) -> Dict[bool, ScaledSprite]:
+        shadows: Dict[bool, ScaledSprite] = {}
+        for upper, orientation in self._orientations():
+            shadow = self._smoothscale(orientation.shadow.image, self._scaled(orientation.shadow.size))
+            shadow.set_alpha(settings.theme.shadow_alpha)
+            shadows[upper] = ScaledSprite(shadow, self._scaled(orientation.shadow.tip_anchor))
+
+        return shadows
+
+    def _build_lips(self) -> Tuple[Dict[bool, ScaledSprite], Dict[bool, ScaledSprite]]:
+        lips: Dict[bool, ScaledSprite] = {}
+        glints: Dict[bool, ScaledSprite] = {}
+        for upper, lip_asset in ((True, self._manifest.lips.upper), (False, self._manifest.lips.lower)):
+            lip = self._scale_lip(lip_asset)
+            lips[upper] = lip
+            glint = self._tint(lip.surface, settings.theme.lip_glint_tint, blend=pygame.BLEND_RGB_ADD)
+            glints[upper] = ScaledSprite(glint, lip.anchor)
+
+        return lips, glints
+
+    def _scale_lip(self, lip_asset: SpriteAsset) -> ScaledSprite:
+        screen_width = self._layout.screen_width
+        size = (screen_width, max(1, round(lip_asset.size[1] * self.scale_y)))
+        surface = self._smoothscale(lip_asset.image, size)
+        anchor = (
+            round(lip_asset.tip_anchor[0] * screen_width / lip_asset.size[0]),
+            round(lip_asset.tip_anchor[1] * self.scale_y),
+        )
+        return ScaledSprite(surface, anchor)
+
+    def _build_badge(self) -> Tuple[ScaledSprite, int]:
+        badge = self._manifest.badges.master
+        surface = self._smoothscale(badge.image, self._scaled(badge.size))
+        surface.set_alpha(settings.theme.badge_alpha)
+        sprite = ScaledSprite(surface, self._scaled(badge.center_anchor))
+        offset = round(badge.tip_offset_pixels * self.scale_y)
+        return sprite, offset
+
+    def _build_picks(self) -> Dict[Tuple[PickShape, bool], ScaledSprite]:
+        picks: Dict[Tuple[PickShape, bool], ScaledSprite] = {}
+        for shape, asset in self._manifest.picks.items():
+            anchor = self._scaled(asset.tip_anchor)
+            idle = self._smoothscale(asset.image, self._scaled(asset.size))
+            active = self._tint(idle, settings.theme.pick_active_tint, blend=pygame.BLEND_RGB_ADD)
+            idle.set_alpha(settings.theme.pick_idle_alpha)
+            picks[(shape, True)] = ScaledSprite(active, anchor)
+            picks[(shape, False)] = ScaledSprite(idle, anchor)
+
+        return picks
 
     def tumbler(
         self,

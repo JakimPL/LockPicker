@@ -103,6 +103,7 @@ class EditorRenderer:
             bounds = self.renderer.get_tumbler_bounds(tumbler)
             self.draw_tumbler(tumbler, bounds, highlighted=False, alpha=settings.alpha.faint)
 
+    # TODO: refactor
     def draw_bindings(self) -> None:
         for start_location, targets in self.lock.level.bindings.items():
             start_tumbler = self.lock.get_tumbler(start_location)

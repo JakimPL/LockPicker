@@ -30,7 +30,10 @@ class StyledRenderer(RendererBase):
     def draw_background(self) -> None:
         self.screen.blit(self.sprites.background, (0, 0))
         for tumbler in self.lock.get_tumblers_by_location().values():
-            self.blit_anchored(self.sprites.shadow(upper=tumbler.upper), self.get_tip_target(tumbler))
+            self.blit_anchored(
+                self.sprites.shadow(upper=tumbler.upper),
+                self.get_tip_target(tumbler),
+            )
 
     def draw_tumbler(
         self,
@@ -63,6 +66,7 @@ class StyledRenderer(RendererBase):
     def draw_frame(self) -> None:
         self.screen.blit(self.sprites.frame, (0, 0))
 
+    # TODO: refactor
     def draw_shear_lips(self) -> None:
         flourish = self.effects.flourish_strength
         for upper in (True, False):

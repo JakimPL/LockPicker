@@ -92,4 +92,5 @@ def load_manifest(directory: Path) -> ThemeManifest:
             f"manifest schema_version {version} is unsupported (expected {SUPPORTED_SCHEMA_VERSION}); "
             f"re-render the theme with `uv run locksmith assets`"
         )
+
     return ThemeManifest.model_validate(payload)

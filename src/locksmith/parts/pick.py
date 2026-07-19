@@ -18,10 +18,11 @@ from locksmith.board import BoardGeometry
 from locksmith.schema.models.anatomy.pick.pick import PickAnatomy
 from locksmith.types import PickShape
 
-_QUARTER_TURN: Final[float] = math.pi / 2
+_QUARTER_TURN: Final[float] = math.pi / 2  # TODO: repeated constant definition
 _EIGHTH_TURN: Final[float] = math.pi / 4
 
 
+# TODO: refactor
 def build_pick(
     name: str,
     *,
@@ -49,7 +50,11 @@ def build_pick(
         depth=anatomy.shaft.length,
     )
     rotate_vertices(mesh_builder, shaft_vertices, axis="Y", radians=_QUARTER_TURN)
-    translate_vertices(mesh_builder, shaft_vertices, offset=(anatomy.shaft.center_x, 0.0, 0.0))
+    translate_vertices(
+        mesh_builder,
+        shaft_vertices,
+        offset=(anatomy.shaft.center_x, 0.0, 0.0),
+    )
     assign_untagged_faces(mesh_builder, material_index=0)
 
     match shape:
@@ -58,7 +63,11 @@ def build_pick(
             scale_vertices(
                 mesh_builder,
                 tip_vertices,
-                factors=(anatomy.diamond_tip.width, anatomy.diamond_tip.depth, anatomy.diamond_tip.height),
+                factors=(
+                    anatomy.diamond_tip.width,
+                    anatomy.diamond_tip.depth,
+                    anatomy.diamond_tip.height,
+                ),
             )
             rotate_vertices(mesh_builder, tip_vertices, axis="Y", radians=_EIGHTH_TURN)
         case PickShape.CIRCLE:

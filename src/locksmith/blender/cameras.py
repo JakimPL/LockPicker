@@ -17,8 +17,6 @@ def new_orthographic_camera(
 ) -> Object:
     camera_data = bpy.data.cameras.new(name)
     camera_data.type = "ORTHO"
-    # Horizontal fit makes ortho_scale mean the framed width even for tall
-    # renders; the default AUTO fit would silently switch to the height.
     camera_data.sensor_fit = "HORIZONTAL"
     camera_data.ortho_scale = ortho_scale
     camera_data.clip_start = clip_start

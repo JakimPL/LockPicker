@@ -3,7 +3,13 @@ from typing import Final
 from bpy.types import Collection, Material, Object
 from mathutils import Vector
 
-from locksmith.blender.meshes import all_edges, bevel_edges, box_vertices, mesh_object_from, new_bmesh
+from locksmith.blender.meshes import (
+    all_edges,
+    bevel_edges,
+    box_vertices,
+    mesh_object_from,
+    new_bmesh,
+)
 from locksmith.blender.modifiers import apply_boolean_difference
 from locksmith.board import BoardGeometry
 from locksmith.schema.models.anatomy.lip import LipAnatomy
@@ -12,6 +18,7 @@ from locksmith.schema.models.anatomy.plate import PlateAnatomy
 _LENGTH_TOLERANCE: Final[float] = 1e-3
 
 
+# TODO: refactor
 def build_lip(
     name: str,
     *,
@@ -54,7 +61,12 @@ def build_lip(
         segments=anatomy.bevel.segments,
         profile=anatomy.bevel.profile,
     )
-    lip = mesh_object_from(name, mesh_builder, collection=collection, materials=[material])
+    lip = mesh_object_from(
+        name,
+        mesh_builder,
+        collection=collection,
+        materials=[material],
+    )
 
     cutter_builder = new_bmesh()
     for position in range(board.config.columns):
@@ -65,9 +77,19 @@ def build_lip(
                 anatomy.depth + plate.cutter_depth_margin,
                 thickness + plate.cutter_height_margin,
             ),
-            center=(board.column_center_x(position), anatomy.face_y + anatomy.depth / 2, 0.0),
+            center=(
+                board.column_center_x(position),
+                anatomy.face_y + anatomy.depth / 2,
+                0.0,
+            ),
         )
-    cutter = mesh_object_from(f"{name}_slots_cut", cutter_builder, collection=collection, materials=[])
+
+    cutter = mesh_object_from(
+        f"{name}_slots_cut",
+        cutter_builder,
+        collection=collection,
+        materials=[],
+    )
     apply_boolean_difference(lip, name="slots", cutter=cutter)
     lip.location = Vector((0.0, 0.0, line_z))
     cutter.location = Vector((0.0, 0.0, line_z))

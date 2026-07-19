@@ -50,5 +50,8 @@ def build_screws(
         assign_untagged_faces(mesh_builder, material_index=1)
 
     return mesh_object_from(
-        "frame_screws", mesh_builder, collection=collection, materials=[head_material, slot_material]
+        "frame_screws",
+        mesh_builder,
+        collection=collection,
+        materials=[head_material, slot_material],
     )

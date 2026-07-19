@@ -65,7 +65,11 @@ def build_scene(config: SceneConfig) -> WorkshopScene:
     reset_to_empty_factory_state()
     scene = active_scene()
     board = BoardGeometry(config.board)
-    library = make_material_library(palette=config.palette, shading=config.shading, plate_half_height=board.height / 2)
+    library = make_material_library(
+        palette=config.palette,
+        shading=config.shading,
+        plate_half_height=board.height / 2,
+    )
     collections = build_scene_collections(scene)
 
     build_world(scene, palette=config.palette, config=config.world)
@@ -78,12 +82,21 @@ def build_scene(config: SceneConfig) -> WorkshopScene:
         collection=collections.background,
     )
     frame_plate = build_frame(
-        board=board, anatomy=config.anatomy.plate, material=library.plate, collection=collections.frame
+        board=board,
+        anatomy=config.anatomy.plate,
+        material=library.plate,
+        collection=collections.frame,
     )
     sprite_stage = build_sprite_stage(
-        board=board, anatomy=config.anatomy.plate, material=library.plate_stage, collection=collections.background
+        board=board,
+        anatomy=config.anatomy.plate,
+        material=library.plate_stage,
+        collection=collections.background,
     )
-    plate_left, plate_right = plate_span(board=board, anatomy=config.anatomy.plate)
+    plate_left, plate_right = plate_span(
+        board=board,
+        anatomy=config.anatomy.plate,
+    )
     bench = build_bench(
         board=board,
         anatomy=config.anatomy.bench,
@@ -175,7 +188,11 @@ def build_scene(config: SceneConfig) -> WorkshopScene:
         angle=config.lighting.fill.angle,
         collection=collections.rig,
     )
-    board_camera = build_board_camera(views=config.views, board=board, collection=collections.rig)
+    board_camera = build_board_camera(
+        views=config.views,
+        board=board,
+        collection=collections.rig,
+    )
 
     build_lookdev(
         config=config.lookdev,

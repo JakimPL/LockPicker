@@ -46,7 +46,9 @@ def build_prototypes(
         material=library.tumblers[Metal.STEEL],
         collection=collections.tumbler_upper,
     )
-    tumbler_upper.location = Vector((staging.tumbler_upper_x, 0.0, -board.height / 2))
+    tumbler_upper.location = Vector(
+        (staging.tumbler_upper_x, 0.0, -board.height / 2),
+    )
     tumbler_lower = build_pin(
         "tumbler_lower",
         upper=False,
@@ -55,7 +57,9 @@ def build_prototypes(
         material=library.tumblers[Metal.STEEL],
         collection=collections.tumbler_lower,
     )
-    tumbler_lower.location = Vector((staging.tumbler_lower_x, 0.0, board.height / 2))
+    tumbler_lower.location = Vector(
+        (staging.tumbler_lower_x, 0.0, board.height / 2),
+    )
 
     pick_diamond = build_pick(
         "pick_diamond",
@@ -67,7 +71,9 @@ def build_prototypes(
         grip_material=library.grips[PickShape.DIAMOND],
         collection=collections.pick_diamond,
     )
-    pick_diamond.location = Vector((staging.pick_x, 0.0, staging.pick_diamond_z))
+    pick_diamond.location = Vector(
+        (staging.pick_x, 0.0, staging.pick_diamond_z),
+    )
     pick_circle = build_pick(
         "pick_circle",
         shape=PickShape.CIRCLE,
@@ -78,7 +84,9 @@ def build_prototypes(
         grip_material=library.grips[PickShape.CIRCLE],
         collection=collections.pick_circle,
     )
-    pick_circle.location = Vector((staging.pick_x, 0.0, staging.pick_circle_z))
+    pick_circle.location = Vector(
+        (staging.pick_x, 0.0, staging.pick_circle_z),
+    )
 
     badge = build_badge(
         anatomy=anatomy.badge,
@@ -95,6 +103,13 @@ def build_prototypes(
         pick_circle=pick_circle,
         badge=badge,
     )
-    for prototype in (tumbler_upper, tumbler_lower, pick_diamond, pick_circle, badge):
+    for prototype in (
+        tumbler_upper,
+        tumbler_lower,
+        pick_diamond,
+        pick_circle,
+        badge,
+    ):
         prototype.hide_render = True
+
     return prototypes

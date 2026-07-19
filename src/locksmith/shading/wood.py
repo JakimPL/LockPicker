@@ -32,7 +32,13 @@ from locksmith.schema.models.palette.palette import PaletteConfig
 from locksmith.schema.models.shading.wood import WoodConfig
 
 
-def make_wood_material(name: str, *, palette: PaletteConfig, config: WoodConfig) -> Material:
+# TODO: refactor
+def make_wood_material(
+    name: str,
+    *,
+    palette: PaletteConfig,
+    config: WoodConfig,
+) -> Material:
     """Figured oiled hardwood: broad cathedral tone under thin latewood lines.
 
     Two grain scales keep the panel from reading as flat ribbed board. A slow
@@ -93,6 +99,7 @@ def make_wood_material(name: str, *, palette: PaletteConfig, config: WoodConfig)
     return material
 
 
+# TODO: refactor
 def _link_grain_surface(
     node_tree: NodeTree,
     principled: ShaderNodeBsdfPrincipled,

@@ -1,6 +1,12 @@
 from typing import Final, Tuple
 
-from bpy.types import Scene, ShaderNodeMapRange, ShaderNodeSeparateXYZ, ShaderNodeTexCoord, ShaderNodeValToRGB
+from bpy.types import (
+    Scene,
+    ShaderNodeMapRange,
+    ShaderNodeSeparateXYZ,
+    ShaderNodeTexCoord,
+    ShaderNodeValToRGB,
+)
 
 from locksmith.blender.nodes import (
     add_color_ramp_stop,
@@ -23,7 +29,13 @@ _WORLD_NAME: Final[str] = "workshop"
 _GRADIENT_DOMAIN: Final[Tuple[float, float]] = (-1.0, 1.0)
 
 
-def build_world(scene: Scene, *, palette: PaletteConfig, config: WorldConfig) -> None:
+# TODO: refactor: split into helper functions so the build_world reads as prose
+def build_world(
+    scene: Scene,
+    *,
+    palette: PaletteConfig,
+    config: WorldConfig,
+) -> None:
     """Directional gradient environment: dark floor, cool mid, warm bright top-left.
 
     Curved metal shoulders sweep across this gradient under the orthographic

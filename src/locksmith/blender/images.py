@@ -25,11 +25,11 @@ def read_rgba_pixels(path: Path) -> RGBAImage:
         width, height = image.size[0], image.size[1]
         if image.channels != _CHANNELS:
             raise ValueError(f"{path} decoded to {image.channels} channels, expected {_CHANNELS}")
+
         buffer = np.empty(width * height * _CHANNELS, dtype=np.float32)
-        # The stub omits prop-array batch access and pylint misreads its runtime signature.
-        # pylint: disable-next=too-many-function-args
         image.pixels.foreach_get(buffer)
     finally:
         bpy.data.images.remove(image)
+
     rows = np.rint(buffer.reshape((height, width, _CHANNELS)) * _BYTE_SCALE).astype(np.uint8)
     return np.ascontiguousarray(np.flipud(rows))

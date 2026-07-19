@@ -33,7 +33,11 @@ def compute_animation_steps(snapshots: List[Snapshot]) -> List[AnimationStep]:
             for location, height in current.heights.items()
         }
         picks = {
-            pick: PickChange(location, following.picks.get(pick, location)) for pick, location in current.picks.items()
+            pick: PickChange(
+                location,
+                following.picks.get(pick, location),
+            )
+            for pick, location in current.picks.items()
         }
         step = AnimationStep(tumblers, picks)
         if _step_changes(step):

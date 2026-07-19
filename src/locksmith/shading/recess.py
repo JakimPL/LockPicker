@@ -56,12 +56,24 @@ def _wire_lit_surface(
     set_float_input(principled, "Roughness", roughness)
     set_float_input(principled, "Specular IOR Level", specular)
     set_float_input(principled, "Emission Strength", glow)
-    link_sockets(node_tree, output_by_identifier(color_source, MIX_RESULT), input_socket(principled, "Base Color"))
-    link_sockets(node_tree, output_by_identifier(color_source, MIX_RESULT), input_socket(principled, "Emission Color"))
+    link_sockets(
+        node_tree,
+        output_by_identifier(color_source, MIX_RESULT),
+        input_socket(principled, "Base Color"),
+    )
+    link_sockets(
+        node_tree,
+        output_by_identifier(color_source, MIX_RESULT),
+        input_socket(principled, "Emission Color"),
+    )
 
 
 def make_pocket_material(
-    name: str, *, palette: PaletteConfig, config: PocketShading, half_height_units: float
+    name: str,
+    *,
+    palette: PaletteConfig,
+    config: PocketShading,
+    half_height_units: float,
 ) -> Material:
     """Machined bore steel for the column troughs, zoned by height.
 
@@ -74,14 +86,40 @@ def make_pocket_material(
     material, node_tree, principled = new_principled_material(name)
     coordinates = new_node(node_tree, ShaderNodeTexCoord)
 
-    zone = _pocket_zone(node_tree, coordinates, palette=palette, config=config, half_height_units=half_height_units)
-    stained = _stain_layer(node_tree, coordinates, zone, palette=palette, config=config)
-    honed, streak_swing = _streak_layer(node_tree, coordinates, stained, palette=palette, config=config)
+    zone = _pocket_zone(
+        node_tree,
+        coordinates,
+        palette=palette,
+        config=config,
+        half_height_units=half_height_units,
+    )
+    stained = _stain_layer(
+        node_tree,
+        coordinates,
+        zone,
+        palette=palette,
+        config=config,
+    )
+    honed, streak_swing = _streak_layer(
+        node_tree,
+        coordinates,
+        stained,
+        palette=palette,
+        config=config,
+    )
 
     bump = new_node(node_tree, ShaderNodeBump)
     set_float_input(bump, "Strength", config.bump_strength)
-    link_nodes(node_tree, source=(streak_swing, "Result"), target=(bump, "Height"))
-    link_nodes(node_tree, source=(bump, "Normal"), target=(principled, "Normal"))
+    link_nodes(
+        node_tree,
+        source=(streak_swing, "Result"),
+        target=(bump, "Height"),
+    )
+    link_nodes(
+        node_tree,
+        source=(bump, "Normal"),
+        target=(principled, "Normal"),
+    )
 
     _wire_lit_surface(
         node_tree,
@@ -95,7 +133,12 @@ def make_pocket_material(
     return material
 
 
-def _noise_swing(node_tree: NodeTree, noise: ShaderNodeTexNoise, *, config: PocketShading) -> ShaderNodeMapRange:
+def _noise_swing(
+    node_tree: NodeTree,
+    noise: ShaderNodeTexNoise,
+    *,
+    config: PocketShading,
+) -> ShaderNodeMapRange:
     """Stretch fBm's mid-crowded Fac to a full 0..1 swing.
 
     Without it the layer strengths mostly shift the mean tone; with it they
@@ -131,7 +174,11 @@ def _pocket_zone(
     chamber = mixed_linear(linear_rgba(palette.plate_deep), steel, config.chamber_mix, gain=config.chamber_gain)
     band = mixed_linear(steel, linear_rgba(palette.rim), config.band_sheen_mix, gain=config.band_gain)
     zone = new_color_mix_node(node_tree, a=chamber, b=band)
-    link_sockets(node_tree, output_socket(zone_range, "Result"), input_by_identifier(zone, MIX_FACTOR))
+    link_sockets(
+        node_tree,
+        output_socket(zone_range, "Result"),
+        input_by_identifier(zone, MIX_FACTOR),
+    )
     return zone
 
 
@@ -177,7 +224,10 @@ def _streak_layer(
     streak_strength = new_math_node(node_tree, "MULTIPLY", operand=config.streak_strength)
     link_nodes(node_tree, source=(swing, "Result"), target=(streak_strength, "Value"))
     worn = mixed_linear(
-        linear_rgba(palette.plate), linear_rgba(palette.rim), config.streak_sheen_mix, gain=config.streak_gain
+        linear_rgba(palette.plate),
+        linear_rgba(palette.rim),
+        config.streak_sheen_mix,
+        gain=config.streak_gain,
     )
     honed = new_color_mix_node(node_tree, a=None, b=worn)
     link_sockets(node_tree, output_by_identifier(base, MIX_RESULT), input_by_identifier(honed, MIX_A))

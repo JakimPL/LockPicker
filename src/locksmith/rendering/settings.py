@@ -3,7 +3,12 @@ from typing import Final, Tuple
 
 from bpy.types import ColorManagedViewSettings, Scene
 
-from locksmith.blender.cycles import ComputeDeviceType, CyclesSettings, cycles_settings, enable_best_compute_device
+from locksmith.blender.cycles import (
+    ComputeDeviceType,
+    CyclesSettings,
+    cycles_settings,
+    enable_best_compute_device,
+)
 from locksmith.schema.models.rendering import RenderConfig
 
 _FILE_FORMAT: Final[str] = "PNG"
@@ -20,9 +25,11 @@ class AppliedRenderSettings:
     look: str
 
 
-def apply_render_settings(scene: Scene, config: RenderConfig) -> AppliedRenderSettings:
-    # The stubs type the dynamic engine enum with only the built-in default,
-    # so choosing Cycles needs a coded exception.
+# TODO: refactor
+def apply_render_settings(
+    scene: Scene,
+    config: RenderConfig,
+) -> AppliedRenderSettings:
     scene.render.engine = "CYCLES"
     device_type = enable_best_compute_device()
     settings = cycles_settings(scene)
@@ -37,21 +44,23 @@ def apply_render_settings(scene: Scene, config: RenderConfig) -> AppliedRenderSe
     scene.render.resolution_y = height
     scene.render.resolution_percentage = _FULL_RESOLUTION_PERCENTAGE
     scene.render.film_transparent = config.film_transparent
+
     image_settings = scene.render.image_settings
-    # The stubs type the format enums with only their empty defaults.
     image_settings.file_format = _FILE_FORMAT
     image_settings.color_mode = _COLOR_MODE
     image_settings.color_depth = _COLOR_DEPTH
 
     view_settings = _require_view_settings(scene)
-    # The stubs type the dynamic OCIO enums with only their empty default.
     view_settings.view_transform = config.view_transform
     view_settings.exposure = config.exposure
     look = _apply_first_supported_look(scene, config.look_candidates)
     return AppliedRenderSettings(device_type=device_type, look=look)
 
 
-def _apply_denoiser(settings: CyclesSettings, device_type: ComputeDeviceType) -> None:
+def _apply_denoiser(
+    settings: CyclesSettings,
+    device_type: ComputeDeviceType,
+) -> None:
     """Denoise on the render device when it is OptiX; otherwise use OpenImageDenoise.
 
     Assigning an unsupported denoiser raises TypeError, so the OptiX attempt
@@ -63,6 +72,7 @@ def _apply_denoiser(settings: CyclesSettings, device_type: ComputeDeviceType) ->
             return
         except TypeError:
             pass
+
     settings.denoiser = "OPENIMAGEDENOISE"
 
 
@@ -96,7 +106,6 @@ def _apply_first_supported_look(
     view_settings = _require_view_settings(scene)
     for look in candidates:
         try:
-            # The stubs type the dynamic OCIO enums with only their empty default.
             view_settings.look = look
         except TypeError:
             continue

@@ -1,4 +1,4 @@
-from __future__ import annotations
+# TODO: split into subpackage
 
 from typing import Dict, List, Optional
 

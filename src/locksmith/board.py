@@ -44,4 +44,5 @@ class BoardGeometry:
         """Height of a pin's free tip; upper pins hang from the top edge, lower pins stand on the bottom."""
         if upper:
             return self.height / 2 - height
+
         return -self.height / 2 + height

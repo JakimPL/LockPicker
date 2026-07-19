@@ -7,7 +7,12 @@ from locksmith.schema.models.shading.enamel import EnamelConfig
 from locksmith.types import HexColor
 
 
-def make_enamel_material(name: str, *, color: HexColor, config: EnamelConfig) -> Material:
+def make_enamel_material(
+    name: str,
+    *,
+    color: HexColor,
+    config: EnamelConfig,
+) -> Material:
     """Glossy coated inlay; the clear coat gives the fired-enamel depth."""
     material, _node_tree, principled = new_principled_material(name)
     set_color_input(principled, "Base Color", linear_rgba(color))

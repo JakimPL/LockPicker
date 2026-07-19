@@ -18,6 +18,7 @@ def new_sun_light(
     light_data = bpy.data.lights.new(name, "SUN")
     if not isinstance(light_data, SunLight):
         raise TypeError(f"expected SunLight, Blender created {type(light_data).__name__}")
+
     light_data.color = Color(color)
     light_data.energy = energy
     light_data.angle = angle

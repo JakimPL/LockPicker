@@ -6,7 +6,13 @@ from mathutils import Vector
 from locksmith.types import Vec3
 
 
-def linked_copy(prototype: Object, name: str, *, location: Vec3, collection: Collection) -> Object:
+def linked_copy(
+    prototype: Object,
+    name: str,
+    *,
+    location: Vec3,
+    collection: Collection,
+) -> Object:
     """Place a render-enabled copy of a prototype; both objects share one mesh."""
     instance = prototype.copy()
     instance.name = name
@@ -29,9 +35,11 @@ def local_bounds(instance: Object) -> Tuple[Vec3, Vec3]:
     mesh = instance.data
     if not isinstance(mesh, Mesh):
         raise TypeError(f"object {instance.name!r} carries no mesh")
+
     coordinates = [vertex.co for vertex in mesh.vertices]
     if not coordinates:
         raise ValueError(f"mesh of {instance.name!r} holds no vertices")
+
     minimum = (
         min(point.x for point in coordinates),
         min(point.y for point in coordinates),
@@ -42,6 +50,7 @@ def local_bounds(instance: Object) -> Tuple[Vec3, Vec3]:
         max(point.y for point in coordinates),
         max(point.z for point in coordinates),
     )
+
     return minimum, maximum
 
 
@@ -54,7 +63,12 @@ def set_camera_ray_visibility(instance: Object, *, visible: bool) -> None:
     instance.visible_camera = visible
 
 
-def override_slot_material(instance: Object, *, slot: int, material: Material) -> None:
+def override_slot_material(
+    instance: Object,
+    *,
+    slot: int,
+    material: Material,
+) -> None:
     """Give one object its own material while its siblings keep the mesh's.
 
     Material slots resolve through the shared mesh by default; relinking the

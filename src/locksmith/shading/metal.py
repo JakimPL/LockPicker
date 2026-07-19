@@ -46,6 +46,7 @@ def make_metal_material(
         base = multiplied(base, jam)
         highlight = multiplied(highlight, jam)
         roughness = min(roughness + config.jam.roughness_shift, config.jam.roughness_cap)
+
     base_color = linear_rgba(base)
     highlight_color = linear_rgba(highlight)
 
@@ -57,7 +58,9 @@ def make_metal_material(
     if verdigris is not None:
         patina = add_patina(node_tree, base=base_color, verdigris=linear_rgba(verdigris), config=config.patina)
         link_sockets(node_tree, output_by_identifier(patina, MIX_RESULT), input_by_identifier(wear, MIX_A))
+
     link_sockets(node_tree, output_by_identifier(wear, MIX_RESULT), input_socket(principled, "Base Color"))
     if hover is not None:
         apply_hover_glow(node_tree, principled, color=linear_rgba(hover), config=config.hover)
+
     return material

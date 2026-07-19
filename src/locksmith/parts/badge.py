@@ -49,5 +49,8 @@ def build_badge(
     assign_untagged_faces(mesh_builder, material_index=1)
 
     return mesh_object_from(
-        "badge_master", mesh_builder, collection=collection, materials=[ring_material, inlay_material]
+        "badge_master",
+        mesh_builder,
+        collection=collection,
+        materials=[ring_material, inlay_material],
     )

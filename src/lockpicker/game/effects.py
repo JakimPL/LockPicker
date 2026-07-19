@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from typing import Dict, Iterator, Optional, Tuple
 
 from lockpicker.constants.config import settings

@@ -12,7 +12,12 @@ _BOARD_CAMERA_NAME: Final[str] = "CAM_BOARD"
 FACING_BOARD: Final[Vec3] = (math.pi / 2, 0.0, 0.0)
 
 
-def build_board_camera(*, views: ViewsConfig, board: BoardGeometry, collection: Collection) -> Object:
+def build_board_camera(
+    *,
+    views: ViewsConfig,
+    board: BoardGeometry,
+    collection: Collection,
+) -> Object:
     """Orthographic camera filling the frame with the board, looking straight down +y.
 
     Orthographic projection is a firm requirement: sprites translate across

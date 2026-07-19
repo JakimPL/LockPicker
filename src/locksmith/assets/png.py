@@ -5,10 +5,6 @@ from typing import Final
 
 from locksmith.types import PixelPair, RGBAImage
 
-# The preview compositor writes PNGs directly so no color management can
-# touch the composited bytes; reading rendered output goes through Blender
-# (locksmith.blender.images), which already ships every PNG filter decoder.
-
 _SIGNATURE: Final[bytes] = b"\x89PNG\r\n\x1a\n"
 _HEADER_TAG: Final[bytes] = b"IHDR"
 _DATA_TAG: Final[bytes] = b"IDAT"
@@ -27,12 +23,20 @@ def write_rgba(path: Path, image: RGBAImage) -> None:
         ValueError: when the array is not a height x width x 4 uint8 image.
     """
     if image.ndim != 3 or image.shape[2] != _CHANNELS or image.dtype.name != "uint8":
-        raise ValueError(f"expected a height x width x {_CHANNELS} uint8 image, got {image.dtype} {image.shape}")
+        raise ValueError(
+            f"expected a height x width x {_CHANNELS} uint8 image, got {image.dtype} {image.shape}",
+        )
     height, width = image.shape[0], image.shape[1]
     header = struct.pack(_HEADER_FORMAT, width, height, _BIT_DEPTH, _RGBA_COLOR_TYPE, 0, 0, 0)
     scanlines = b"".join(_NO_FILTER + row.tobytes() for row in image)
     path.write_bytes(
-        _SIGNATURE + _chunk(_HEADER_TAG, header) + _chunk(_DATA_TAG, zlib.compress(scanlines)) + _chunk(_END_TAG, b"")
+        _SIGNATURE
+        + _chunk(_HEADER_TAG, header)
+        + _chunk(_DATA_TAG, zlib.compress(scanlines))
+        + _chunk(
+            _END_TAG,
+            b"",
+        )
     )
 
 
@@ -44,8 +48,10 @@ def png_size(path: Path) -> PixelPair:
     """
     with path.open("rb") as stream:
         prefix = stream.read(len(_SIGNATURE) + 8 + struct.calcsize(_HEADER_FORMAT))
+
     if not prefix.startswith(_SIGNATURE) or prefix[len(_SIGNATURE) + 4 : len(_SIGNATURE) + 8] != _HEADER_TAG:
         raise ValueError(f"{path} is not a PNG file")
+
     width, height = struct.unpack_from(">II", prefix, len(_SIGNATURE) + 8)
     return width, height
 

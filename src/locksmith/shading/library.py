@@ -47,8 +47,12 @@ class MaterialLibrary:
                 return self.tumblers[metal]
 
 
+# TODO: refactor!
 def make_material_library(
-    *, palette: PaletteConfig, shading: ShadingConfig, plate_half_height: float
+    *,
+    palette: PaletteConfig,
+    shading: ShadingConfig,
+    plate_half_height: float,
 ) -> MaterialLibrary:
     metals = shading.metals
 
@@ -117,15 +121,24 @@ def make_material_library(
         hovered=hovered,
         jammed=jammed,
         plate=make_plate_material(
-            "frame_plate", palette=palette, config=shading.plate, half_height_units=plate_half_height
+            "frame_plate",
+            palette=palette,
+            config=shading.plate,
+            half_height_units=plate_half_height,
         ),
         plate_stage=make_plate_material(
             "sprite_stage_plate",
             palette=palette,
-            config=shading.plate.model_copy(update={"shell": shading.plate.shell.model_copy(update={"strength": 0.0})}),
+            config=shading.plate.model_copy(
+                update={"shell": shading.plate.shell.model_copy(update={"strength": 0.0})},
+            ),
             half_height_units=plate_half_height,
         ),
-        wood=make_wood_material("bench_wood", palette=palette, config=shading.wood),
+        wood=make_wood_material(
+            "bench_wood",
+            palette=palette,
+            config=shading.wood,
+        ),
         wood_carved=make_wood_material(
             "bench_wood_carved",
             palette=palette.model_copy(
@@ -137,12 +150,27 @@ def make_material_library(
             ),
             config=shading.wood,
         ),
-        bore=make_bore_material("bore_iron", color=palette.bore, config=shading.bore),
-        pocket=make_pocket_material(
-            "pocket_bore", palette=palette, config=shading.pocket, half_height_units=plate_half_height
+        bore=make_bore_material(
+            "bore_iron",
+            color=palette.bore,
+            config=shading.bore,
         ),
-        raceway=make_raceway_material("raceway_floor", palette=palette, config=shading.raceway),
-        enamel=make_enamel_material("badge_enamel", color=palette.enamel, config=shading.enamel),
+        pocket=make_pocket_material(
+            "pocket_bore",
+            palette=palette,
+            config=shading.pocket,
+            half_height_units=plate_half_height,
+        ),
+        raceway=make_raceway_material(
+            "raceway_floor",
+            palette=palette,
+            config=shading.raceway,
+        ),
+        enamel=make_enamel_material(
+            "badge_enamel",
+            color=palette.enamel,
+            config=shading.enamel,
+        ),
         rosette=make_metal_material(
             "badge_rosette",
             base=palette.rosette,
@@ -184,7 +212,15 @@ def make_material_library(
             jam=None,
         ),
         grips={
-            PickShape.DIAMOND: make_grip_material("pick_grip_a", color=palette.grip_a, config=shading.grip),
-            PickShape.CIRCLE: make_grip_material("pick_grip_b", color=palette.grip_b, config=shading.grip),
+            PickShape.DIAMOND: make_grip_material(
+                "pick_grip_a",
+                color=palette.grip_a,
+                config=shading.grip,
+            ),
+            PickShape.CIRCLE: make_grip_material(
+                "pick_grip_b",
+                color=palette.grip_b,
+                config=shading.grip,
+            ),
         },
     )

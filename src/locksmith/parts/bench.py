@@ -5,7 +5,12 @@ from typing import List, Optional, Sequence, Tuple
 from bmesh.types import BMesh
 from bpy.types import Collection, Material, Object
 
-from locksmith.blender.meshes import assign_untagged_faces, crowned_box_vertices, mesh_object_from, new_bmesh
+from locksmith.blender.meshes import (
+    assign_untagged_faces,
+    crowned_box_vertices,
+    mesh_object_from,
+    new_bmesh,
+)
 from locksmith.board import BoardGeometry
 from locksmith.schema.models.anatomy.bench import BenchAnatomy
 
@@ -30,6 +35,7 @@ class PlankSpan:
     material_index: int = 0
 
 
+# TODO: refactor
 def build_bench(
     *,
     board: BoardGeometry,
@@ -95,9 +101,15 @@ def build_bench(
             ),
         ),
     )
-    return mesh_object_from("bench_planks", mesh_builder, collection=collection, materials=[material, carved_material])
+    return mesh_object_from(
+        "bench_planks",
+        mesh_builder,
+        collection=collection,
+        materials=[material, carved_material],
+    )
 
 
+# TODO: refactor
 def _panel_planks(
     mesh_builder: BMesh,
     *,
@@ -123,6 +135,7 @@ def _panel_planks(
                 clamped = (max(low, span.inner_limit), high)
             else:
                 clamped = (low, min(high, span.inner_limit))
+
             for segment_low, segment_high in _without_mouth(clamped, span.mouth):
                 if segment_high - segment_low < anatomy.gap:
                     continue
@@ -145,6 +158,8 @@ def _without_mouth(segment: Span, mouth: Optional[Span]) -> List[Span]:
     low, high = segment
     if high <= low:
         return []
+
     if mouth is None or mouth[1] <= low or mouth[0] >= high:
         return [segment]
+
     return [(low, min(mouth[0], high)), (max(mouth[1], low), high)]

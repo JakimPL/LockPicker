@@ -47,7 +47,11 @@ def build_lookdev(
     linked_copy(
         prototypes.pick_circle,
         "pick_idle",
-        location=(board.x_at(config.idle_pick.x_pixels), config.idle_pick.y, board.units(config.idle_pick.z_pixels)),
+        location=(
+            board.x_at(config.idle_pick.x_pixels),
+            config.idle_pick.y,
+            board.units(config.idle_pick.z_pixels),
+        ),
         collection=collection,
     )
 
@@ -65,12 +69,26 @@ def _place_tumbler(
     tip = board.tip_z(upper=placement.upper, height=placement.height)
     prototype = prototypes.tumbler_upper if placement.upper else prototypes.tumbler_lower
     suffix = "u" if placement.upper else "l"
-    pin = linked_copy(prototype, f"pin_{placement.position}_{suffix}", location=(x, 0.0, tip), collection=collection)
-    override_slot_material(pin, slot=0, material=library.tumbler_material(metal=placement.metal, state=placement.state))
+    pin = linked_copy(
+        prototype,
+        f"pin_{placement.position}_{suffix}",
+        location=(x, 0.0, tip),
+        collection=collection,
+    )
+    override_slot_material(
+        pin,
+        slot=0,
+        material=library.tumbler_material(metal=placement.metal, state=placement.state),
+    )
     if placement.state is TumblerState.MASTER:
         offset = board.units(badge_tip_offset_pixels)
         badge_z = tip + offset if placement.upper else tip - offset
-        linked_copy(prototypes.badge, f"badge_{placement.position}", location=(x, 0.0, badge_z), collection=collection)
+        linked_copy(
+            prototypes.badge,
+            f"badge_{placement.position}",
+            location=(x, 0.0, badge_z),
+            collection=collection,
+        )
 
 
 def hovered_tumbler(config: LookdevConfig) -> TumblerPlacement:
@@ -82,4 +100,5 @@ def hovered_tumbler(config: LookdevConfig) -> TumblerPlacement:
     for placement in config.tumblers:
         if placement.state is TumblerState.HOVER:
             return placement
+
     raise LookupError("lookdev arrangement holds no hovered tumbler")

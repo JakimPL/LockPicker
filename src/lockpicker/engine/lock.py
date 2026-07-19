@@ -212,7 +212,11 @@ class Lock:
 
     def get_state(self) -> State:
         tumblers = tuple(
-            LocatedTumblerState(location, replace(tumbler.state)) for location, tumbler in self._level.tumblers.items()
+            LocatedTumblerState(
+                location,
+                replace(tumbler.state),
+            )
+            for location, tumbler in self._level.tumblers.items()
         )
         picks = tuple(PickState(pick, location) for pick, location in self._picks.items())
         return State(self.current_pick, tumblers, picks)

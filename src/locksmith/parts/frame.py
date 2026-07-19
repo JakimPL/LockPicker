@@ -3,13 +3,23 @@ from typing import Tuple
 from bmesh.types import BMesh
 from bpy.types import Collection, Material, Object
 
-from locksmith.blender.meshes import box_vertices, cube_vertices, mesh_object_from, new_bmesh, subdivide_all_edges
+from locksmith.blender.meshes import (
+    box_vertices,
+    cube_vertices,
+    mesh_object_from,
+    new_bmesh,
+    subdivide_all_edges,
+)
 from locksmith.blender.modifiers import apply_boolean_difference
 from locksmith.board import BoardGeometry
 from locksmith.schema.models.anatomy.plate import PlateAnatomy
 
 
-def plate_span(*, board: BoardGeometry, anatomy: PlateAnatomy) -> Tuple[float, float]:
+def plate_span(
+    *,
+    board: BoardGeometry,
+    anatomy: PlateAnatomy,
+) -> Tuple[float, float]:
     """Horizontal extent of the plate: the slot columns plus a bezel each side."""
     left = board.column_center_x(0) - board.column_width / 2 - anatomy.bezel_left
     right = board.column_center_x(board.config.columns - 1) + board.column_width / 2 + anatomy.bezel_right
@@ -27,7 +37,14 @@ def slot_width(*, board: BoardGeometry, anatomy: PlateAnatomy) -> float:
     return board.column_width - 2 * anatomy.land_inset
 
 
-def _countersink_cutter(*, board: BoardGeometry, anatomy: PlateAnatomy, hole_width: float, height: float) -> BMesh:
+# TODO: refactor
+def _countersink_cutter(
+    *,
+    board: BoardGeometry,
+    anatomy: PlateAnatomy,
+    hole_width: float,
+    height: float,
+) -> BMesh:
     """One tapered prism per column that carves the front of each slot to a chamfer.
 
     Each prism is a cube distorted into a wedge: its front face (toward the
@@ -51,9 +68,11 @@ def _countersink_cutter(*, board: BoardGeometry, anatomy: PlateAnatomy, hole_wid
             vertex.co.x = center_x + (1.0 if vertex.co.x > 0.0 else -1.0) * (front_half if front else back_half)
             vertex.co.y = front_y if front else back_y
             vertex.co.z = (1.0 if vertex.co.z > 0.0 else -1.0) * half_z
+
     return builder
 
 
+# TODO: refactor
 def build_frame(
     *,
     board: BoardGeometry,
@@ -77,10 +96,17 @@ def build_frame(
     height = board.height + anatomy.margin
     depth = anatomy.back_y - anatomy.face_y
     box_vertices(
-        mesh_builder, size=(width, depth, height), center=((left + right) / 2, anatomy.face_y + depth / 2, 0.0)
+        mesh_builder,
+        size=(width, depth, height),
+        center=((left + right) / 2, anatomy.face_y + depth / 2, 0.0),
     )
     subdivide_all_edges(mesh_builder, cuts=anatomy.subdivision_cuts)
-    plate = mesh_object_from("frame_plate", mesh_builder, collection=collection, materials=[material])
+    plate = mesh_object_from(
+        "frame_plate",
+        mesh_builder,
+        collection=collection,
+        materials=[material],
+    )
 
     cutter_builder = new_bmesh()
     hole_width = slot_width(board=board, anatomy=anatomy)
@@ -123,11 +149,17 @@ def build_frame(
             0.0,
         ),
     )
-    chamber = mesh_object_from("frame_chamber_cut", chamber_builder, collection=collection, materials=[])
+    chamber = mesh_object_from(
+        "frame_chamber_cut",
+        chamber_builder,
+        collection=collection,
+        materials=[],
+    )
     apply_boolean_difference(plate, name="chamber", cutter=chamber)
     return plate
 
 
+# TODO: refactor
 def build_sprite_stage(
     *,
     board: BoardGeometry,
@@ -150,8 +182,17 @@ def build_sprite_stage(
     height = board.height + anatomy.margin
     face_y = anatomy.face_y + anatomy.chamber_depth
     depth = anatomy.back_y - face_y
-    box_vertices(mesh_builder, size=(right - left, depth, height), center=((left + right) / 2, face_y + depth / 2, 0.0))
-    stage = mesh_object_from("sprite_stage", mesh_builder, collection=collection, materials=[material])
+    box_vertices(
+        mesh_builder,
+        size=(right - left, depth, height),
+        center=((left + right) / 2, face_y + depth / 2, 0.0),
+    )
+    stage = mesh_object_from(
+        "sprite_stage",
+        mesh_builder,
+        collection=collection,
+        materials=[material],
+    )
 
     cutter_builder = new_bmesh()
     hole_width = slot_width(board=board, anatomy=anatomy)
@@ -165,7 +206,12 @@ def build_sprite_stage(
             ),
             center=(board.column_center_x(position), face_y + depth / 2, 0.0),
         )
-    cutter = mesh_object_from("sprite_stage_slots_cut", cutter_builder, collection=collection, materials=[])
+    cutter = mesh_object_from(
+        "sprite_stage_slots_cut",
+        cutter_builder,
+        collection=collection,
+        materials=[],
+    )
     apply_boolean_difference(stage, name="slots", cutter=cutter)
     stage.hide_render = True
     return stage

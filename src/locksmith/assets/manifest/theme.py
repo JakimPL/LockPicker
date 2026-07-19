@@ -11,6 +11,7 @@ from locksmith.schema.models.base import SceneModel
 from locksmith.types import PickShape
 
 MANIFEST_FILENAME: Final[str] = "manifest.json"
+JSON_INDENT: Final[int] = 4
 
 
 class ThemeManifest(SceneModel):
@@ -33,7 +34,7 @@ class ThemeManifest(SceneModel):
 
 
 def write_manifest(manifest: ThemeManifest, path: Path) -> None:
-    path.write_text(manifest.model_dump_json(indent=2) + "\n", encoding="utf-8")
+    path.write_text(manifest.model_dump_json(indent=JSON_INDENT) + "\n", encoding="utf-8")
 
 
 def load_manifest(path: Path) -> ThemeManifest:

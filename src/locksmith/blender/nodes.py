@@ -146,7 +146,11 @@ def link_nodes(
     """Connect a (node, output socket name) pair to a (node, input socket name) pair."""
     source_node, output_name = source
     target_node, input_name = target
-    link_sockets(node_tree, output_socket(source_node, output_name), input_socket(target_node, input_name))
+    link_sockets(
+        node_tree,
+        output_socket(source_node, output_name),
+        input_socket(target_node, input_name),
+    )
 
 
 def set_float_input(node: Node, input_name: str, value: float) -> None:
@@ -200,6 +204,7 @@ def new_math_node(node_tree: NodeTree, operation: MathOperation, *, operand: Opt
         if not isinstance(socket, NodeSocketFloat):
             raise TypeError(f"math node {node.name} holds no float second input")
         socket.default_value = operand
+
     return node
 
 
@@ -215,8 +220,10 @@ def new_color_mix_node(
     node.clamp_factor = True
     if a is not None:
         _set_socket_color(node, MIX_A, a)
+
     if b is not None:
         _set_socket_color(node, MIX_B, b)
+
     return node
 
 
@@ -224,6 +231,7 @@ def _set_socket_color(node: Node, identifier: str, color: RGBAColor) -> None:
     socket = input_by_identifier(node, identifier)
     if not isinstance(socket, NodeSocketColor):
         raise TypeError(f"socket {identifier} on {node.name} holds no color value")
+
     socket.default_value = color
 
 
@@ -253,7 +261,12 @@ def set_color_ramp_stop(
     element.color = color
 
 
-def set_color_ramp_positions(ramp: ColorRamp, *, start: float, end: float) -> None:
+def set_color_ramp_positions(
+    ramp: ColorRamp,
+    *,
+    start: float,
+    end: float,
+) -> None:
     """Place the ramp's two existing stops, keeping their colors."""
     first: ColorRampElement = ramp.elements[0]
     second: ColorRampElement = ramp.elements[1]
@@ -261,7 +274,12 @@ def set_color_ramp_positions(ramp: ColorRamp, *, start: float, end: float) -> No
     second.position = end
 
 
-def add_color_ramp_stop(ramp: ColorRamp, *, position: float, color: RGBAColor) -> None:
+def add_color_ramp_stop(
+    ramp: ColorRamp,
+    *,
+    position: float,
+    color: RGBAColor,
+) -> None:
     """Add a new color stop to the ramp at a position.
 
     The ramp keeps its stops sorted by position, so the new stop slots in

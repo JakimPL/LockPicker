@@ -26,6 +26,7 @@ def trough_radius(*, board: BoardGeometry, plate: PlateAnatomy) -> float:
     return board.column_width / 2 - plate.land_inset
 
 
+# TODO: refactor
 def build_background(
     *,
     board: BoardGeometry,

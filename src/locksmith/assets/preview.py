@@ -1,3 +1,5 @@
+# TODO: split into a subpackage
+
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Final, List, Optional, Tuple
@@ -59,10 +61,15 @@ def render_preview(
     metrics: Optional[CompositeMetrics] = None
     if still_path.exists():
         still = read_rgba_pixels(still_path)
-        metrics = _comparison_metrics(composite, still=still, excluded=_state_tinted_rects(manifest, config=config))
+        metrics = _comparison_metrics(
+            composite,
+            still=still,
+            excluded=_state_tinted_rects(manifest, config=config),
+        )
     return PreviewResult(preview_path=preview_path, metrics=metrics)
 
 
+# TODO: refactor
 def compose_board(
     manifest: ThemeManifest,
     *,
@@ -89,6 +96,7 @@ def compose_board(
                 target=_tip_target(placement, board=config.board),
                 image_scale=scale,
             )
+
     for placement in config.lookdev.tumblers:
         orientation = _orientation_assets(manifest, upper=placement.upper)
         _blit_anchored(
@@ -98,6 +106,7 @@ def compose_board(
             target=_tip_target(placement, board=config.board),
             image_scale=scale,
         )
+
     badge = manifest.badges.master
     for placement in config.lookdev.tumblers:
         if placement.state is not TumblerState.MASTER:
@@ -111,7 +120,14 @@ def compose_board(
             target=(center_x, badge_y),
             image_scale=scale,
         )
-    _blit_anchored(canvas, sprites[manifest.board.frame], anchor=(0, 0), target=(0.0, 0.0), image_scale=scale)
+
+    _blit_anchored(
+        canvas,
+        sprites[manifest.board.frame],
+        anchor=(0, 0),
+        target=(0.0, 0.0),
+        image_scale=scale,
+    )
     _blit_lips(canvas, manifest, config=config, sprites=sprites)
     _blit_picks(canvas, manifest, config=config, sprites=sprites)
     return canvas
@@ -130,7 +146,13 @@ def _blit_lips(
     for upper, lip in ((True, manifest.lips.upper), (False, manifest.lips.lower)):
         travel = config.board.pixels_per_unit
         line_y = travel if upper else config.board.height_pixels - travel
-        _blit_anchored(canvas, sprites[lip.image], anchor=lip.tip_anchor, target=(center_x, line_y), image_scale=scale)
+        _blit_anchored(
+            canvas,
+            sprites[lip.image],
+            anchor=lip.tip_anchor,
+            target=(center_x, line_y),
+            image_scale=scale,
+        )
 
 
 def _blit_picks(
@@ -148,7 +170,11 @@ def _blit_picks(
     bite = config.lookdev.engaged_pick.bite_pixels
     engaged_y = tip_y + bite if hovered.upper else tip_y - bite
     _blit_anchored(
-        canvas, sprites[engaged.image], anchor=engaged.tip_anchor, target=(center_x, engaged_y), image_scale=scale
+        canvas,
+        sprites[engaged.image],
+        anchor=engaged.tip_anchor,
+        target=(center_x, engaged_y),
+        image_scale=scale,
     )
     idle = manifest.picks[PickShape.CIRCLE]
     idle_y = config.board.height_pixels / 2 - config.lookdev.idle_pick.z_pixels
@@ -161,7 +187,10 @@ def _blit_picks(
     )
 
 
-def _load_sprites(manifest: ThemeManifest, directory: Path) -> Dict[str, RGBAImage]:
+def _load_sprites(
+    manifest: ThemeManifest,
+    directory: Path,
+) -> Dict[str, RGBAImage]:
     filenames = {manifest.board.background, manifest.board.frame, manifest.badges.master.image}
     for orientation in (manifest.tumblers.upper, manifest.tumblers.lower):
         filenames.update(orientation.images.values())
@@ -171,14 +200,22 @@ def _load_sprites(manifest: ThemeManifest, directory: Path) -> Dict[str, RGBAIma
     return {filename: read_rgba_pixels(directory / filename) for filename in sorted(filenames)}
 
 
-def _orientation_assets(manifest: ThemeManifest, *, upper: bool) -> TumblerOrientationAssets:
+def _orientation_assets(
+    manifest: ThemeManifest,
+    *,
+    upper: bool,
+) -> TumblerOrientationAssets:
     return manifest.tumblers.upper if upper else manifest.tumblers.lower
 
 
-def _tip_target(placement: TumblerPlacement, *, board: BoardConfig) -> Tuple[float, float]:
+def _tip_target(
+    placement: TumblerPlacement,
+    *,
+    board: BoardConfig,
+) -> Tuple[float, float]:
     """Logical pixel position of the tumbler's free tip; image y grows downward."""
     center_x = (
-        board.column_offset_pixels + placement.position * board.column_pitch_pixels + board.column_width_pixels / 2
+        board.column_offset_pixels + placement.position * board.column_pitch_pixels + board.column_width_pixels / 2,
     )
     travel = placement.height * board.pixels_per_unit
     tip_y = travel if placement.upper else board.height_pixels - travel
@@ -198,7 +235,13 @@ def _blit_anchored(
     _alpha_over(canvas, sprite, left=left, top=top)
 
 
-def _alpha_over(canvas: RGBAImage, sprite: RGBAImage, *, left: int, top: int) -> None:
+def _alpha_over(
+    canvas: RGBAImage,
+    sprite: RGBAImage,
+    *,
+    left: int,
+    top: int,
+) -> None:
     """In-place 8-bit alpha blend with clipping, matching a PyGame alpha blit."""
     sprite_height, sprite_width = sprite.shape[0], sprite.shape[1]
     canvas_height, canvas_width = canvas.shape[0], canvas.shape[1]
@@ -216,7 +259,11 @@ def _alpha_over(canvas: RGBAImage, sprite: RGBAImage, *, left: int, top: int) ->
     canvas[y_start:y_stop, x_start:x_stop, :3] = blended.astype(np.uint8)
 
 
-def _state_tinted_rects(manifest: ThemeManifest, *, config: SceneConfig) -> List[PixelRect]:
+def _state_tinted_rects(
+    manifest: ThemeManifest,
+    *,
+    config: SceneConfig,
+) -> List[PixelRect]:
     """Image regions where the still shows hover or jam materials.
 
     The parity composite can only use base metal sprites there, so these
@@ -227,15 +274,24 @@ def _state_tinted_rects(manifest: ThemeManifest, *, config: SceneConfig) -> List
     for placement in config.lookdev.tumblers:
         if placement.state not in (TumblerState.HOVER, TumblerState.JAM):
             continue
+
         orientation = _orientation_assets(manifest, upper=placement.upper)
         center_x, tip_y = _tip_target(placement, board=config.board)
         left = (round(center_x) - orientation.tip_anchor[0]) * scale
         top = (round(tip_y) - orientation.tip_anchor[1]) * scale
-        rects.append((left, top, left + orientation.size[0] * scale, top + orientation.size[1] * scale))
+        rects.append(
+            (left, top, left + orientation.size[0] * scale, top + orientation.size[1] * scale),
+        )
+
     return rects
 
 
-def _comparison_metrics(composite: RGBAImage, *, still: RGBAImage, excluded: List[PixelRect]) -> CompositeMetrics:
+def _comparison_metrics(
+    composite: RGBAImage,
+    *,
+    still: RGBAImage,
+    excluded: List[PixelRect],
+) -> CompositeMetrics:
     """Compare RGB channels outside the excluded regions.
 
     Raises:
@@ -243,10 +299,14 @@ def _comparison_metrics(composite: RGBAImage, *, still: RGBAImage, excluded: Lis
     """
     if composite.shape != still.shape:
         raise ValueError(f"composite {composite.shape} does not match still {still.shape}")
+
     mask = np.ones(composite.shape[:2], dtype=bool)
     for left, top, right, bottom in excluded:
         mask[max(top, 0) : max(bottom, 0), max(left, 0) : max(right, 0)] = False
-    difference = np.abs(composite[:, :, :3].astype(np.int16) - still[:, :, :3].astype(np.int16))
+
+    difference = np.abs(
+        composite[:, :, :3].astype(np.int16) - still[:, :, :3].astype(np.int16),
+    )
     selected = difference[mask]
     return CompositeMetrics(
         mean_absolute=float(selected.mean()),

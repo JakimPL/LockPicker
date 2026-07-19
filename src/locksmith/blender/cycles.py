@@ -51,11 +51,13 @@ def enable_best_compute_device() -> ComputeDeviceType:
     preferences = _cycles_preferences()
     if preferences is None:
         return "CPU"
+
     for device_type in _GPU_PREFERENCE_ORDER:
         try:
             preferences.compute_device_type = device_type
         except TypeError:
             continue
+
         preferences.get_devices()
         found = False
         for device in preferences.devices:
@@ -63,6 +65,7 @@ def enable_best_compute_device() -> ComputeDeviceType:
             found = found or device.use
         if found:
             return device_type
+
     return "CPU"
 
 
@@ -71,10 +74,12 @@ def _cycles_preferences() -> Optional[_CyclesPreferences]:
     context_preferences = bpy.context.preferences
     if context_preferences is None:
         return None
+
     try:
         addon = context_preferences.addons["cycles"]
     except KeyError:
         return None
+
     return cast(_CyclesPreferences, addon.preferences)
 
 

@@ -1,22 +1,38 @@
+# TODO: split into subpackages
+
 from pathlib import Path
 from typing import Dict, Final
 
 from bpy.types import Object, Scene
 from mathutils import Vector
 
-from locksmith.assets.framing import Bounds, SpriteFraming, shadow_framing, sprite_framing, strip_framing
+from locksmith.assets.framing import (
+    Bounds,
+    SpriteFraming,
+    shadow_framing,
+    sprite_framing,
+    strip_framing,
+)
 from locksmith.assets.manifest.badge import BadgeAsset
 from locksmith.assets.manifest.badges import BadgesAssets
 from locksmith.assets.manifest.board import BoardAssets
 from locksmith.assets.manifest.lips import LipAssets
 from locksmith.assets.manifest.provenance import RenderProvenance
 from locksmith.assets.manifest.sprite import SpriteAsset
-from locksmith.assets.manifest.theme import MANIFEST_FILENAME, ThemeManifest, write_manifest
+from locksmith.assets.manifest.theme import (
+    MANIFEST_FILENAME,
+    ThemeManifest,
+    write_manifest,
+)
 from locksmith.assets.manifest.tumbler_orientation import TumblerOrientationAssets
 from locksmith.assets.manifest.tumblers import TumblerAssets
 from locksmith.assets.png import require_png_size
 from locksmith.blender.cameras import new_orthographic_camera
-from locksmith.blender.objects import local_bounds, override_slot_material, set_camera_ray_visibility
+from locksmith.blender.objects import (
+    local_bounds,
+    override_slot_material,
+    set_camera_ray_visibility,
+)
 from locksmith.blender.session import blender_version, render_still
 from locksmith.builder import WorkshopScene
 from locksmith.parts.background import trough_radius
@@ -43,9 +59,6 @@ def render_assets(workshop: WorkshopScene, *, config: SceneConfig, directory: Pa
     """
     directory.mkdir(parents=True, exist_ok=True)
     workshop.collections.lookdev.hide_render = True
-    # Lips stay out of every other pass: a lip shadow baked onto the plate or
-    # onto a translating pin sprite would sit at one fixed height while the
-    # runtime blits the lip independently.
     workshop.lip_upper.hide_render = True
     workshop.lip_lower.hide_render = True
     _expose_board_to_secondary_rays(workshop)
@@ -86,7 +99,13 @@ def render_assets(workshop: WorkshopScene, *, config: SceneConfig, directory: Pa
     return manifest
 
 
-def _render_board(workshop: WorkshopScene, *, config: SceneConfig, directory: Path) -> BoardAssets:
+# TODO: refactor
+def _render_board(
+    workshop: WorkshopScene,
+    *,
+    config: SceneConfig,
+    directory: Path,
+) -> BoardAssets:
     """Render the opaque back layer and the transparent overlay plate.
 
     The back layer is the empty mechanism: the diffuse channel wall carries
@@ -102,19 +121,45 @@ def _render_board(workshop: WorkshopScene, *, config: SceneConfig, directory: Pa
 
     set_camera_ray_visibility(workshop.background_wall, visible=True)
     scene.render.film_transparent = False
-    _render_file(scene, directory / _BACKGROUND_FILENAME, expected=_scaled(logical, scale))
+    _render_file(
+        scene,
+        directory / _BACKGROUND_FILENAME,
+        expected=_scaled(logical, scale),
+    )
     set_camera_ray_visibility(workshop.background_wall, visible=False)
 
-    for static in (workshop.frame_plate, workshop.bench, workshop.keyway, workshop.flanges, workshop.screws):
+    for static in (
+        workshop.frame_plate,
+        workshop.bench,
+        workshop.keyway,
+        workshop.flanges,
+        workshop.screws,
+    ):
         set_camera_ray_visibility(static, visible=True)
+
     scene.render.film_transparent = True
-    _render_file(scene, directory / _FRAME_FILENAME, expected=_scaled(logical, scale))
-    for static in (workshop.frame_plate, workshop.bench, workshop.keyway, workshop.flanges, workshop.screws):
+    _render_file(
+        scene,
+        directory / _FRAME_FILENAME,
+        expected=_scaled(logical, scale),
+    )
+    for static in (
+        workshop.frame_plate,
+        workshop.bench,
+        workshop.keyway,
+        workshop.flanges,
+        workshop.screws,
+    ):
         set_camera_ray_visibility(static, visible=False)
 
-    return BoardAssets(logical_size=logical, background=_BACKGROUND_FILENAME, frame=_FRAME_FILENAME)
+    return BoardAssets(
+        logical_size=logical,
+        background=_BACKGROUND_FILENAME,
+        frame=_FRAME_FILENAME,
+    )
 
 
+# TODO: refactor
 def _render_tumbler_orientation(
     workshop: WorkshopScene,
     *,
@@ -144,10 +189,21 @@ def _render_tumbler_orientation(
     images: Dict[Metal, str] = {}
     prototype.hide_render = False
     for metal in dict.fromkeys(config.assets.groups):
-        override_slot_material(prototype, slot=0, material=workshop.library.tumblers[metal])
+        override_slot_material(
+            prototype,
+            slot=0,
+            material=workshop.library.tumblers[metal],
+        )
         filename = f"pin_{metal.value}_{orientation}.png"
-        _render_sprite(workshop, prototype=prototype, framing=framing, config=config, path=directory / filename)
+        _render_sprite(
+            workshop,
+            prototype=prototype,
+            framing=framing,
+            config=config,
+            path=directory / filename,
+        )
         images[metal] = filename
+
     prototype.hide_render = True
     workshop.sprite_stage.hide_render = True
     workshop.frame_plate.hide_render = False
@@ -156,11 +212,17 @@ def _render_tumbler_orientation(
         prototype=prototype,
         bounds=bounds,
         config=config,
-        path=directory / f"shadow_{orientation}.png",
+        path=directory / f"shadow_{orientation}.png",  # TODO: hardcoded path
     )
-    return TumblerOrientationAssets(images=images, size=framing.size, tip_anchor=framing.anchor, shadow=shadow)
+    return TumblerOrientationAssets(
+        images=images,
+        size=framing.size,
+        tip_anchor=framing.anchor,
+        shadow=shadow,
+    )
 
 
+# TODO: refactor
 def _render_shadow(
     workshop: WorkshopScene,
     *,
@@ -180,7 +242,11 @@ def _render_shadow(
         bounds,
         pixels_per_unit=workshop.board.config.pixels_per_unit,
         sun_direction=config.lighting.key.direction,
-        catcher_y=config.anatomy.background.pocket_y + trough_radius(board=workshop.board, plate=config.anatomy.plate),
+        catcher_y=config.anatomy.background.pocket_y
+        + trough_radius(
+            board=workshop.board,
+            plate=config.anatomy.plate,
+        ),
         margin_pixels=config.assets.shadow_margin_pixels,
     )
     scene = workshop.scene
@@ -195,7 +261,13 @@ def _render_shadow(
     workshop.rim_sun.hide_render = True
     workshop.fill_sun.hide_render = True
     scene.world = None
-    _render_sprite(workshop, prototype=prototype, framing=framing, config=config, path=path)
+    _render_sprite(
+        workshop,
+        prototype=prototype,
+        framing=framing,
+        config=config,
+        path=path,
+    )
     scene.world = world
     workshop.fill_sun.hide_render = False
     workshop.rim_sun.hide_render = False
@@ -205,19 +277,33 @@ def _render_shadow(
     catcher.hide_render = True
     set_camera_ray_visibility(prototype, visible=True)
     prototype.hide_render = True
-    return SpriteAsset(image=path.name, size=framing.size, tip_anchor=framing.anchor)
+    return SpriteAsset(
+        image=path.name,
+        size=framing.size,
+        tip_anchor=framing.anchor,
+    )
 
 
-def _render_picks(workshop: WorkshopScene, *, config: SceneConfig, directory: Path) -> Dict[PickShape, SpriteAsset]:
+# TODO: refactor
+def _render_picks(
+    workshop: WorkshopScene,
+    *,
+    config: SceneConfig,
+    directory: Path,
+) -> Dict[PickShape, SpriteAsset]:
     prototypes = {
         PickShape.DIAMOND: workshop.prototypes.pick_diamond,
         PickShape.CIRCLE: workshop.prototypes.pick_circle,
     }
     picks: Dict[PickShape, SpriteAsset] = {}
     for shape, prototype in prototypes.items():
-        # The engaged depth is where picks live at runtime, so the sprite
-        # bakes the board occlusion seen from that pose.
-        prototype.location = Vector((_slot_x(workshop), config.lookdev.engaged_pick.y, 0.0))
+        prototype.location = Vector(
+            (
+                _slot_x(workshop),
+                config.lookdev.engaged_pick.y,
+                0.0,
+            )
+        )
         framing = sprite_framing(
             local_bounds(prototype),
             pixels_per_unit=workshop.board.config.pixels_per_unit,
@@ -225,13 +311,30 @@ def _render_picks(workshop: WorkshopScene, *, config: SceneConfig, directory: Pa
         )
         filename = f"pick_{shape.value}.png"
         prototype.hide_render = False
-        _render_sprite(workshop, prototype=prototype, framing=framing, config=config, path=directory / filename)
+        _render_sprite(
+            workshop,
+            prototype=prototype,
+            framing=framing,
+            config=config,
+            path=directory / filename,
+        )
         prototype.hide_render = True
-        picks[shape] = SpriteAsset(image=filename, size=framing.size, tip_anchor=framing.anchor)
+        picks[shape] = SpriteAsset(
+            image=filename,
+            size=framing.size,
+            tip_anchor=framing.anchor,
+        )
+
     return picks
 
 
-def _render_badges(workshop: WorkshopScene, *, config: SceneConfig, directory: Path) -> BadgesAssets:
+# TODO: refactor
+def _render_badges(
+    workshop: WorkshopScene,
+    *,
+    config: SceneConfig,
+    directory: Path,
+) -> BadgesAssets:
     prototype = workshop.prototypes.badge
     prototype.location = Vector((_slot_x(workshop), 0.0, 0.0))
     framing = sprite_framing(
@@ -240,7 +343,13 @@ def _render_badges(workshop: WorkshopScene, *, config: SceneConfig, directory: P
         padding_pixels=config.assets.padding_pixels,
     )
     prototype.hide_render = False
-    _render_sprite(workshop, prototype=prototype, framing=framing, config=config, path=directory / _BADGE_FILENAME)
+    _render_sprite(
+        workshop,
+        prototype=prototype,
+        framing=framing,
+        config=config,
+        path=directory / _BADGE_FILENAME,
+    )
     prototype.hide_render = True
     master = BadgeAsset(
         image=_BADGE_FILENAME,
@@ -251,7 +360,12 @@ def _render_badges(workshop: WorkshopScene, *, config: SceneConfig, directory: P
     return BadgesAssets(master=master)
 
 
-def _render_lips(workshop: WorkshopScene, *, config: SceneConfig, directory: Path) -> LipAssets:
+def _render_lips(
+    workshop: WorkshopScene,
+    *,
+    config: SceneConfig,
+    directory: Path,
+) -> LipAssets:
     """Render both shear-lip strips on full-board-width canvases.
 
     Each orientation bakes separately because the upper-left key sun lights
@@ -263,7 +377,13 @@ def _render_lips(workshop: WorkshopScene, *, config: SceneConfig, directory: Pat
     )
 
 
-def _render_lip(lip: Object, *, workshop: WorkshopScene, config: SceneConfig, path: Path) -> SpriteAsset:
+def _render_lip(
+    lip: Object,
+    *,
+    workshop: WorkshopScene,
+    config: SceneConfig,
+    path: Path,
+) -> SpriteAsset:
     framing = strip_framing(
         local_bounds(lip),
         pixels_per_unit=workshop.board.config.pixels_per_unit,
@@ -271,9 +391,19 @@ def _render_lip(lip: Object, *, workshop: WorkshopScene, config: SceneConfig, pa
         padding_pixels=config.assets.padding_pixels,
     )
     lip.hide_render = False
-    _render_sprite(workshop, prototype=lip, framing=framing, config=config, path=path)
+    _render_sprite(
+        workshop,
+        prototype=lip,
+        framing=framing,
+        config=config,
+        path=path,
+    )
     lip.hide_render = True
-    return SpriteAsset(image=path.name, size=framing.size, tip_anchor=framing.anchor)
+    return SpriteAsset(
+        image=path.name,
+        size=framing.size,
+        tip_anchor=framing.anchor,
+    )
 
 
 def _render_sprite(
@@ -289,7 +419,11 @@ def _render_sprite(
     offset_x, offset_z = framing.center_offset(pixels_per_unit=pixels_per_unit)
     camera = new_orthographic_camera(
         _CAMERA_PREFIX + path.stem.upper(),
-        location=(prototype.location.x + offset_x, config.views.camera_y, prototype.location.z + offset_z),
+        location=(
+            prototype.location.x + offset_x,
+            config.views.camera_y,
+            prototype.location.z + offset_z,
+        ),
         rotation_radians=FACING_BOARD,
         ortho_scale=framing.ortho_width(pixels_per_unit=pixels_per_unit),
         clip_start=config.views.clip_start,
@@ -300,7 +434,11 @@ def _render_sprite(
     scene.camera = camera
     _set_canvas(scene, size=framing.size, image_scale=config.assets.image_scale)
     scene.render.film_transparent = True
-    _render_file(scene, path, expected=_scaled(framing.size, config.assets.image_scale))
+    _render_file(
+        scene,
+        path,
+        expected=_scaled(framing.size, config.assets.image_scale),
+    )
 
 
 def _expose_board_to_secondary_rays(workshop: WorkshopScene) -> None:

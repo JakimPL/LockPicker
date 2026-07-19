@@ -2,18 +2,28 @@ from typing import Tuple
 
 from bpy.types import Collection, Material, Object
 
-from locksmith.blender.meshes import assign_untagged_faces, box_vertices, mesh_object_from, new_bmesh
+from locksmith.blender.meshes import (
+    assign_untagged_faces,
+    box_vertices,
+    mesh_object_from,
+    new_bmesh,
+)
 from locksmith.board import BoardGeometry
 from locksmith.schema.models.anatomy.keyway.keyway import KeywayAnatomy
 
 
-def keyway_mouth_span(*, board: BoardGeometry, anatomy: KeywayAnatomy) -> Tuple[float, float]:
+def keyway_mouth_span(
+    *,
+    board: BoardGeometry,
+    anatomy: KeywayAnatomy,
+) -> Tuple[float, float]:
     """Horizontal extent of the slot opening in the bench panel."""
     half_width = board.units(anatomy.width_pixels) / 2
     center = board.x_at(anatomy.center_pixels)
     return center - half_width, center + half_width
 
 
+# TODO: refactor
 def build_keyway(
     *,
     board: BoardGeometry,

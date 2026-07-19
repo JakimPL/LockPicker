@@ -20,6 +20,7 @@ _TIP_TOLERANCE: Final[float] = 1e-4
 _FACE_TOLERANCE: Final[float] = 0.01
 
 
+# TODO: refactor
 def build_pin(
     name: str,
     *,
@@ -75,4 +76,10 @@ def build_pin(
 
 
 def _bevel(mesh_builder: BMesh, edges: Sequence[BMEdge], bevel: EdgeBevel) -> None:
-    bevel_edges(mesh_builder, edges, offset=bevel.offset, segments=bevel.segments, profile=bevel.profile)
+    bevel_edges(
+        mesh_builder,
+        edges,
+        offset=bevel.offset,
+        segments=bevel.segments,
+        profile=bevel.profile,
+    )

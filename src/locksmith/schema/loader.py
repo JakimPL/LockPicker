@@ -46,7 +46,13 @@ def _load_fragment(path: Path) -> Dict[str, object]:
     return raw
 
 
-def _merge_key(merged: Dict[str, object], key: str, value: object, *, source: Path) -> None:
+def _merge_key(
+    merged: Dict[str, object],
+    key: str,
+    value: object,
+    *,
+    source: Path,
+) -> None:
     """Add one key to the directory mapping.
 
     Raises:

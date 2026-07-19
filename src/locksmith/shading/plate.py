@@ -37,8 +37,13 @@ from locksmith.schema.models.shading.plate.plate import PlateShading
 from locksmith.types import RGBAColor
 
 
+# TODO: refactor
 def make_plate_material(
-    name: str, *, palette: PaletteConfig, config: PlateShading, half_height_units: float
+    name: str,
+    *,
+    palette: PaletteConfig,
+    config: PlateShading,
+    half_height_units: float,
 ) -> Material:
     """Self-lit housing plate: mottled iron, rim glints, lamp pool, shell band, and depth fade.
 
@@ -96,7 +101,12 @@ def make_plate_material(
     link_sockets(node_tree, output_socket(fade_range, "Result"), input_by_identifier(deep, MIX_FACTOR))
 
     shell = _shell_band_mix(
-        node_tree, separate=separate, base=base, key=key, config=config, half_height_units=half_height_units
+        node_tree,
+        separate=separate,
+        base=base,
+        key=key,
+        config=config,
+        half_height_units=half_height_units,
     )
     link_sockets(node_tree, output_by_identifier(deep, MIX_RESULT), input_by_identifier(shell, MIX_A))
 
@@ -129,7 +139,13 @@ def _shell_band_mix(
     shell_strength = new_math_node(node_tree, "MULTIPLY", operand=config.shell.strength)
     link_nodes(node_tree, source=(shell_range, "Result"), target=(shell_strength, "Value"))
     shell = new_color_mix_node(
-        node_tree, a=None, b=mixed_linear(base, key, config.shell.key_mix, gain=config.shell.gain)
+        node_tree,
+        a=None,
+        b=mixed_linear(base, key, config.shell.key_mix, gain=config.shell.gain),
     )
-    link_sockets(node_tree, output_socket(shell_strength, "Value"), input_by_identifier(shell, MIX_FACTOR))
+    link_sockets(
+        node_tree,
+        output_socket(shell_strength, "Value"),
+        input_by_identifier(shell, MIX_FACTOR),
+    )
     return shell

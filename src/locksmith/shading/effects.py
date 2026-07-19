@@ -42,6 +42,7 @@ from locksmith.types import RGBAColor
 _NOISE_MIDPOINT: Final[float] = 0.5
 
 
+# TODO: refactor
 def apply_roughness_breakup(
     node_tree: NodeTree,
     principled: ShaderNodeBsdfPrincipled,
@@ -93,7 +94,11 @@ def add_edge_wear(
     strength = new_math_node(node_tree, "MULTIPLY", operand=config.strength)
     link_nodes(node_tree, source=(ramp, "Color"), target=(strength, "Value"))
     wear = new_color_mix_node(node_tree, a=base, b=highlight)
-    link_sockets(node_tree, output_socket(strength, "Value"), input_by_identifier(wear, MIX_FACTOR))
+    link_sockets(
+        node_tree,
+        output_socket(strength, "Value"),
+        input_by_identifier(wear, MIX_FACTOR),
+    )
     return wear
 
 
@@ -112,7 +117,11 @@ def add_patina(
     set_color_ramp_stop(color_ramp, 1, position=config.end, color=BLACK)
     link_nodes(node_tree, source=(geometry, "Pointiness"), target=(ramp, "Fac"))
     patina = new_color_mix_node(node_tree, a=base, b=verdigris)
-    link_sockets(node_tree, output_socket(ramp, "Color"), input_by_identifier(patina, MIX_FACTOR))
+    link_sockets(
+        node_tree,
+        output_socket(ramp, "Color"),
+        input_by_identifier(patina, MIX_FACTOR),
+    )
     return patina
 
 
