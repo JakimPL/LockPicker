@@ -1,6 +1,7 @@
 from dataclasses import replace
 from typing import Dict, List, Optional
 
+from lockpicker.engine.events import Sound
 from lockpicker.engine.pick import PickSet
 from lockpicker.level.level import Level
 from lockpicker.state.snapshot import Snapshot
@@ -17,6 +18,7 @@ class Lock:
 
         self._picks = PickSet(self.level.number_of_picks)
         self._states: List[Snapshot] = [self._capture_snapshot()]
+        self._sounds: List[Sound] = []
 
     def push(self, location: Location) -> None:
         tumbler = self.get_tumbler(location)
@@ -36,6 +38,11 @@ class Lock:
         self._states = [self._states[-1]]
         return snapshots
 
+    def drain_sounds(self) -> List[Sound]:
+        sounds = list(dict.fromkeys(self._sounds))
+        self._sounds.clear()
+        return sounds
+
     def reset(self) -> None:
         self.level = self._level_copy
 
@@ -47,7 +54,6 @@ class Lock:
         return True
 
     def get_possible_moves(self) -> List[Location]:
-        # TODO: consider state change after each move
         moves: List[Location] = []
         max_position = max([position for position, upper in self._level.tumblers])
         for upper in [True, False]:
@@ -84,6 +90,7 @@ class Lock:
     def _initialize_state(self) -> None:
         self._picks = PickSet(self.level.number_of_picks)
         self._states = [self._capture_snapshot()]
+        self._sounds = []
 
     def _push_tumbler(self, tumbler: Tumbler) -> None:
         location = tumbler.location
@@ -148,6 +155,7 @@ class Lock:
             jammed = False
             if picks and pushed:
                 target_tumbler.jam()
+                self._sounds.append(Sound.JAM)
                 jammed = True
 
             if not jammed:
@@ -168,6 +176,7 @@ class Lock:
                 group_tumbler = self._require_tumbler(location)
                 group_tumbler.jam()
                 group_tumbler.set_difference(0)
+                self._sounds.append(Sound.JAM)
 
         self._record_snapshot()
 
@@ -189,6 +198,7 @@ class Lock:
                     all_picks_valid = False
                     self._apply_bindings(location, False)
                     self._picks.clear(pick)
+                    self._sounds.append(Sound.BREAK)
                     self._release_tumbler(location)
 
         return number_of_revisions == 1
@@ -217,6 +227,7 @@ class Lock:
             self._picks.set(pick, pick_location)
 
         self._states = [self._capture_snapshot()]
+        self._sounds = []
 
     @property
     def level(self) -> Level:

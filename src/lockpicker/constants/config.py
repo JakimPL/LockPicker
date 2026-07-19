@@ -88,6 +88,11 @@ class AnimationConfig(Section):
     fps: int
 
 
+class AudioConfig(Section):
+    enabled: bool
+    volume: float
+
+
 class RulesConfig(Section):
     default_number_of_picks: int
     default_max_height: int
@@ -126,6 +131,7 @@ class Settings(BaseSettings):
     color: ColorConfig
     alpha: AlphaConfig
     animation: AnimationConfig
+    audio: AudioConfig
     rules: RulesConfig
     simulation: SimulationConfig
     theme: ThemeConfig

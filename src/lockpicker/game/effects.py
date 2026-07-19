@@ -12,12 +12,14 @@ class LipEffects:
         self._glints: Dict[Location, int] = {}
         self._flourish: Optional[int] = None
 
-    def observe(self, location: Location, height: float) -> None:
+    def observe(self, location: Location, height: float) -> bool:
         previous = self._heights.get(location)
-        if previous is not None and previous > 1.0 >= height:
+        seated = previous is not None and previous > 1.0 >= height
+        if seated:
             self._glints[location] = settings.theme.lip_glint_frames
 
         self._heights[location] = height
+        return seated
 
     def advance(self) -> None:
         self._glints = {location: count - 1 for location, count in self._glints.items() if count > 1}

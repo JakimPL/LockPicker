@@ -22,4 +22,4 @@ class Viewport:
 
     @property
     def offset(self) -> Tuple[int, int]:
-        return self.rect.topleft
+        return self.rect.topleft  # type: ignore[no-any-return]

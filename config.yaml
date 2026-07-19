@@ -53,6 +53,10 @@ animation:
   pick_travel: 2.0
   fps: 60
 
+audio:
+  enabled: true
+  volume: 0.7
+
 rules:
   default_number_of_picks: 2
   default_max_height: 11

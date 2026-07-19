@@ -5,8 +5,10 @@ import pygame
 
 from lockpicker.agents.random import RandomAgent
 from lockpicker.constants.config import RendererMode
+from lockpicker.engine.events import Sound
 from lockpicker.engine.lock import Lock
 from lockpicker.game.animation import Animation, compute_animation_steps
+from lockpicker.game.audio import SoundBoard
 from lockpicker.game.effects import LipEffects
 from lockpicker.game.input import Key, MouseState
 from lockpicker.game.layout import Layout
@@ -39,6 +41,7 @@ class Game:
         self.mouse.offset = self.viewport.offset
         self.animation = Animation()
         self.effects = LipEffects()
+        self.audio = SoundBoard()
         self.layout = Layout(lock.level.max_height, self.viewport.ui_scale)
         self.renderer: BoardRenderer = create_renderer(
             self.viewport.board, lock, self.layout, self.animation, self.effects, mode=renderer_mode
@@ -108,7 +111,11 @@ class Game:
     def draw_tumblers(self) -> None:
         self.highlighted = None
         for location, tumbler in self.lock.get_tumblers_by_location().items():
-            self.effects.observe(location, self.renderer.get_current_height(tumbler))
+            height = self.renderer.get_current_height(tumbler)
+            if self.effects.observe(location, height):
+                self.audio.play(Sound.SET)
+
+            self.audio.observe_motion(location, height)
             bounds = self.renderer.get_tumbler_bounds(tumbler)
             highlighted = self.renderer.is_mouse_hovering_tumbler(tumbler, self.mouse.position, bounds)
             self.renderer.draw_tumbler(tumbler, bounds, highlighted=highlighted)
@@ -122,7 +129,12 @@ class Game:
             if self.random_moves:
                 self.random_agent.play_move()
 
+            self.play_sounds()
             self.animation.load(compute_animation_steps(self.lock.drain_snapshots()))
+
+    def play_sounds(self) -> None:
+        for sound in self.lock.drain_sounds():
+            self.audio.play(sound)
 
     def handle_selected_tumbler(self) -> None:
         if self.mouse.left_clicked:
@@ -150,6 +162,7 @@ class Game:
         self.lock.reset()
         self.animation.reset()
         self.effects.reset()
+        self.audio.silence_slides()
 
     def save_state(self) -> None:
         last_state = self.undo_history[-1] if self.undo_history else None
@@ -162,6 +175,7 @@ class Game:
         if self.undo_history:
             self.animation.reset()
             self.effects.reset()
+            self.audio.silence_slides()
             self.redo_history.append(self.lock.get_state())
             state = self.undo_history.pop()
             self.lock.load_state(state)
@@ -170,6 +184,7 @@ class Game:
         if self.redo_history:
             self.animation.reset()
             self.effects.reset()
+            self.audio.silence_slides()
             self.undo_history.append(self.lock.get_state())
             state = self.redo_history.pop()
             self.lock.load_state(state)
