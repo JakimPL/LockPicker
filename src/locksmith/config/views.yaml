@@ -1,0 +1,12 @@
+views:
+  camera_y: -15.0
+  clip_start: 0.1
+  clip_end: 100.0
+staging:
+  tumbler_upper_x: -20.0
+  tumbler_lower_x: -17.0
+  pick_x: -24.0
+  pick_diamond_z: 2.0
+  pick_circle_z: 0.0
+  badge_x: -24.0
+  badge_z: -2.0

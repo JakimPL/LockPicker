@@ -1,0 +1,19 @@
+lookdev:
+  tumblers:
+    - {position: 0, upper: true, height: 4, metal: steel, state: plain}
+    - {position: 0, upper: false, height: 3, metal: brass, state: plain}
+    - {position: 1, upper: true, height: 6, metal: steel, state: master}
+    - {position: 1, upper: false, height: 2, metal: copper, state: plain}
+    - {position: 2, upper: true, height: 3, metal: brass, state: hover}
+    - {position: 2, upper: false, height: 5, metal: steel, state: plain}
+    - {position: 3, upper: true, height: 5, metal: copper, state: jam}
+    - {position: 3, upper: false, height: 4, metal: brass, state: plain}
+    - {position: 4, upper: true, height: 2, metal: steel, state: plain}
+    - {position: 4, upper: false, height: 6, metal: copper, state: master}
+    - {position: 5, upper: false, height: 7, metal: steel, state: plain}
+    - {position: 6, upper: true, height: 8, metal: brass, state: plain}
+    - {position: 6, upper: false, height: 1, metal: steel, state: plain}
+    - {position: 7, upper: true, height: 4, metal: copper, state: plain}
+    - {position: 7, upper: false, height: 6, metal: brass, state: plain}
+  engaged_pick: {y: -0.24, bite_pixels: 20.0}
+  idle_pick: {x_pixels: 80.0, y: -0.24, z_pixels: -40.0}

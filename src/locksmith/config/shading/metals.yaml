@@ -1,0 +1,16 @@
+metals:
+  roughness: {steel: 0.18, brass: 0.28, copper: 0.33, rosette: 0.4, lip: 0.1, pick: 0.12, ferrule: 0.35}
+  breakup:
+    noise_scale: 14.0
+    noise_detail: 6.0
+    spread: 0.05
+    minimum: 0.03
+    streak_mapping_scale: [25.0, 25.0, 1.2]
+    streak_scale: 1.0
+    streak_detail: 4.0
+    strength: 0.05
+  edge_wear: {start: 0.6, end: 0.74, strength: 0.85}
+  bevel_normal: {radius: 0.02, samples: 4}
+  patina: {start: 0.34, end: 0.47}
+  hover: {blend: 0.65, power: 3.0, gain: 2.2}
+  jam: {roughness_shift: 0.15, roughness_cap: 0.9}

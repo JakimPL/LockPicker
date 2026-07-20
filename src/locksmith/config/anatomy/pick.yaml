@@ -1,0 +1,6 @@
+pick:
+  shaft: {segments: 24, radius: 0.07, length: 7.0, center_x: -3.55}
+  diamond_tip: {width: 0.39, depth: 0.14, height: 0.39}
+  circle_tip: {segments: 24, rings: 16, radius_pixels: 20.0, depth_scale: 0.5}
+  ferrule: {segments: 24, radius: 0.1, length: 0.35, center_x: -7.2}
+  grip: {segments: 24, radius: 0.095, length: 4.0, center_x: -9.2}

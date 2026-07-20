@@ -2,6 +2,11 @@ screen:
   width: 1000
   height: 800
 
+display:
+  width: 1000
+  height: 800
+  fullscreen: false
+
 layout:
   x_offset: 150
   bar_width: 80
@@ -25,8 +30,10 @@ arrow:
 color:
   highlight: [255, 255, 255]
   background: [32, 32, 32]
-  post_release: [64, 64, 64]
+  border: [13, 12, 11]
+  post_release: [104, 92, 72]
   arrow: [192, 128, 128]
+  lip: [212, 220, 228]
   tumblers:
     - [128, 128, 128]
     - [192, 192, 64]
@@ -38,11 +45,17 @@ color:
 alpha:
   opaque: 255
   dimmed: 160
-  faint: 64
+  faint: 112
   jam_divisor: 3
 
 animation:
-  speed: 0.05
+  speed: 0.07
+  pick_travel: 2.0
+  fps: 60
+
+audio:
+  enabled: true
+  volume: 0.7
 
 rules:
   default_number_of_picks: 2
@@ -53,3 +66,17 @@ rules:
 simulation:
   games: 1000
   max_moves: 100
+
+theme:
+  mode: styled
+  name: workshop
+  directory: assets/themes
+  highlight_tint: [72, 48, 24]
+  jam_tint: [128, 122, 134]
+  shadow_alpha: 160
+  badge_alpha: 255
+  lip_glint_frames: 18
+  lip_glint_tint: [96, 72, 40]
+  win_flourish_frames: 45
+  pick_idle_alpha: 200
+  pick_active_tint: [36, 26, 14]

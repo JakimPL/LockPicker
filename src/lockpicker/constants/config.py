@@ -23,6 +23,11 @@ class PickShape(StrEnum):
     CIRCLE = "circle"
 
 
+class RendererMode(StrEnum):
+    FLAT = "flat"
+    STYLED = "styled"
+
+
 class Section(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -30,6 +35,12 @@ class Section(BaseModel):
 class ScreenConfig(Section):
     width: int
     height: int
+
+
+class DisplayConfig(Section):
+    width: int
+    height: int
+    fullscreen: bool
 
 
 class LayoutConfig(Section):
@@ -56,8 +67,10 @@ class ArrowConfig(Section):
 class ColorConfig(Section):
     highlight: Color
     background: Color
+    border: Color
     post_release: Color
     arrow: Color
+    lip: Color
     tumblers: List[Color]
     picks: List[Color]
 
@@ -71,6 +84,13 @@ class AlphaConfig(Section):
 
 class AnimationConfig(Section):
     speed: float
+    pick_travel: float
+    fps: int
+
+
+class AudioConfig(Section):
+    enabled: bool
+    volume: float
 
 
 class RulesConfig(Section):
@@ -85,18 +105,36 @@ class SimulationConfig(Section):
     max_moves: int
 
 
+class ThemeConfig(Section):
+    mode: RendererMode
+    name: str
+    directory: str
+    highlight_tint: Color
+    jam_tint: Color
+    shadow_alpha: int
+    badge_alpha: int
+    lip_glint_frames: int
+    lip_glint_tint: Color
+    win_flourish_frames: int
+    pick_idle_alpha: int
+    pick_active_tint: Color
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(yaml_file=CONFIG_FILE, frozen=True)
 
     screen: ScreenConfig
+    display: DisplayConfig
     layout: LayoutConfig
     pick: PickConfig
     arrow: ArrowConfig
     color: ColorConfig
     alpha: AlphaConfig
     animation: AnimationConfig
+    audio: AudioConfig
     rules: RulesConfig
     simulation: SimulationConfig
+    theme: ThemeConfig
 
     @classmethod
     def settings_customise_sources(

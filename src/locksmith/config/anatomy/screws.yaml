@@ -1,0 +1,6 @@
+screws:
+  head: {segments: 24, base_radius: 0.13, face_radius: 0.115, depth: 0.07, y: -0.065}
+  slot: {length: 0.22, depth: 0.05, height: 0.045, y: -0.1}
+  placements:
+    - {x: 5.15, z: 4.6, slot_angle: 0.9}
+    - {x: 5.15, z: -4.6, slot_angle: 0.1}

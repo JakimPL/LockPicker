@@ -1,0 +1,7 @@
+world:
+  z_factor: 0.9
+  x_factor: -0.35
+  mid_position: 0.45
+  top_white_mix: 0.25
+  top_gain: 1.7
+  strength: 0.7

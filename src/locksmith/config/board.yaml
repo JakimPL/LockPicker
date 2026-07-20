@@ -1,0 +1,9 @@
+board:
+  pixels_per_unit: 72.0
+  width_pixels: 1000.0
+  height_pixels: 800.0
+  column_width_pixels: 80.0
+  column_pitch_pixels: 85.0
+  column_offset_pixels: 150.0
+  columns: 8
+  max_height: 11.0

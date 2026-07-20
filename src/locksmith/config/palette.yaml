@@ -1,0 +1,26 @@
+palette:
+  key: "FFC98A"
+  rim: "BFD4E8"
+  hover: "FFD9A0"
+  enamel: "8E2F2B"
+  jam: "6E6E82"
+  patina: "4E7C6B"
+  plate: "2B2926"
+  plate_dark: "211C18"
+  plate_deep: "0C0A09"
+  wood_light: "6B5D4C"
+  wood: "3E3629"
+  wood_dark: "2B2119"
+  wood_deep: "191411"
+  wood_black: "0B0908"
+  bore: "151110"
+  world_floor: "101112"
+  world_mid: "5A6672"
+  rosette: "3E4348"
+  steel: {base: "8C9298", highlight: "E8EDF2"}
+  brass: {base: "C9A24B", highlight: "F2D98C"}
+  copper: {base: "B26E4F", highlight: "E8A87C"}
+  lip: {base: "A8AEB4", highlight: "F2F6FA"}
+  pick: {base: "E0B85A", highlight: "FFEBB0"}
+  grip_a: "AFC5AF"
+  grip_b: "C5AFAF"

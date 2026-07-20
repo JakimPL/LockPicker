@@ -44,12 +44,14 @@ class ButtonState(NamedTuple):
 
 class MouseState:
     def __init__(self) -> None:
+        self.offset: Tuple[int, int] = (0, 0)
         self.position: Tuple[int, int] = (0, 0)
         self.pressed = ButtonState(False, False, False)
         self.previous = ButtonState(False, False, False)
 
     def update(self) -> None:
-        self.position = pygame.mouse.get_pos()
+        x, y = pygame.mouse.get_pos()
+        self.position = (x - self.offset[0], y - self.offset[1])
         pressed = pygame.mouse.get_pressed()
         self.pressed = ButtonState(bool(pressed[0]), bool(pressed[1]), bool(pressed[2]))
 

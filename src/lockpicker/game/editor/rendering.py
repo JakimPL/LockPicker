@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Optional, Tuple
 
 import pygame
@@ -9,15 +10,24 @@ from lockpicker.engine.lock import Lock
 from lockpicker.game.editor.geometry import EditorGeometry
 from lockpicker.game.editor.state import EditorState
 from lockpicker.game.input import MouseState
-from lockpicker.game.renderer import Renderer
+from lockpicker.game.render.protocol import BoardRenderer
 from lockpicker.tumbler.location import Location
 from lockpicker.tumbler.tumbler import Tumbler
+
+
+@dataclass(frozen=True)
+class _ArrowGeometry:
+    start_x: float
+    start_y: float
+    intermediate_y: float
+    end_x: float
+    end_y: float
 
 
 class EditorRenderer:
     def __init__(
         self,
-        renderer: Renderer,
+        renderer: BoardRenderer,
         lock: Lock,
         state: EditorState,
         geometry: EditorGeometry,
@@ -33,6 +43,8 @@ class EditorRenderer:
         self.renderer.draw_background()
         self.draw_tumblers()
         self.draw_transparent_tumbler()
+        self.renderer.draw_frame()
+        self.renderer.draw_shear_lips()
         self.draw_bindings()
         self.draw_binding_arrow()
         pygame.display.flip()
@@ -77,14 +89,14 @@ class EditorRenderer:
         post_release_pixels = tumbler.post_release_height * layout.scale
         left = layout.bar_x(tumbler.position)
         height_pixels = self.renderer.get_current_height(tumbler) * layout.scale
-        top = height_pixels if tumbler.upper else settings.screen.height - height_pixels - post_release_pixels
+        top = height_pixels if tumbler.upper else layout.screen_height - height_pixels - post_release_pixels
         if post_release_pixels > 0:
-            return pygame.Rect(left, top, settings.layout.bar_width, post_release_pixels)
+            return pygame.Rect(left, top, layout.bar_width, post_release_pixels)
 
         return pygame.Rect(
             left,
             top + post_release_pixels,
-            settings.layout.bar_width,
+            layout.bar_width,
             -post_release_pixels,
         )
 
@@ -107,28 +119,20 @@ class EditorRenderer:
             if start_tumbler is None:
                 continue
 
-            start_x = self.renderer.get_tumbler_x(start_location)
-            start_y = self.renderer.get_tumbler_y(start_location, start_tumbler.height)
-
             for end_location, difference in targets.items():
                 end_tumbler = self.lock.get_tumbler(end_location)
                 if end_tumbler is None:
                     continue
 
-                intermediate_y = self.renderer.get_tumbler_y(end_location, end_tumbler.height)
-                end_x = self.renderer.get_tumbler_x(end_location)
-                end_y = intermediate_y + self.renderer.layout.scale * (
-                    difference if end_location.upper else -difference
+                geometry = self._arrow_geometry(
+                    start_location,
+                    end_location,
+                    start_height=start_tumbler.height,
+                    end_height=end_tumbler.height,
+                    difference=difference,
                 )
                 alpha = settings.alpha.opaque if self.is_tumbler_bound(start_location, end_location) else None
-                self.draw_arrow(
-                    start_x=start_x,
-                    start_y=start_y,
-                    intermediate_y=intermediate_y,
-                    end_x=end_x,
-                    end_y=end_y,
-                    alpha=alpha,
-                )
+                self._draw_arrow_geometry(geometry, alpha=alpha)
 
     def draw_binding_arrow(self) -> None:
         initial = self.state.binding_initial
@@ -144,33 +148,50 @@ class EditorRenderer:
         if start_tumbler is None or end_tumbler is None:
             return
 
-        start_x = self.renderer.get_tumbler_x(initial)
-        start_y = self.renderer.get_tumbler_y(initial, start_tumbler.height)
-        end_x = self.renderer.get_tumbler_x(end_location)
-        end_y = self.renderer.get_tumbler_y(end_location, end_tumbler.height)
-
         if self.state.binding_target is None:
+            difference = 0
             alpha = settings.alpha.opaque if self.is_tumbler_bound(initial, end_location) else None
-            self.draw_arrow(
-                start_x=start_x,
-                start_y=start_y,
-                intermediate_y=end_y,
-                end_x=end_x,
-                end_y=end_y,
-                alpha=alpha,
-            )
         else:
             difference = self.geometry.calculate_difference(end_location)
-            scale = self.renderer.layout.scale
-            offset = difference * scale if end_location.upper else -difference * scale
-            self.draw_arrow(
-                start_x=start_x,
-                start_y=start_y,
-                intermediate_y=end_y,
-                end_x=end_x,
-                end_y=end_y + offset,
-                alpha=settings.alpha.opaque,
-            )
+            alpha = settings.alpha.opaque
+
+        geometry = self._arrow_geometry(
+            initial,
+            end_location,
+            start_height=start_tumbler.height,
+            end_height=end_tumbler.height,
+            difference=difference,
+        )
+        self._draw_arrow_geometry(geometry, alpha=alpha)
+
+    def _arrow_geometry(
+        self,
+        start_location: Location,
+        end_location: Location,
+        *,
+        start_height: int,
+        end_height: int,
+        difference: int,
+    ) -> _ArrowGeometry:
+        intermediate_y = self.renderer.get_tumbler_y(end_location, end_height)
+        end_y = intermediate_y + self.renderer.layout.scale * (difference if end_location.upper else -difference)
+        return _ArrowGeometry(
+            start_x=self.renderer.get_tumbler_x(start_location),
+            start_y=self.renderer.get_tumbler_y(start_location, start_height),
+            intermediate_y=intermediate_y,
+            end_x=self.renderer.get_tumbler_x(end_location),
+            end_y=end_y,
+        )
+
+    def _draw_arrow_geometry(self, geometry: _ArrowGeometry, *, alpha: Optional[int]) -> None:
+        self.draw_arrow(
+            start_x=geometry.start_x,
+            start_y=geometry.start_y,
+            intermediate_y=geometry.intermediate_y,
+            end_x=geometry.end_x,
+            end_y=geometry.end_y,
+            alpha=alpha,
+        )
 
     def draw_arrow(
         self,
@@ -186,6 +207,9 @@ class EditorRenderer:
         if start_x == end_x and start_y == intermediate_y:
             return
 
+        layout = self.renderer.layout
+        size = layout.px(settings.arrow.size)
+        width = max(1, layout.px(settings.arrow.width))
         color = (*settings.color.arrow, alpha)
         surface = pygame.Surface(self.renderer.screen.get_size(), pygame.SRCALPHA)
         pygame.draw.line(
@@ -193,21 +217,21 @@ class EditorRenderer:
             color,
             (start_x, start_y),
             (end_x, intermediate_y),
-            settings.arrow.width,
+            width,
         )
         pygame.draw.line(
             surface,
             color,
             (end_x, intermediate_y),
             (end_x, end_y),
-            settings.arrow.width,
+            width,
         )
         pygame.draw.line(
             surface,
             color,
-            (end_x - settings.arrow.size, end_y),
-            (end_x + settings.arrow.size, end_y),
-            settings.arrow.width,
+            (end_x - size, end_y),
+            (end_x + size, end_y),
+            width,
         )
         self.renderer.screen.blit(surface, (0, 0))
 

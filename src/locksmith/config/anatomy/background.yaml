@@ -1,0 +1,6 @@
+background:
+  margin: 14.0
+  depth: 0.6
+  center_y: 1.2
+  pocket_y: 0.28
+  pocket_segments: 96

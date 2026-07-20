@@ -6,7 +6,6 @@ __pycache__/
 .mypy_cache/
 .pytest_cache/
 .venv/
-.venv-build/
 .vscode/
 
 **/*.idea
@@ -18,3 +17,9 @@ __pycache__/
 *.pyo
 *.coverage
 *.coverage.*
+
+*.blend
+*.blend1
+/assets/
+/build/
+/docs/lookdev/

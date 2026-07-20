@@ -6,10 +6,13 @@ from typing import Tuple
 import pygame
 import pytest
 
-from lockpicker.constants.config import settings
+from lockpicker.constants.config import RendererMode, settings
 from lockpicker.engine.lock import Lock
 from lockpicker.game.editor.editor import Editor
 from lockpicker.game.game import Game
+from lockpicker.tumbler.definition import TumblerDefinition
+from lockpicker.tumbler.location import Location
+from tests.conftest import LockFactory
 
 
 def grid_point(position: int, *, upper: bool) -> Tuple[int, int]:
@@ -30,8 +33,12 @@ def assert_level_within_bounds(lock: Lock) -> None:
         assert 1 <= tumbler.height <= lock.level.max_height
 
 
-def test_game_frame_renders_and_quit_stops(screen: pygame.surface.Surface, sample_lock: Lock) -> None:
-    game = Game(screen, sample_lock, random_moves=False)
+def test_game_frame_renders_and_quit_stops(
+    screen: pygame.surface.Surface,
+    sample_lock: Lock,
+    renderer_mode: RendererMode,
+) -> None:
+    game = Game(screen, sample_lock, random_moves=False, renderer_mode=renderer_mode)
     pump(game)
     pygame.event.post(pygame.event.Event(pygame.QUIT))
     game.frame()
@@ -42,8 +49,9 @@ def test_game_handles_click_and_undo(
     screen: pygame.surface.Surface,
     sample_lock: Lock,
     monkeypatch: pytest.MonkeyPatch,
+    renderer_mode: RendererMode,
 ) -> None:
-    game = Game(screen, sample_lock, random_moves=False)
+    game = Game(screen, sample_lock, random_moves=False, renderer_mode=renderer_mode)
     monkeypatch.setattr(pygame.mouse, "get_pos", lambda: grid_point(0, upper=False))
     presses = iter([(True, False, False), (False, False, False), (False, False, True)])
     monkeypatch.setattr(pygame.mouse, "get_pressed", lambda *args, **kwargs: next(presses, (False, False, False)))
@@ -56,12 +64,34 @@ def test_game_handles_click_and_undo(
     assert_level_within_bounds(game.lock)
 
 
+def test_win_flourish_delays_exit(
+    screen: pygame.surface.Surface,
+    build_lock: LockFactory,
+    renderer_mode: RendererMode,
+) -> None:
+    location = Location(0, False)
+    lock = build_lock([TumblerDefinition(location, 0, 2, 0, False)])
+    game = Game(screen, lock, random_moves=False, renderer_mode=renderer_mode)
+    game.running = True
+    game.lock.push(location)
+
+    frames = 0
+    while game.running and frames < 600:
+        game.frame()
+        frames += 1
+
+    assert game.running is False
+    assert game.effects.flourish_finished
+    assert frames >= settings.theme.win_flourish_frames
+
+
 def test_editor_frame_renders_and_quit_stops(
     screen: pygame.surface.Surface,
     sample_lock: Lock,
     tmp_path: Path,
+    renderer_mode: RendererMode,
 ) -> None:
-    editor = Editor(screen, sample_lock, tmp_path / "out.lvl", lambda: None)
+    editor = Editor(screen, sample_lock, tmp_path / "out.lvl", lambda: None, renderer_mode=renderer_mode)
     pump(editor)
     pygame.event.post(pygame.event.Event(pygame.QUIT))
     editor.frame()
@@ -73,8 +103,9 @@ def test_editor_event_dispatch(
     sample_lock: Lock,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    renderer_mode: RendererMode,
 ) -> None:
-    editor = Editor(screen, sample_lock, tmp_path / "out.lvl", lambda: None)
+    editor = Editor(screen, sample_lock, tmp_path / "out.lvl", lambda: None, renderer_mode=renderer_mode)
     monkeypatch.setattr(pygame.mouse, "get_pos", lambda: grid_point(3, upper=True))
     monkeypatch.setattr(pygame.mouse, "get_pressed", lambda *args, **kwargs: (False, False, False))
     editor.running = True

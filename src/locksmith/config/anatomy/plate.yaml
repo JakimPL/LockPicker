@@ -1,0 +1,14 @@
+plate:
+  margin: 12.0
+  bezel_left: 0.15
+  bezel_right: 0.15
+  chamber_depth: 0.5
+  face_y: -0.15
+  back_y: 0.55
+  subdivision_cuts: 72
+  slot_clearance: 0.04
+  land_inset: 0.03
+  cutter_depth_margin: 0.4
+  cutter_height_margin: 0.2
+  countersink_width: 0.05
+  countersink_depth: 0.35
